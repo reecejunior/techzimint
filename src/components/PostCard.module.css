@@ -1,11 +1,43 @@
 /* A feed card. Content-forward: the media and the copy carry it, and the chrome
    is a hairline and a row of quiet controls. */
 .card {
+  position: relative;
   padding: var(--s-5) 0;
   border-bottom: 1px solid var(--hairline);
 }
 
+/* ── Thread connector ──────────────────────────────────────
+   A single vertical rule running through the logo, so consecutive updates
+   from one founder read as one continuing story rather than repeated,
+   disconnected cards. Sized per-card so it lines up regardless of how tall
+   any one update is:
+     - "first": starts at the logo's own centre (not the card's top, since
+       nothing sits above it) and runs to the card's bottom.
+     - "middle": the full card height — the safe default.
+     - "last": stops at the logo's centre instead of the card's bottom, since
+       nothing sits below it.
+   The logo itself paints over it, which is what makes the line look like it
+   passes behind each avatar. */
+.threadLine {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--hairline-strong);
+}
+
+.threadLine[data-pos='first'] {
+  top: 40px;
+}
+
+.threadLine[data-pos='last'] {
+  bottom: auto;
+  height: 40px;
+}
+
 .head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--s-3);
@@ -14,9 +46,11 @@
 .logoLink {
   display: block;
   flex-shrink: 0;
+  position: relative;
 }
 
 .headText {
+  flex: 1;
   min-width: 0;
 }
 
@@ -45,6 +79,59 @@
 .launch {
   color: var(--brand-text);
   font-weight: 500;
+}
+
+/* A later post from the same founder — neutral, so it doesn't compete with
+   the one-time "Launched" marker. */
+.updateTag {
+  color: var(--ink-500);
+  font-weight: 500;
+}
+
+/* ── Delete ─────────────────────────────────────────────────
+   Only the owning founder ever sees this. First tap asks; it takes a second,
+   deliberate tap on the same control to actually delete — no modal, but
+   still two intentional actions for something irreversible. */
+.delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 6px 8px;
+  margin: -6px -8px 0 0;
+  border-radius: var(--r-sm);
+  color: var(--ink-400);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.delete:hover:not(:disabled) {
+  color: var(--ink-700);
+  background: #F7F4F1;
+}
+
+.delete:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.deleteConfirm {
+  color: var(--orange-800);
+  background: var(--surface-2);
+}
+
+.deleteConfirm:hover:not(:disabled) {
+  color: var(--orange-800);
+  background: var(--surface-2);
+}
+
+.deleteLabel {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
 }
 
 .body {

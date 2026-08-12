@@ -486,8 +486,22 @@ function Loaded({ startup }: { startup: Startup }) {
                                 <p className={styles.quiet}>No updates posted yet.</p>
                             ) : (
                                 <div className={styles.posts}>
-                                    {posts.map(p => (
-                                        <PostCard key={p.id} post={p} liked={likes.has(p.id)} />
+                                    {posts.map((p, i) => (
+                                        <PostCard
+                                            key={p.id}
+                                            post={p}
+                                            liked={likes.has(p.id)}
+                                            isOwner={isOwner}
+                                            threadPosition={
+                                                posts.length < 2
+                                                    ? undefined
+                                                    : i === 0
+                                                      ? 'first'
+                                                      : i === posts.length - 1
+                                                        ? 'last'
+                                                        : 'middle'
+                                            }
+                                        />
                                     ))}
                                 </div>
                             )}

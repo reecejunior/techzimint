@@ -135,6 +135,24 @@ service cloud.firestore {
                        && request.resource.data.ratingSumUsefulness <= resource.data.ratingSumUsefulness + 5
                        && request.resource.data.ratingSumWouldPay >= resource.data.ratingSumWouldPay + 1
                        && request.resource.data.ratingSumWouldPay <= resource.data.ratingSumWouldPay + 5)
+                      ||
+                      // A post removed by its owner: postCount drops by exactly
+                      // one, and the totals that post had contributed may drop
+                      // with it — bounded so a client can only ever take counts
+                      // away, never invent new ones. Weekly/monthly like totals
+                      // are untouched; see deletePost() for why.
+                      (resource.data.ownerId == request.auth.uid
+                       && request.resource.data.postCount == resource.data.postCount - 1
+                       && request.resource.data.likeCount >= 0
+                       && request.resource.data.likeCount <= resource.data.likeCount
+                       && request.resource.data.commentCount >= 0
+                       && request.resource.data.commentCount <= resource.data.commentCount
+                       && unchanged('weeklyLikes')
+                       && unchanged('monthlyLikes')
+                       && unchanged('reviewCount')
+                       && unchanged('ratingSumUX')
+                       && unchanged('ratingSumUsefulness')
+                       && unchanged('ratingSumWouldPay'))
                     );
 
       allow delete: if false;
@@ -163,7 +181,9 @@ service cloud.firestore {
                         (movedByOne('commentCount') && touched().hasOnly(['commentCount']))
                       );
 
-        allow delete: if false;
+        // Only the founder who owns this startup may remove a post they posted.
+        allow delete: if signedIn()
+                      && get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid;
 
         match /comments/{commentId} {
           allow read: if true;
@@ -174,8 +194,12 @@ service cloud.firestore {
                         && request.resource.data.body.size() > 0
                         && request.resource.data.body.size() <= 1000;
 
-          // Comments are not editable; removal is a moderation action.
-          allow update, delete: if false;
+          // Comments are not editable, and never deletable one at a time —
+          // that stays a moderation action. The one exception is the cascade
+          // below: removing a whole post takes its comments with it.
+          allow update: if false;
+          allow delete: if signedIn()
+                        && get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid;
         }
       }
 

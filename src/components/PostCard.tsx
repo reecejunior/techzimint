@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Heart, MessageCircle, Send, Star } from 'lucide-react';
+import { Heart, Loader2, MessageCircle, Send, Star, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
-import { addComment, toggleLike } from '@/lib/firestore';
+import { addComment, deletePost, toggleLike } from '@/lib/firestore';
 import { useComments } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
 import type { Post } from '@/lib/types';
@@ -13,12 +13,27 @@ import Logo from '@/components/ui/Logo';
 import PostMedia from '@/components/ui/PostMedia';
 import styles from './PostCard.module.css';
 
-export default function PostCard({ post, liked }: { post: Post; liked: boolean }) {
+interface PostCardProps {
+  post: Post;
+  liked: boolean;
+  /** Shows the delete control. True only for the founder who owns this post's startup. */
+  isOwner?: boolean;
+  /**
+   * Position within a single startup's own update thread. Omitted outside
+   * that context (e.g. the general feed, which interleaves different
+   * startups) — the connecting line only makes sense within one story.
+   */
+  threadPosition?: 'first' | 'middle' | 'last';
+}
+
+export default function PostCard({ post, liked, isOwner = false, threadPosition }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [pendingLike, setPendingLike] = useState(false);
   /** Local guess applied while the write is in flight. */
   const [optimistic, setOptimistic] = useState<{ liked: boolean; delta: number } | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isLiked = optimistic?.liked ?? liked;
   const likeCount = Math.max(0, post.likeCount + (optimistic?.delta ?? 0));
@@ -43,8 +58,33 @@ export default function PostCard({ post, liked }: { post: Post; liked: boolean }
     }
   }
 
+  async function handleDelete() {
+    if (!confirmingDelete) {
+      // First click asks; it does not act. A destructive control needs a
+      // second, deliberate tap rather than firing on the first touch.
+      setConfirmingDelete(true);
+      return;
+    }
+    setDeleting(true);
+    setFailed(null);
+    try {
+      await deletePost(post.startupId, post.id);
+      // No further state to set on success: the live subscription this card
+      // came from removes it, which unmounts this component.
+    } catch (err) {
+      setDeleting(false);
+      setConfirmingDelete(false);
+      setFailed(err instanceof Error ? err.message : 'Could not delete that.');
+      setTimeout(() => setFailed(null), 3200);
+    }
+  }
+
   return (
     <article className={styles.card}>
+      {threadPosition && (
+        <span className={styles.threadLine} data-pos={threadPosition} aria-hidden="true" />
+      )}
+
       <header className={styles.head}>
         <Link href={`/startups/${post.startupSlug}`} className={styles.logoLink} tabIndex={-1}>
           <Logo
@@ -62,10 +102,33 @@ export default function PostCard({ post, liked }: { post: Post; liked: boolean }
             </Link>
           </h3>
           <p className={styles.meta}>
-            {post.isLaunch && <span className={styles.launch}>Launched</span>}
+            {post.isLaunch ? (
+              <span className={styles.launch}>Launched</span>
+            ) : (
+              <span className={styles.updateTag}>Update</span>
+            )}
             <time dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
           </p>
         </div>
+
+        {isOwner && (
+          <button
+            type="button"
+            className={clsx(styles.delete, confirmingDelete && styles.deleteConfirm)}
+            onClick={handleDelete}
+            onBlur={() => setConfirmingDelete(false)}
+            disabled={deleting}
+            aria-label={confirmingDelete ? 'Confirm delete' : `Delete this update on ${post.startupName}`}
+            title={confirmingDelete ? 'Click again to delete' : 'Delete'}
+          >
+            {deleting ? (
+              <Loader2 size={15} className={styles.spin} aria-hidden="true" />
+            ) : (
+              <Trash2 size={15} aria-hidden="true" />
+            )}
+            {confirmingDelete && <span className={styles.deleteLabel}>Confirm?</span>}
+          </button>
+        )}
       </header>
 
       {post.body && <p className={styles.body}>{post.body}</p>}

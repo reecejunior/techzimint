@@ -274,9 +274,13 @@ export function subscribeToStartupPosts(
   onData: (posts: Post[]) => void,
   onError: (err: Error) => void,
 ): () => void {
+  // Oldest first: on a single startup's own page these read as one thread —
+  // the launch post at the top, updates unfolding beneath it in the order
+  // they happened. The cross-startup feed stays newest-first; that one is a
+  // feed, not a story.
   const q = query(
     collection(getDb(), 'startups', startupId, 'posts'),
-    orderBy('createdAt', 'desc'),
+    orderBy('createdAt', 'asc'),
     limit(50),
   );
   return onSnapshot(
@@ -645,6 +649,55 @@ export async function addPost(startupId: string, draft: PostDraft): Promise<void
       createdAt: serverTimestamp(),
     });
     tx.update(startupRef, { postCount: increment(1) });
+  });
+}
+
+/**
+ * Deletes a post. Only the founder who owns the startup may do this.
+ *
+ * Comments are removed first, outside the transaction — a transaction can
+ * only touch documents it names ahead of time, and a subcollection's members
+ * aren't known until they're queried. The post itself and the startup's
+ * counters are then updated together, so the startup's totals never include
+ * a post that no longer exists.
+ *
+ * Likes already cast on the post are left as orphaned records rather than
+ * cascade-deleted: the same rule that stops one visitor reading another's
+ * vote also stops this client from finding them, and once the post is gone
+ * nothing will try to toggle a like against it again.
+ *
+ * Weekly/monthly like totals are left untouched. A post's lifetime like count
+ * carries no record of which period each like landed in, so there is no
+ * correct amount to subtract from this week's or this month's number.
+ */
+export async function deletePost(startupId: string, postId: string): Promise<void> {
+  const user = await ensureSignedIn();
+  const db = getDb();
+  const startupRef = doc(db, 'startups', startupId);
+  const postRef = doc(db, 'startups', startupId, 'posts', postId);
+
+  const commentsSnap = await getDocs(
+    collection(db, 'startups', startupId, 'posts', postId, 'comments'),
+  );
+
+  await runTransaction(db, async tx => {
+    const [postSnap, startupSnap] = await Promise.all([tx.get(postRef), tx.get(startupRef)]);
+    if (!postSnap.exists()) return; // Already gone — nothing to do.
+    if (!startupSnap.exists()) throw new Error('That startup no longer exists.');
+
+    const startup = startupSnap.data();
+    if (startup.ownerId !== user.uid) {
+      throw new Error('Only the founder who posted this can delete it.');
+    }
+
+    const post = postSnap.data();
+    for (const c of commentsSnap.docs) tx.delete(c.ref);
+    tx.delete(postRef);
+    tx.update(startupRef, {
+      postCount: increment(-1),
+      likeCount: increment(-num(post.likeCount)),
+      commentCount: increment(-num(post.commentCount)),
+    });
   });
 }
 

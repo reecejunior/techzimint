@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ArrowRight, Loader2, Trophy } from 'lucide-react';
-import { useFeed, useMyLikes, useStartups } from '@/lib/hooks';
+import { useFeed, useMyLikes, useMyUid, useStartups } from '@/lib/hooks';
 import { categories } from '@/lib/types';
 import PostCard from '@/components/PostCard';
 import Logo from '@/components/ui/Logo';
@@ -13,13 +13,20 @@ import styles from './page.module.css';
 export default function FeedPage() {
   const { data: posts, loading, error, hasMore, loadingMore, loadMore } = useFeed();
   const likes = useMyLikes();
+  const uid = useMyUid();
   const { data: startups } = useStartups();
   const [category, setCategory] = useState('all');
 
   /* Category lives on the startup, not the post, so filter through the
-     startups we already have subscribed rather than denormalising it again. */
+     startups we already have subscribed rather than denormalising it again.
+     Ownership is looked up the same way: posts don't carry the startup's
+     ownerId, and this list — already loaded for the sidebar — has it. */
   const categoryById = useMemo(
     () => new Map(startups.map(s => [s.id, s.category])),
+    [startups],
+  );
+  const ownerById = useMemo(
+    () => new Map(startups.map(s => [s.id, s.ownerId])),
     [startups],
   );
 
@@ -104,7 +111,12 @@ export default function FeedPage() {
             <>
               <div className={styles.feed}>
                 {visible.map(post => (
-                  <PostCard key={post.id} post={post} liked={likes.has(post.id)} />
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    liked={likes.has(post.id)}
+                    isOwner={Boolean(uid) && ownerById.get(post.startupId) === uid}
+                  />
                 ))}
               </div>
 
