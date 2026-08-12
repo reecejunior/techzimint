@@ -3,6 +3,7 @@ import './globals.css';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import Analytics from '@/components/Analytics';
+import BetaBanner from '@/components/BetaBanner';
 
 export const metadata: Metadata = {
   title: {
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <a href="#main" className="sr-only">Skip to content</a>
         <Nav />
+        <BetaBanner />
         <main id="main">{children}</main>
         <Footer />
         <Analytics />

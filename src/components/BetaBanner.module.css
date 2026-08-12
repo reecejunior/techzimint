@@ -1,0 +1,59 @@
+/* Informational, not an error — a tint one step darker than the page, not
+   orange. Orange is reserved for actions and the brand; a status notice that
+   borrows it would read as a warning. */
+.banner {
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding-block: 10px;
+}
+
+.text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-700);
+}
+
+.text strong {
+  color: var(--ink-900);
+  font-weight: 600;
+}
+
+.link {
+  color: var(--brand-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link:hover {
+  color: var(--orange-700);
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  color: var(--ink-400);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.close:hover {
+  color: var(--ink-900);
+  background: #F0EDEA;
+}
+
+@media (max-width: 560px) {
+  .text {
+    font-size: 12.5px;
+  }
+}
