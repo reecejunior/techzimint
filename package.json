@@ -6,12 +6,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:firebase": "node scripts/check-firebase.mjs",
+    "seed": "node scripts/seed.mjs",
+    "snapshot-ranks": "node scripts/snapshot-ranks.mjs",
+    "test:logic": "node --experimental-strip-types --no-warnings scripts/logic-check.mts"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "firebase": "^12.17.1",
+    "framer-motion": "^13.1.0",
+    "lucide-react": "^1.31.0",
     "next": "16.3.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -19,6 +28,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "firebase-tools": "^15.26.0",
     "typescript": "^5"
   }
 }

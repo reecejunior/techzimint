@@ -1,0 +1,51 @@
+rules_version = '2';
+
+// TEMPORARY — for running `npm run seed` only.
+//
+// Publish this, run the seed, then publish firestore.rules again straight away.
+// It opens only the collections the seed populates: likes and helpful marks stay
+// shut, and no other path is writable.
+//
+// While this is live those collections are world-writable, so treat it as a
+// two-minute window, not a resting state.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Collection-group reads. Rules nested under /startups/{id}/… do NOT cover
+    // collectionGroup() queries, and rules do not cascade into subcollections —
+    // so posts and reviews each need their own group-scope rule.
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if true;
+    }
+
+    match /{path=**}/posts/{postId} {
+      allow read: if true;
+    }
+
+    match /startups/{startupId} {
+      allow read, write: if true;
+
+      // The seed writes a launch post per startup. Without this rule those
+      // writes are denied: `allow write` on the parent document does not reach
+      // its subcollections.
+      match /posts/{postId} {
+        allow read, write: if true;
+
+        match /comments/{commentId} {
+          allow read, write: if true;
+        }
+      }
+
+      match /reviews/{reviewId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /reviewers/{reviewerId} {
+      allow read, write: if true;
+    }
+
+    // Anything not matched above is denied by default, so likes/ and helpful/
+    // stay shut without needing a rule of their own.
+  }
+}

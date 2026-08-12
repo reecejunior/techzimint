@@ -1,0 +1,231 @@
+rules_version = '2';
+
+// Techzim Startups — public read, tightly-scoped anonymous writes.
+//
+// The Firebase API key in the client bundle is an identifier, not a secret.
+// These rules are what actually protect the data, so keep them deployed:
+//     firebase deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function mine() {
+      return signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // `resource` is null when a document does not exist, and dereferencing it
+    // denies the read. Toggling a like or a helpful mark reads the record first
+    // to decide add-or-remove, so without the null branch nobody could ever
+    // perform the *first* one.
+    function mineOrMissing() {
+      return signedIn() && (resource == null || resource.data.uid == request.auth.uid);
+    }
+
+    function unchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    function touched() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Counters move by exactly one per write, so no single request can inflate
+    // a standing.
+    function movedByOne(field) {
+      return request.resource.data[field] == resource.data[field] + 1
+          || request.resource.data[field] == resource.data[field] - 1;
+    }
+
+    // Weekly and monthly counters restart when their period rolls over. A reset
+    // is only accepted together with a new period key, so a counter cannot be
+    // rewritten while claiming to still be in the stored period.
+    function countedForPeriod(countField, keyField) {
+      return (unchanged(keyField) && movedByOne(countField))
+          || (request.resource.data[keyField] != resource.data[keyField]
+              && (request.resource.data[countField] == 0
+                  || request.resource.data[countField] == 1));
+    }
+
+    function isRating(v) {
+      return v is int && v >= 1 && v <= 5;
+    }
+
+    // Reviewer profiles ask for every review by one author across all startups,
+    // which is a collectionGroup query. Those match at the group scope — a rule
+    // nested under /startups/{id}/reviews does NOT cover them.
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if true;
+    }
+
+    // Same reason: the feed is one collectionGroup query over every startup's
+    // posts, so it needs a rule at the group scope to be readable at all.
+    match /{path=**}/posts/{postId} {
+      allow read: if true;
+    }
+
+    match /{path=**}/comments/{commentId} {
+      allow read: if true;
+    }
+
+    match /startups/{startupId} {
+      allow read: if true;
+
+      // Submissions go live immediately. Moderation is reactive: only the
+      // console can set `rejected`, because `status` is frozen on update below.
+      // A new startup still cannot arrive pre-loaded with engagement or wearing
+      // an editorial badge it didn't earn.
+      allow create: if signedIn()
+                    && request.resource.data.status in ['approved', 'pending']
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.resource.data.likeCount == 0
+                    && request.resource.data.weeklyLikes == 0
+                    && request.resource.data.monthlyLikes == 0
+                    && request.resource.data.commentCount == 0
+                    && request.resource.data.reviewCount == 0
+                    && request.resource.data.postCount == 1
+                    && request.resource.data.isStartupOfWeek == false
+                    && request.resource.data.isTrending == false
+                    && request.resource.data.prevRankWeek == 0
+                    && request.resource.data.prevRankMonth == 0
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 80
+                    && request.resource.data.tagline.size() <= 100
+                    && request.resource.data.description.size() <= 2000
+                    && request.resource.data.slug is string;
+
+      // Engagement rolls up to the startup. Each branch may move only its own
+      // counters; nothing that decides visibility or ownership can change.
+      allow update: if signedIn()
+                    && unchanged('status')
+                    && unchanged('slug')
+                    && unchanged('name')
+                    && unchanged('ownerId')
+                    && unchanged('isStartupOfWeek')
+                    && (
+                      // A like: the three like counters move together.
+                      (movedByOne('likeCount')
+                       && countedForPeriod('weeklyLikes', 'weekKey')
+                       && countedForPeriod('monthlyLikes', 'monthKey')
+                       && unchanged('commentCount')
+                       && unchanged('reviewCount'))
+                      ||
+                      // A comment: one counter, nothing else.
+                      (movedByOne('commentCount')
+                       && touched().hasOnly(['commentCount']))
+                      ||
+                      // A post by the owner: one counter, nothing else.
+                      (movedByOne('postCount')
+                       && touched().hasOnly(['postCount'])
+                       && resource.data.ownerId == request.auth.uid)
+                      ||
+                      // A review: the count grows by one and each rating sum
+                      // grows by at most one review's worth (5 stars).
+                      (request.resource.data.reviewCount == resource.data.reviewCount + 1
+                       && unchanged('likeCount')
+                       && unchanged('weeklyLikes')
+                       && unchanged('monthlyLikes')
+                       && unchanged('commentCount')
+                       && request.resource.data.ratingSumUX >= resource.data.ratingSumUX + 1
+                       && request.resource.data.ratingSumUX <= resource.data.ratingSumUX + 5
+                       && request.resource.data.ratingSumUsefulness >= resource.data.ratingSumUsefulness + 1
+                       && request.resource.data.ratingSumUsefulness <= resource.data.ratingSumUsefulness + 5
+                       && request.resource.data.ratingSumWouldPay >= resource.data.ratingSumWouldPay + 1
+                       && request.resource.data.ratingSumWouldPay <= resource.data.ratingSumWouldPay + 5)
+                    );
+
+      allow delete: if false;
+
+      /* ── Posts ── */
+      match /posts/{postId} {
+        allow read: if true;
+
+        // Only the founder who submitted the startup may post to it, and a new
+        // post can never arrive pre-loaded with engagement.
+        allow create: if signedIn()
+                      && request.resource.data.authorId == request.auth.uid
+                      && get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid
+                      && request.resource.data.likeCount == 0
+                      && request.resource.data.commentCount == 0
+                      && request.resource.data.body is string
+                      && request.resource.data.body.size() <= 2000
+                      && request.resource.data.images.size() <= 4;
+
+        // Anyone signed in may nudge a like or comment count; nothing else on a
+        // post is editable, including by its author.
+        allow update: if signedIn()
+                      && (
+                        (movedByOne('likeCount') && touched().hasOnly(['likeCount']))
+                        ||
+                        (movedByOne('commentCount') && touched().hasOnly(['commentCount']))
+                      );
+
+        allow delete: if false;
+
+        match /comments/{commentId} {
+          allow read: if true;
+
+          allow create: if signedIn()
+                        && request.resource.data.authorId == request.auth.uid
+                        && request.resource.data.body is string
+                        && request.resource.data.body.size() > 0
+                        && request.resource.data.body.size() <= 1000;
+
+          // Comments are not editable; removal is a moderation action.
+          allow update, delete: if false;
+        }
+      }
+
+      /* ── Reviews ── */
+      match /reviews/{reviewId} {
+        allow read: if true;
+
+        allow create: if signedIn()
+                      && request.resource.data.authorId == request.auth.uid
+                      && request.resource.data.helpfulCount == 0
+                      && request.resource.data.isTrustedTester == false
+                      && isRating(request.resource.data.ratingUX)
+                      && isRating(request.resource.data.ratingUsefulness)
+                      && isRating(request.resource.data.ratingWouldPay)
+                      && request.resource.data.comment is string
+                      && request.resource.data.comment.size() <= 1500;
+
+        allow update: if signedIn()
+                      && movedByOne('helpfulCount')
+                      && touched().hasOnly(['helpfulCount']);
+
+        allow delete: if false;
+      }
+    }
+
+    // One like per (post, visitor). The id encodes both, so a second like for
+    // the same post collides with the first.
+    match /likes/{likeId} {
+      allow read: if mineOrMissing();
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && likeId == request.resource.data.postId + '__' + request.auth.uid;
+      allow delete: if mine();
+      allow update: if false;
+    }
+
+    match /helpful/{markId} {
+      allow read: if mineOrMissing();
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && markId == request.resource.data.reviewId + '__' + request.auth.uid;
+      allow delete: if mine();
+      allow update: if false;
+    }
+
+    // Reviewer profiles are editorial content — readable by all, writable only
+    // from the seed script or the console.
+    match /reviewers/{reviewerId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

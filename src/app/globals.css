@@ -1,40 +1,124 @@
+/* ═══ Design system ═══════════════════════════════════════════
+   Restraint is the point. Hierarchy comes from size, weight, spacing and one
+   accent colour — never from decoration. Every value below is on a scale; if
+   you need a number that isn't here, the scale is probably right and the
+   instinct is wrong. */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── Type ──
+     The system stack resolves to SF Pro on Apple platforms and Segoe UI on
+     Windows: both are neutral, and neither costs a download. */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+    system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Optical tracking: large type needs tightening, small type needs air.
+     These follow SF's own tracking table rather than one flat value. */
+  --track-display: -0.022em;
+  --track-title: -0.019em;
+  --track-heading: -0.014em;
+  --track-body: -0.011em;
+  --track-caption: 0em;
+  --track-micro: 0.006em;
+
+  /* ── Space ──  4pt grid. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+
+  /* ── Colour ──
+     Warm-neutral text so the orange stays the only saturated thing on screen.
+     Every step is AA or better on white — verified, not assumed. */
+  --ink-900: #1D1A17;  /* 16.8:1 — titles */
+  --ink-700: #45403B;  /*  9.6:1 — body */
+  --ink-500: #6B655F;  /*  5.6:1 — secondary */
+  --ink-400: #7C756E;  /*  4.6:1 — tertiary, the lightest usable for text */
+
+  --orange-50: #FFF9F5;
+  --orange-100: #FFF0E6;
+  --orange-200: #FCDFCB;
+  --orange-300: #F6BE97;
+  --orange-500: #E85D04;  /* brand: fills, icons, large type */
+  --orange-600: #C24C03;  /* 4.9:1 on white — orange text at body size */
+  --orange-700: #9E3D02;
+  --orange-800: #7A2F02;
+
+  --white: #FFFFFF;
+
+  --bg: var(--white);
+  --surface: var(--orange-50);
+  --surface-2: var(--orange-100);
+  --hairline: #E8E4E0;          /* neutral rule; orange borders shout */
+  --hairline-strong: #D6D0CA;
+  --border: var(--hairline);
+  --border-strong: var(--hairline-strong);
+  --brand: var(--orange-500);
+  --brand-hover: var(--orange-600);
+  --brand-active: var(--orange-700);
+  --brand-text: var(--orange-600);
+  /* Deeper than --brand so semi-transparent white on top still clears 4.5:1.
+     At orange-600 the 72%-white captions composite to 3.25:1 and fail. */
+  --brand-panel: var(--orange-700);
+  --on-brand: var(--white);
+
+  /* ── Shape ──  Radius grows with the surface it wraps. */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-pill: 980px;
+
+  /* ── Depth ──  Barely there. Separation is a hairline's job. */
+  --shadow-sm: 0 1px 2px rgba(29, 26, 23, 0.04);
+  --shadow: 0 2px 6px rgba(29, 26, 23, 0.05), 0 1px 2px rgba(29, 26, 23, 0.04);
+  --shadow-lg: 0 12px 32px rgba(29, 26, 23, 0.08);
+  --ring: 0 0 0 4px rgba(232, 93, 4, 0.18);
+
+  /* ── Motion ──  One curve. Quick, and never bouncy. */
+  --ease: cubic-bezier(0.32, 0.08, 0.24, 1);
+  --fast: 160ms;
+  --normal: 280ms;
+
+  --nav-h: 52px;
+  --max-w: 1024px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-padding-top: calc(var(--nav-h) + var(--s-6));
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+body {
+  background: var(--bg);
+  color: var(--ink-700);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: var(--track-body);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+body > main {
+  flex: 1;
 }
 
 a {
@@ -42,8 +126,134 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+img,
+svg {
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* Headings share the body face; the scale does the work. Tracking tightens as
+   size grows, which is what keeps large text from looking loose. */
+h1, h2, h3, h4 {
+  color: var(--ink-900);
+  font-weight: 600;
+  line-height: 1.16;
+  text-wrap: balance;
+}
+
+h1 { font-size: 32px; letter-spacing: var(--track-title); }
+h2 { font-size: 22px; letter-spacing: var(--track-heading); }
+h3 { font-size: 17px; letter-spacing: var(--track-body); }
+h4 { font-size: 15px; letter-spacing: var(--track-body); }
+
+p {
+  text-wrap: pretty;
+}
+
+.wrap {
+  width: 100%;
+  max-width: var(--max-w);
+  margin-inline: auto;
+  padding-inline: clamp(20px, 5vw, 40px);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--r-xs);
+}
+
+::selection {
+  background: var(--orange-200);
+  color: var(--ink-900);
+}
+
+/* ─── Utilities ──────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Makes a whole row one target while leaving real buttons inside it clickable:
+   the anchor stretches behind them rather than wrapping them. */
+.stretch-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Numerals in tables and counters must not jitter as they change. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+@keyframes shimmer {
+  to { background-position: -200% center; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.skel {
+  background: linear-gradient(
+    90deg,
+    #F2EFEC 25%,
+    #E9E5E1 37%,
+    #F2EFEC 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--r-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

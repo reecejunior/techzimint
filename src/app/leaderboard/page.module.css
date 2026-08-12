@@ -1,0 +1,469 @@
+/* Leaderboard */
+
+.page {
+  padding-bottom: var(--s-20);
+}
+
+/* ── Masthead ──────────────────────────────────────────────
+   Air before the content. The title, one line of context, and a quiet set of
+   totals — nothing else earns space up here. */
+.masthead {
+  padding-top: var(--s-16);
+}
+
+.mastheadInner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-8);
+  flex-wrap: wrap;
+  padding-bottom: var(--s-8);
+}
+
+.mastheadLeft {
+  max-width: 34ch;
+}
+
+.pageTitle {
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: var(--track-display);
+  line-height: 1.08;
+  margin-bottom: var(--s-2);
+}
+
+.pageDesc {
+  font-size: 17px;
+  color: var(--ink-500);
+  line-height: 1.47;
+}
+
+/* Totals read as a caption, not a dashboard. */
+.mastheadStats {
+  display: flex;
+  gap: var(--s-6);
+  flex-wrap: wrap;
+  padding-bottom: 3px;
+}
+
+.mStat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mStatNum {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: var(--track-heading);
+  color: var(--ink-900);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.mStatLabel {
+  font-size: 13px;
+  letter-spacing: var(--track-caption);
+  color: var(--ink-400);
+}
+
+/* ── Controls ──────────────────────────────────────────────
+   Sticky, translucent, and the same height wherever it sits. */
+.controls {
+  position: sticky;
+  top: calc(var(--nav-h) - 1px);
+  z-index: 100;
+  margin-top: var(--s-12);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.controlsInner {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding-block: var(--s-3);
+}
+
+/* Segmented control, the way a system control behaves: a recessed track with
+   one raised selected segment. */
+.toggle {
+  display: flex;
+  gap: 2px;
+  background: #F0EDEA;
+  border-radius: var(--r-sm);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.toggleBtn {
+  padding: 5px 12px;
+  border-radius: var(--r-xs);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: var(--track-caption);
+  color: var(--ink-500);
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.toggleBtn:hover:not([data-active]) {
+  color: var(--ink-900);
+}
+
+.toggleBtn[data-active] {
+  background: var(--white);
+  color: var(--ink-900);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Scrolls sideways on a phone rather than hiding the filters entirely. */
+.chipScroller {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin-block: -6px;
+  padding-block: 6px;
+}
+
+.chipScroller::-webkit-scrollbar {
+  display: none;
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+}
+
+.chip {
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: var(--track-caption);
+  color: var(--ink-500);
+  background: transparent;
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.chip:hover:not([data-active]) {
+  background: #F0EDEA;
+  color: var(--ink-900);
+}
+
+.chip[data-active] {
+  background: var(--ink-900);
+  color: var(--white);
+  font-weight: 500;
+}
+
+.regionSelect {
+  flex-shrink: 0;
+  padding: 5px 28px 5px 11px;
+  border-radius: var(--r-xs);
+  font-size: 13px;
+  letter-spacing: var(--track-caption);
+  color: var(--ink-700);
+  border: 1px solid var(--hairline-strong);
+  background-color: var(--white);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 9 6'%3E%3Cpath d='M1 1.5l3.5 3 3.5-3' stroke='%237C756E' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color var(--fast) var(--ease);
+}
+
+.regionSelect:hover {
+  border-color: var(--ink-400);
+}
+
+/* ── Ranked list ───────────────────────────────────────────
+   Hairline-separated rows with one consistent left edge. */
+.listWrap {
+  padding-top: var(--s-8);
+}
+
+.listMeta {
+  font-size: 13px;
+  color: var(--ink-400);
+  margin-bottom: var(--s-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 40px 1fr auto;
+  grid-template-areas: 'rank logo info score';
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-3);
+  border-radius: var(--r-md);
+  transition: background var(--fast) var(--ease);
+}
+
+/* The separator is drawn as a pseudo-element inset to the text column, so the
+   hover fill can round its corners without the rule cutting across it. */
+.row::after {
+  content: '';
+  position: absolute;
+  left: var(--s-3);
+  right: var(--s-3);
+  bottom: 0;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.row:last-child::after {
+  display: none;
+}
+
+.row:hover {
+  background: #FAF8F6;
+}
+
+.rankCell {
+  grid-area: rank;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.rankNum {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-400);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Only the podium earns emphasis; the rest of the column stays quiet. */
+.row[data-top] .rankNum {
+  color: var(--ink-900);
+  font-weight: 600;
+}
+
+.row[data-top='1'] .rankNum {
+  color: var(--brand-text);
+}
+
+.deltaUp,
+.deltaDown,
+.deltaFlat {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: var(--track-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+.deltaUp {
+  color: var(--brand-text);
+}
+
+.deltaDown,
+.deltaFlat {
+  color: var(--ink-400);
+}
+
+.rowLogo {
+  grid-area: logo;
+}
+
+.rowInfo {
+  grid-area: info;
+  min-width: 0;
+}
+
+.rowNameLine {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: 1px;
+}
+
+.rowName {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: var(--track-body);
+  color: var(--ink-900);
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.rowLink {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowTagline {
+  font-size: 15px;
+  color: var(--ink-500);
+  line-height: 1.4;
+  margin-bottom: var(--s-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowBadges {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.rowComments {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.rowScoreInline {
+  display: none;
+  font-size: 13px;
+  color: var(--ink-400);
+  font-variant-numeric: tabular-nums;
+}
+
+.rowScore {
+  grid-area: score;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 64px;
+}
+
+.rowScoreNum {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: var(--track-body);
+  color: var(--ink-900);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.rowScoreLabel {
+  font-size: 12px;
+  color: var(--ink-400);
+}
+
+/* ── Loading ───────────────────────────────────────────── */
+.skelRank { width: 18px; height: 15px; }
+.skelLogo { width: 40px; height: 40px; border-radius: var(--r-sm); }
+.skelLine { width: min(260px, 64%); height: 16px; margin-bottom: 10px; }
+.skelLineShort { width: min(180px, 46%); height: 13px; }
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .pageTitle {
+    font-size: 32px;
+  }
+
+  .hero {
+    grid-template-columns: auto 1fr;
+    row-gap: var(--s-4);
+  }
+
+  .heroRight {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .masthead {
+    padding-top: var(--s-10);
+  }
+
+  .mastheadInner {
+    padding-bottom: var(--s-6);
+    gap: var(--s-5);
+  }
+
+  .pageTitle {
+    font-size: 28px;
+  }
+
+  .mastheadStats {
+    gap: var(--s-5);
+  }
+
+  .mStatNum {
+    font-size: 17px;
+  }
+
+  .controls {
+    margin-top: var(--s-8);
+  }
+
+  /* Rank, name and vote survive. The logo and score column fold away, and the
+     score reappears inline under the tagline rather than vanishing. */
+  .row {
+    grid-template-columns: 26px 1fr;
+    grid-template-areas: 'rank info';
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-2);
+  }
+
+  .rowLogo,
+  .rowScore {
+    display: none;
+  }
+
+  .rowScoreInline {
+    display: inline;
+  }
+
+  .rowTagline {
+    white-space: normal;
+  }
+
+  .row::after {
+    left: var(--s-2);
+    right: var(--s-2);
+  }
+}
+
+@media (max-width: 460px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: var(--s-5);
+  }
+
+  .heroAvatar {
+    display: none;
+  }
+}
+
+/* Signals that produced the score, shown inline under the tagline. */
+.rowStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-400);
+  font-variant-numeric: tabular-nums;
+}

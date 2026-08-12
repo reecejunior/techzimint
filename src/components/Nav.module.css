@@ -1,0 +1,166 @@
+/* Slim, quiet, and always present — the chrome should never compete with the
+   leaderboard underneath it. */
+.root {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  height: var(--nav-h);
+  gap: var(--s-6);
+}
+
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: var(--track-heading);
+  line-height: 1;
+  color: var(--ink-900);
+  transition: opacity var(--fast) var(--ease);
+}
+
+.logo:hover {
+  opacity: 0.7;
+}
+
+.logoMark {
+  color: var(--brand);
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  flex: 1;
+}
+
+/* 14px is deliberate: nav labels sit below body size so they read as
+   navigation rather than as content. */
+.link {
+  position: relative;
+  padding: 6px 10px;
+  border-radius: var(--r-xs);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: var(--track-caption);
+  color: var(--ink-500);
+  white-space: nowrap;
+  transition: color var(--fast) var(--ease);
+}
+
+.link:hover {
+  color: var(--ink-900);
+}
+
+.link[data-active] {
+  color: var(--ink-900);
+  font-weight: 500;
+}
+
+.cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 15px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: var(--track-caption);
+  /* The one pill on the page: it marks the single primary action. */
+  border-radius: var(--r-pill);
+  transition: background var(--fast) var(--ease), opacity var(--fast) var(--ease);
+}
+
+.cta:hover {
+  background: var(--brand-hover);
+}
+
+.cta:active {
+  opacity: 0.8;
+}
+
+/* ─── Mobile ─────────────────────────────────────────────── */
+.menuBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  border-radius: var(--r-xs);
+  color: var(--ink-700);
+  transition: background var(--fast) var(--ease);
+}
+
+.menuBtn:hover {
+  background: var(--surface);
+}
+
+.mobilePanel {
+  display: none;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--white);
+  animation: riseIn var(--normal) var(--ease);
+}
+
+.mobileLinks {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-1) clamp(20px, 5vw, 40px) var(--s-5);
+}
+
+.mobileLink {
+  padding: var(--s-4) 0;
+  font-size: 17px;
+  color: var(--ink-700);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.mobileLink[data-active] {
+  color: var(--ink-900);
+  font-weight: 500;
+}
+
+.mobileCta {
+  margin-top: var(--s-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-3);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 17px;
+  font-weight: 500;
+  border-radius: var(--r-pill);
+}
+
+@media (max-width: 780px) {
+  .links,
+  .cta {
+    display: none;
+  }
+
+  .menuBtn {
+    display: inline-flex;
+  }
+
+  .mobilePanel[data-open] {
+    display: block;
+  }
+
+  .inner {
+    gap: var(--s-3);
+  }
+}

@@ -1,0 +1,61 @@
+/* Badges are metadata, not decoration: no borders, no shouting, just a tint
+   that separates them from the copy around them. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--track-caption);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.category {
+  background: #F2EFEC;
+  color: var(--ink-700);
+}
+
+.region {
+  background: #F2EFEC;
+  color: var(--ink-500);
+}
+
+.week {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.trending {
+  background: var(--surface-2);
+  color: var(--orange-700);
+}
+
+.founder {
+  background: var(--surface-2);
+  color: var(--orange-700);
+}
+
+.trusted {
+  background: var(--ink-900);
+  color: var(--white);
+}
+
+.pending {
+  background: #F2EFEC;
+  color: var(--ink-500);
+}
+
+/* On the orange featured card. */
+.onBrand {
+  background: var(--white);
+  color: var(--orange-700);
+  font-weight: 600;
+}
+
+.onBrandMuted {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--white);
+}

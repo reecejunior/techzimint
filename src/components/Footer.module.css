@@ -1,0 +1,113 @@
+/* Quiet close to the page: a hairline, a faint tint, and small type. The page
+   sections own their own bottom spacing, so the footer adds none of its own. */
+.root {
+  background: #FAF8F6;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-500);
+}
+
+.inner {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) 1fr 1fr;
+  gap: var(--s-10);
+  padding-block: var(--s-12) var(--s-8);
+}
+
+.brandName {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: var(--track-body);
+  color: var(--ink-900);
+  margin-bottom: var(--s-2);
+}
+
+.brandName span {
+  color: var(--brand);
+}
+
+.brandText {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-500);
+  max-width: 34ch;
+  margin-bottom: var(--s-4);
+}
+
+.flag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ink-400);
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  align-content: start;
+}
+
+.colTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.colLink {
+  width: fit-content;
+  font-size: 13px;
+  color: var(--ink-500);
+  transition: color var(--fast) var(--ease);
+}
+
+.colLink:hover {
+  color: var(--ink-900);
+}
+
+.bottom {
+  border-top: 1px solid var(--hairline);
+}
+
+.bottomInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  padding-block: var(--s-4);
+  font-size: 12px;
+  color: var(--ink-400);
+}
+
+.bottomCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--brand-text);
+  font-size: 12px;
+  transition: opacity var(--fast) var(--ease);
+}
+
+.bottomCta:hover {
+  opacity: 0.7;
+}
+
+.bottomCta svg {
+  transition: transform var(--fast) var(--ease);
+}
+
+.bottomCta:hover svg {
+  transform: translateX(2px);
+}
+
+@media (max-width: 720px) {
+  .inner {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-8);
+    padding-block: var(--s-10) var(--s-6);
+  }
+
+  .brand {
+    grid-column: 1 / -1;
+  }
+}

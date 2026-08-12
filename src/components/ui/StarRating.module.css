@@ -1,0 +1,21 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.on {
+  color: var(--brand);
+}
+
+.off {
+  color: var(--orange-300);
+}
+
+.num {
+  margin-left: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-500);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,266 @@
+/* Profile — orange & white */
+
+.page {
+  padding: 40px 0 88px;
+}
+
+.stateWrap {
+  padding: 48px 0 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profileCard {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  padding-bottom: 30px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.profileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.name {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+.username {
+  font-size: 13px;
+  color: var(--ink-400);
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.bio {
+  font-size: 15px;
+  color: var(--ink-700);
+  line-height: 1.65;
+  margin-bottom: 14px;
+  max-width: 56ch;
+}
+
+.joinDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-400);
+  font-weight: 500;
+}
+
+/* ── Stats ───────────────────────────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 20px 22px;
+  background: var(--white);
+  border-right: 1px solid var(--hairline);
+}
+
+.statCard:last-child {
+  border-right: none;
+}
+
+.statIcon {
+  color: var(--brand);
+  margin-bottom: 3px;
+}
+
+.statNum {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink-900);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-400);
+
+}
+
+/* ── Trusted banner ──────────────────────────────────────── */
+.trustedBanner {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  background: var(--brand-panel);
+  border-radius: var(--r-sm);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  color: var(--white);
+}
+
+.trustedIcon {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--r-sm);
+}
+
+.trustedBanner strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--white);
+  margin-bottom: 5px;
+}
+
+.trustedBanner p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.6;
+  max-width: 62ch;
+}
+
+/* ── Review history ──────────────────────────────────────── */
+.sectionTitle {
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+.reviewList {
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewCard {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.reviewCard:first-child {
+  border-top: 1px solid var(--hairline);
+}
+
+.reviewTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.startupLink {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--brand-text);
+  letter-spacing: -0.01em;
+  transition: color var(--fast) var(--ease);
+}
+
+.startupLink:hover {
+  color: var(--orange-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.reviewDate {
+  font-size: 12px;
+  color: var(--ink-400);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.reviewDims {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--ink-400);
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  font-weight: 500;
+}
+
+.reviewDims strong {
+  color: var(--ink-900);
+}
+
+.reviewComment {
+  font-size: 15px;
+  color: var(--ink-700);
+  line-height: 1.65;
+  margin-bottom: 10px;
+  max-width: 72ch;
+}
+
+.reviewFooter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-400);
+}
+
+/* ── Loading ─────────────────────────────────────────────── */
+.skelCard { height: 130px; }
+.skelStats { height: 92px; }
+.skelList { height: 260px; }
+
+@media (max-width: 640px) {
+  .profileCard {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .statCard {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+    padding: 15px 18px;
+  }
+
+  .statCard:last-child {
+    border-bottom: none;
+  }
+
+  .statNum {
+    font-size: 20px;
+    margin-left: auto;
+  }
+
+  .statIcon {
+    margin-bottom: 0;
+  }
+}

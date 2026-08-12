@@ -1,0 +1,130 @@
+.media {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+
+/* ── Video ─────────────────────────────────────────────────
+   A fixed 16:9 box, so nothing reflows when the player mounts. */
+.videoWrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: #1D1A17;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  object-fit: contain;
+}
+
+.poster {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #1D1A17;
+}
+
+.posterImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Dimmed so the play control stays legible over any thumbnail. */
+  opacity: 0.72;
+  transition: opacity var(--normal) var(--ease), transform var(--normal) var(--ease);
+}
+
+.poster:hover .posterImg {
+  opacity: 0.6;
+  transform: scale(1.02);
+}
+
+.playBadge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding-left: 3px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink-900);
+  transition: transform var(--normal) var(--ease);
+}
+
+.poster:hover .playBadge {
+  transform: scale(1.06);
+}
+
+/* ── Images ────────────────────────────────────────────────
+   One image runs full width and keeps its own proportions. Two or more go into
+   an even grid at a fixed ratio so rows stay level. */
+.grid {
+  display: grid;
+  gap: var(--s-1);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #F2EFEC;
+  display: block;
+}
+
+.grid[data-count='1'] {
+  grid-template-columns: 1fr;
+}
+
+.grid[data-count='1'] .image {
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+}
+
+.grid[data-count='2'] {
+  grid-template-columns: 1fr 1fr;
+  aspect-ratio: 2 / 1;
+}
+
+.grid[data-count='3'] {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  aspect-ratio: 3 / 2;
+}
+
+/* The first of three spans both rows, so the set reads as one composition. */
+.grid[data-count='3'] .image:first-child {
+  grid-row: span 2;
+}
+
+.grid[data-count='4'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  aspect-ratio: 3 / 2;
+}
+
+@media (max-width: 560px) {
+  .grid[data-count='3'] {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid[data-count='3'] .image:first-child {
+    grid-row: auto;
+    grid-column: span 2;
+  }
+}
