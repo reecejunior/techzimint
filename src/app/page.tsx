@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ArrowRight, Loader2, Trophy } from 'lucide-react';
-import { useFeed, useMyLikes, useMyUid, useStartups } from '@/lib/hooks';
+import { useAdminAuth, useFeed, useMyLikes, useMyUid, useStartups } from '@/lib/hooks';
 import { categories } from '@/lib/types';
 import PostCard from '@/components/PostCard';
 import Logo from '@/components/ui/Logo';
@@ -14,6 +14,7 @@ export default function FeedPage() {
   const { data: posts, loading, error, hasMore, loadingMore, loadMore } = useFeed();
   const likes = useMyLikes();
   const uid = useMyUid();
+  const { isAdmin } = useAdminAuth();
   const { data: startups } = useStartups();
   const [category, setCategory] = useState('all');
 
@@ -116,6 +117,7 @@ export default function FeedPage() {
                     post={post}
                     liked={likes.has(post.id)}
                     isOwner={Boolean(uid) && ownerById.get(post.startupId) === uid}
+                    isAdmin={isAdmin}
                   />
                 ))}
               </div>

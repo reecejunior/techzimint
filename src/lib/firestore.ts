@@ -19,7 +19,7 @@ import {
   type DocumentSnapshot,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
-import { ensureSignedIn, getDb } from './firebase';
+import { ADMIN_EMAIL, ensureSignedIn, getDb } from './firebase';
 import {
   computeScore,
   initialsOf,
@@ -151,6 +151,7 @@ function mapStartup(snap: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot
       ? d.rankHistory.map((r: DocumentData) => ({ week: String(r.week), rank: num(r.rank) }))
       : [],
     status: (d.status ?? 'approved') as Startup['status'],
+    rejectionReason: String(d.rejectionReason ?? ''),
     submittedAt: toIso(d.submittedAt),
   };
 }
@@ -511,26 +512,55 @@ export async function addComment(
 
 /* ─── Reviews ─────────────────────────────────────────────── */
 
+/**
+ * Adds or replaces this visitor's review of a startup.
+ *
+ * The review's document id is the author's own uid, the same trick `likes`
+ * uses to cap it at one per (startup, visitor) — a second submission
+ * overwrites the first instead of stacking. `reviewCount` only moves the
+ * first time; editing swaps the old rating out of the running sums and the
+ * new one in, so the average never counts one person's opinion twice.
+ */
 export async function addReview(startupId: string, draft: ReviewDraft): Promise<void> {
   const user = await ensureSignedIn();
   const db = getDb();
   const startupRef = doc(db, 'startups', startupId);
-  const reviewRef = doc(collection(db, 'startups', startupId, 'reviews'));
+  const reviewRef = doc(db, 'startups', startupId, 'reviews', user.uid);
 
   await runTransaction(db, async tx => {
-    const startupSnap = await tx.get(startupRef);
+    const [startupSnap, existingSnap] = await Promise.all([tx.get(startupRef), tx.get(reviewRef)]);
     if (!startupSnap.exists()) throw new Error('That startup no longer exists.');
 
     const founders: string[] = Array.isArray(startupSnap.data().founders)
       ? startupSnap.data().founders
       : [];
     const authorName = draft.authorName.trim() || 'Anonymous';
+    const isFounder = founders.some(f => f.toLowerCase() === authorName.toLowerCase());
+
+    if (existingSnap.exists()) {
+      const prev = existingSnap.data();
+      tx.update(reviewRef, {
+        authorName,
+        authorAvatar: initialsOf(authorName),
+        isFounder,
+        ratingUX: draft.ratingUX,
+        ratingUsefulness: draft.ratingUsefulness,
+        ratingWouldPay: draft.ratingWouldPay,
+        comment: draft.comment.trim(),
+      });
+      tx.update(startupRef, {
+        ratingSumUX: increment(draft.ratingUX - num(prev.ratingUX)),
+        ratingSumUsefulness: increment(draft.ratingUsefulness - num(prev.ratingUsefulness)),
+        ratingSumWouldPay: increment(draft.ratingWouldPay - num(prev.ratingWouldPay)),
+      });
+      return;
+    }
 
     tx.set(reviewRef, {
       authorId: user.uid,
       authorName,
       authorAvatar: initialsOf(authorName),
-      isFounder: founders.some(f => f.toLowerCase() === authorName.toLowerCase()),
+      isFounder,
       isTrustedTester: false,
       ratingUX: draft.ratingUX,
       ratingUsefulness: draft.ratingUsefulness,
@@ -686,7 +716,7 @@ export async function deletePost(startupId: string, postId: string): Promise<voi
     if (!startupSnap.exists()) throw new Error('That startup no longer exists.');
 
     const startup = startupSnap.data();
-    if (startup.ownerId !== user.uid) {
+    if (startup.ownerId !== user.uid && user.email !== ADMIN_EMAIL) {
       throw new Error('Only the founder who posted this can delete it.');
     }
 
@@ -798,4 +828,75 @@ export async function submitStartup(input: StartupSubmission): Promise<string> {
   });
 
   return slug;
+}
+
+/* ─── Admin moderation ────────────────────────────────────── */
+/*
+ * Gated by firestore.rules, not by this module — every function here writes
+ * a shape that only passes the rules if the caller is signed in as
+ * ADMIN_EMAIL, and that rule is itself held behind a kill switch until the
+ * feature is activated. See firestore.rules' adminActive().
+ */
+
+/** Every startup regardless of status, newest submission first. */
+export function subscribeToStartupsForAdmin(
+  onData: (startups: Startup[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(collection(getDb(), 'startups'), orderBy('submittedAt', 'desc'), limit(200));
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapStartup)),
+    err => onError(err as Error),
+  );
+}
+
+async function setStartupDecision(
+  startupId: string,
+  status: 'approved' | 'rejected',
+  rejectionReason: string,
+): Promise<void> {
+  const db = getDb();
+  const startupRef = doc(db, 'startups', startupId);
+  const postsSnap = await getDocs(collection(db, 'startups', startupId, 'posts'));
+
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(startupRef);
+    if (!snap.exists()) throw new Error('That startup no longer exists.');
+
+    tx.update(startupRef, { status, rejectionReason });
+    // Posts mirror the startup's status so the feed's collection-group filter
+    // stays correct without a join back to the parent.
+    for (const p of postsSnap.docs) {
+      tx.update(p.ref, { approved: status === 'approved' });
+    }
+  });
+}
+
+export function approveStartup(startupId: string): Promise<void> {
+  return setStartupDecision(startupId, 'approved', '');
+}
+
+export function rejectStartup(startupId: string, reason: string): Promise<void> {
+  return setStartupDecision(startupId, 'rejected', reason.trim().slice(0, 500));
+}
+
+/**
+ * Removes a single comment without touching the rest of its thread. Deleting
+ * a whole post already cascades its comments; this is for taking down one
+ * abusive reply and leaving the rest intact.
+ */
+export async function deleteComment(startupId: string, postId: string, commentId: string): Promise<void> {
+  const db = getDb();
+  const startupRef = doc(db, 'startups', startupId);
+  const postRef = doc(db, 'startups', startupId, 'posts', postId);
+  const commentRef = doc(db, 'startups', startupId, 'posts', postId, 'comments', commentId);
+
+  await runTransaction(db, async tx => {
+    const commentSnap = await tx.get(commentRef);
+    if (!commentSnap.exists()) return;
+    tx.delete(commentRef);
+    tx.update(postRef, { commentCount: increment(-1) });
+    tx.update(startupRef, { commentCount: increment(-1) });
+  });
 }

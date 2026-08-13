@@ -1,6 +1,24 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getAuth, signInAnonymously, type Auth, type User } from 'firebase/auth';
+import {
+  getAuth,
+  signInAnonymously,
+  signInWithEmailAndPassword,
+  signOut,
+  type Auth,
+  type User,
+} from 'firebase/auth';
+
+/**
+ * The one real account on a site where everyone else browses anonymously.
+ * Mirrored as a literal in firestore.rules (rules can't import a JS
+ * constant) — change both together if this ever moves.
+ */
+export const ADMIN_EMAIL = 'chimutashureece@gmail.com';
+
+export function isAdminUser(user: User | null): boolean {
+  return Boolean(user?.email && user.email === ADMIN_EMAIL);
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -59,6 +77,25 @@ export function ensureSignedIn(): Promise<User> {
       });
     }, reject);
   });
+}
+
+/**
+ * Swaps the current session (anonymous or not) for the admin's real account.
+ * The moderation panel is what actually gates on the result — this alone
+ * grants nothing, since firestore.rules is the real enforcement layer.
+ */
+export function signInAdmin(email: string, password: string): Promise<User> {
+  return signInWithEmailAndPassword(getFirebaseAuth(), email, password).then(c => c.user);
+}
+
+/**
+ * Drops the admin session. The next anonymous action re-bootstraps a fresh
+ * anonymous identity — any likes/reviews cast under the previous anonymous
+ * session are not recovered, since Firebase Auth doesn't keep more than one
+ * identity live per client.
+ */
+export function signOutAdmin(): Promise<void> {
+  return signOut(getFirebaseAuth());
 }
 
 /**

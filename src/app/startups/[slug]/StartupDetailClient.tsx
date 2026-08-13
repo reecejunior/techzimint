@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { addPost, addReview, toggleHelpful } from '@/lib/firestore';
 import {
-    useMyHelpfulMarks, useMyLikes, useMyUid, useReviews, useStartup, useStartupPosts,
+    useAdminAuth, useMyHelpfulMarks, useMyLikes, useMyUid, useReviews, useStartup, useStartupPosts,
 } from '@/lib/hooks';
 import type { PostVideo, RankHistory, Review, Startup, PostImage } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
@@ -151,17 +151,25 @@ const DIMENSIONS = [
 
 function ReviewForm({
     startupId,
+    existing,
     onDone,
     onCancel,
 }: {
     startupId: string;
+    /** This visitor's own review, if they've already left one — prefills the
+        form so re-submitting reads as an edit, not a blank second opinion. */
+    existing?: Review | null;
     onDone: () => void;
     onCancel: () => void;
 }) {
-    const [ratings, setRatings] = useState({ ratingUX: 0, ratingUsefulness: 0, ratingWouldPay: 0 });
+    const [ratings, setRatings] = useState({
+        ratingUX: existing?.ratingUX ?? 0,
+        ratingUsefulness: existing?.ratingUsefulness ?? 0,
+        ratingWouldPay: existing?.ratingWouldPay ?? 0,
+    });
     const [hovered, setHovered] = useState<{ key: string; n: number } | null>(null);
-    const [authorName, setAuthorName] = useState('');
-    const [comment, setComment] = useState('');
+    const [authorName, setAuthorName] = useState(existing?.authorName ?? '');
+    const [comment, setComment] = useState(existing?.comment ?? '');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -260,7 +268,7 @@ function ReviewForm({
                     title={complete ? undefined : 'Rate all three first'}
                 >
                     {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
-                    {saving ? 'Saving…' : 'Post review'}
+                    {saving ? 'Saving…' : existing ? 'Update review' : 'Post review'}
                 </button>
             </div>
         </form>
@@ -377,10 +385,12 @@ function Loaded({ startup }: { startup: Startup }) {
     const helpfulMarks = useMyHelpfulMarks();
     const likes = useMyLikes();
     const uid = useMyUid();
+    const { isAdmin } = useAdminAuth();
     const [showForm, setShowForm] = useState(false);
     const [justSubmitted, setJustSubmitted] = useState(false);
 
     const isOwner = Boolean(uid && startup.ownerId && uid === startup.ownerId);
+    const myReview = uid ? reviews.find(r => r.authorId === uid) ?? null : null;
 
     return (
         <div className={styles.page}>
@@ -492,6 +502,7 @@ function Loaded({ startup }: { startup: Startup }) {
                                             post={p}
                                             liked={likes.has(p.id)}
                                             isOwner={isOwner}
+                                            isAdmin={isAdmin}
                                             threadPosition={
                                                 posts.length < 2
                                                     ? undefined
@@ -522,7 +533,7 @@ function Loaded({ startup }: { startup: Startup }) {
                                         }}
                                         id="add-review-btn"
                                     >
-                                        Write a review
+                                        {myReview ? 'Edit your review' : 'Write a review'}
                                     </button>
                                 )}
                             </div>
@@ -536,6 +547,7 @@ function Loaded({ startup }: { startup: Startup }) {
                             {showForm && (
                                 <ReviewForm
                                     startupId={startup.id}
+                                    existing={myReview}
                                     onCancel={() => setShowForm(false)}
                                     onDone={() => {
                                         setShowForm(false);

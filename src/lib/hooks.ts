@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ensureSignedIn, isFirebaseConfigured } from './firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { ensureSignedIn, getFirebaseAuth, isAdminUser, isFirebaseConfigured } from './firebase';
 import {
   FEED_PAGE_SIZE,
   fetchFeedPage,
@@ -15,6 +16,7 @@ import {
   subscribeToReviews,
   subscribeToStartupPosts,
   subscribeToStartups,
+  subscribeToStartupsForAdmin,
 } from './firestore';
 import type {
   Comment,
@@ -291,6 +293,48 @@ export function useMyUid(): string | null {
     };
   }, []);
   return uid;
+}
+
+/* ─── Admin ───────────────────────────────────────────────── */
+
+/**
+ * Who's signed in right now, and whether that's the admin account. Purely a
+ * UI convenience — every admin write is re-checked by firestore.rules, which
+ * is the only layer that can't be spoofed from the browser.
+ */
+export function useAdminAuth(): { user: User | null; isAdmin: boolean; loading: boolean } {
+  const [state, setState] = useState<{ user: User | null; loading: boolean }>({
+    user: null,
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return onAuthStateChanged(getFirebaseAuth(), user => setState({ user, loading: false }));
+  }, []);
+
+  if (!isFirebaseConfigured) return { user: null, isAdmin: false, loading: false };
+  return { user: state.user, isAdmin: isAdminUser(state.user), loading: state.loading };
+}
+
+/** Every startup regardless of status, for the moderation list. */
+export function useAllStartupsForAdmin(): AsyncState<Startup[]> {
+  const [state, setState] = useState<AsyncState<Startup[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToStartupsForAdmin(
+      startups => setState({ data: startups, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  return state;
 }
 
 /* ─── Profiles ────────────────────────────────────────────── */

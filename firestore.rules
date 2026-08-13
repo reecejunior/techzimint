@@ -12,6 +12,19 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Admin/review panel — built, but held inert until explicitly activated.
+    // Flip this to `true` and republish when ready to switch it on; every
+    // isAdmin() branch below evaluates to false regardless of who's signed
+    // in until that happens, so no real privileged write can succeed.
+    function adminActive() {
+      return false;
+    }
+
+    // Mirrors ADMIN_EMAIL in src/lib/firebase.ts — update both together.
+    function isAdmin() {
+      return adminActive() && signedIn() && request.auth.token.email == 'chimutashureece@gmail.com';
+    }
+
     function mine() {
       return signedIn() && resource.data.uid == request.auth.uid;
     }
@@ -141,7 +154,7 @@ service cloud.firestore {
                       // with it — bounded so a client can only ever take counts
                       // away, never invent new ones. Weekly/monthly like totals
                       // are untouched; see deletePost() for why.
-                      (resource.data.ownerId == request.auth.uid
+                      ((resource.data.ownerId == request.auth.uid || isAdmin())
                        && request.resource.data.postCount == resource.data.postCount - 1
                        && request.resource.data.likeCount >= 0
                        && request.resource.data.likeCount <= resource.data.likeCount
@@ -153,7 +166,36 @@ service cloud.firestore {
                        && unchanged('ratingSumUX')
                        && unchanged('ratingSumUsefulness')
                        && unchanged('ratingSumWouldPay'))
+                      ||
+                      // A review edited by its own author: the review's doc id
+                      // is their uid, so this can only be the same person who
+                      // wrote it. reviewCount stays put — this replaces a
+                      // rating, it doesn't add one — and each sum may move by
+                      // at most one rating's full range (old 1–5 out, new 1–5
+                      // in).
+                      (unchanged('reviewCount')
+                       && unchanged('likeCount')
+                       && unchanged('weeklyLikes')
+                       && unchanged('monthlyLikes')
+                       && unchanged('commentCount')
+                       && touched().hasOnly(['ratingSumUX', 'ratingSumUsefulness', 'ratingSumWouldPay'])
+                       && request.resource.data.ratingSumUX >= resource.data.ratingSumUX - 4
+                       && request.resource.data.ratingSumUX <= resource.data.ratingSumUX + 4
+                       && request.resource.data.ratingSumUsefulness >= resource.data.ratingSumUsefulness - 4
+                       && request.resource.data.ratingSumUsefulness <= resource.data.ratingSumUsefulness + 4
+                       && request.resource.data.ratingSumWouldPay >= resource.data.ratingSumWouldPay - 4
+                       && request.resource.data.ratingSumWouldPay <= resource.data.ratingSumWouldPay + 4)
                     );
+
+      // Admin decision: flips status between approved/rejected and records
+      // why, touching nothing else. Independent of the community-engagement
+      // rule above (which freezes status) — a separate `allow update` is
+      // additive in Firestore rules, not a replacement.
+      allow update: if isAdmin()
+                    && request.resource.data.status in ['approved', 'rejected']
+                    && touched().hasOnly(['status', 'rejectionReason'])
+                    && (!('rejectionReason' in request.resource.data)
+                        || request.resource.data.rejectionReason.size() <= 500);
 
       allow delete: if false;
 
@@ -181,9 +223,15 @@ service cloud.firestore {
                         (movedByOne('commentCount') && touched().hasOnly(['commentCount']))
                       );
 
-        // Only the founder who owns this startup may remove a post they posted.
+        // Admin decision: mirrors the parent startup's approve/reject onto
+        // its posts. Nothing else on the post moves.
+        allow update: if isAdmin() && touched().hasOnly(['approved']);
+
+        // The founder who owns this startup may remove a post they posted;
+        // the admin may remove any post.
         allow delete: if signedIn()
-                      && get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid;
+                      && (get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid
+                          || isAdmin());
 
         match /comments/{commentId} {
           allow read: if true;
@@ -194,12 +242,13 @@ service cloud.firestore {
                         && request.resource.data.body.size() > 0
                         && request.resource.data.body.size() <= 1000;
 
-          // Comments are not editable, and never deletable one at a time —
-          // that stays a moderation action. The one exception is the cascade
-          // below: removing a whole post takes its comments with it.
+          // Comments are not editable. Deleting one at a time is an admin
+          // moderation action; the founder can still remove a whole post,
+          // which cascades its comments with it.
           allow update: if false;
           allow delete: if signedIn()
-                        && get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid;
+                        && (get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid
+                            || isAdmin());
         }
       }
 
@@ -207,7 +256,11 @@ service cloud.firestore {
       match /reviews/{reviewId} {
         allow read: if true;
 
+        // The doc id is the author's own uid — the same one-per-visitor
+        // trick `likes` uses — so a second submission can only ever be an
+        // update to this same document, never a second review.
         allow create: if signedIn()
+                      && reviewId == request.auth.uid
                       && request.resource.data.authorId == request.auth.uid
                       && request.resource.data.helpfulCount == 0
                       && request.resource.data.isTrustedTester == false
@@ -218,8 +271,18 @@ service cloud.firestore {
                       && request.resource.data.comment.size() <= 1500;
 
         allow update: if signedIn()
-                      && movedByOne('helpfulCount')
-                      && touched().hasOnly(['helpfulCount']);
+                      && (
+                        (movedByOne('helpfulCount') && touched().hasOnly(['helpfulCount']))
+                        ||
+                        // The author replacing their own rating and comment.
+                        (reviewId == request.auth.uid
+                         && touched().hasOnly(['authorName', 'authorAvatar', 'isFounder', 'ratingUX', 'ratingUsefulness', 'ratingWouldPay', 'comment'])
+                         && isRating(request.resource.data.ratingUX)
+                         && isRating(request.resource.data.ratingUsefulness)
+                         && isRating(request.resource.data.ratingWouldPay)
+                         && request.resource.data.comment is string
+                         && request.resource.data.comment.size() <= 1500)
+                      );
 
         allow delete: if false;
       }

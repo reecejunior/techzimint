@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Heart, Loader2, MessageCircle, Send, Star, Trash2 } from 'lucide-react';
+import { Heart, Loader2, MessageCircle, Send, Star, Trash2, X } from 'lucide-react';
 import clsx from 'clsx';
-import { addComment, deletePost, toggleLike } from '@/lib/firestore';
+import { addComment, deleteComment, deletePost, toggleLike } from '@/lib/firestore';
 import { useComments } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
 import type { Post } from '@/lib/types';
@@ -18,6 +18,8 @@ interface PostCardProps {
   liked: boolean;
   /** Shows the delete control. True only for the founder who owns this post's startup. */
   isOwner?: boolean;
+  /** Shows the delete control regardless of ownership, plus a delete-x on every comment. */
+  isAdmin?: boolean;
   /**
    * Position within a single startup's own update thread. Omitted outside
    * that context (e.g. the general feed, which interleaves different
@@ -26,7 +28,13 @@ interface PostCardProps {
   threadPosition?: 'first' | 'middle' | 'last';
 }
 
-export default function PostCard({ post, liked, isOwner = false, threadPosition }: PostCardProps) {
+export default function PostCard({
+  post,
+  liked,
+  isOwner = false,
+  isAdmin = false,
+  threadPosition,
+}: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [pendingLike, setPendingLike] = useState(false);
   /** Local guess applied while the write is in flight. */
@@ -111,7 +119,7 @@ export default function PostCard({ post, liked, isOwner = false, threadPosition 
           </p>
         </div>
 
-        {isOwner && (
+        {(isOwner || isAdmin) && (
           <button
             type="button"
             className={clsx(styles.delete, confirmingDelete && styles.deleteConfirm)}
@@ -172,17 +180,31 @@ export default function PostCard({ post, liked, isOwner = false, threadPosition 
         </p>
       )}
 
-      {showComments && <CommentThread post={post} />}
+      {showComments && <CommentThread post={post} isAdmin={isAdmin} />}
     </article>
   );
 }
 
-function CommentThread({ post }: { post: Post }) {
+function CommentThread({ post, isAdmin }: { post: Post; isAdmin: boolean }) {
   const { data: comments, loading } = useComments(post.startupId, post.id, true);
   const [body, setBody] = useState('');
   const [name, setName] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  async function remove(commentId: string) {
+    setRemovingId(commentId);
+    setError(null);
+    try {
+      await deleteComment(post.startupId, post.id, commentId);
+      // The live subscription removes it from the list on success.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove that comment.');
+    } finally {
+      setRemovingId(null);
+    }
+  }
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -219,6 +241,22 @@ function CommentThread({ post }: { post: Post }) {
                 </p>
                 <p className={styles.commentText}>{c.body}</p>
               </div>
+              {isAdmin && (
+                <button
+                  type="button"
+                  className={styles.commentDelete}
+                  onClick={() => remove(c.id)}
+                  disabled={removingId === c.id}
+                  aria-label={`Remove this comment from ${c.authorName}`}
+                  title="Remove comment"
+                >
+                  {removingId === c.id ? (
+                    <Loader2 size={12} className={styles.spin} aria-hidden="true" />
+                  ) : (
+                    <X size={12} aria-hidden="true" />
+                  )}
+                </button>
+              )}
             </li>
           ))}
         </ul>

@@ -228,6 +228,32 @@
 .comment {
   display: flex;
   gap: var(--s-3);
+  align-items: flex-start;
+}
+
+/* Only the admin sees this — a lighter-weight version of .delete, since
+   removing one reply is a smaller action than removing a whole post. */
+.commentDelete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  color: var(--ink-400);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.commentDelete:hover:not(:disabled) {
+  color: var(--orange-800);
+  background: var(--surface-2);
+}
+
+.commentDelete:disabled {
+  cursor: progress;
+  opacity: 0.6;
 }
 
 .commentBody {

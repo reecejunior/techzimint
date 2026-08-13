@@ -206,13 +206,44 @@ launch post's `approved` to `false`). It disappears from the feed and the
 leaderboard, but its page still loads and says it was removed.
 
 Clients cannot change `status` themselves: it is frozen on update in
-[`firestore.rules`](firestore.rules), so only the console can reject or restore.
-New startups also can't arrive pre-loaded with likes, reviews, or a
-"Startup of the Week" badge — the create rule pins all of those.
+[`firestore.rules`](firestore.rules), so only the console — or the admin panel
+below — can reject or restore. New startups also can't arrive pre-loaded with
+likes, reviews, or a "Startup of the Week" badge — the create rule pins all
+of those.
 
 If spam ever becomes a real problem, flipping back to pre-approval is two lines:
 `status: 'approved'` → `'pending'` in `submitStartup`, and `approved: true` →
 `false` on the launch post.
+
+#### Admin panel (`/admin`)
+
+A quiet, unlinked route for one real account to reject or restore any startup,
+and to remove any post or comment. Everyone else on the site is anonymous;
+this is the one place a real Firebase Auth (email/password) identity is used.
+
+- **Sign-in**: real email/password, checked client-side against `ADMIN_EMAIL`
+  in [`src/lib/firebase.ts`](src/lib/firebase.ts) for the UI, and against the
+  same email as a literal in `firestore.rules`' `isAdmin()` for the actual
+  enforcement. The two are not linked — if the email ever changes, update both.
+- **Reject/restore**: toggles a startup's `status` between `approved` and
+  `rejected` (with an optional reason, visible only in the admin panel) and
+  mirrors it onto every post under that startup.
+- **Remove any post or comment**: the same delete controls founders see on
+  their own posts, but visible to the admin on everyone's.
+- **No rejection notifications** — founders aren't told; this was a deliberate
+  scope cut, not an oversight.
+
+**Held inert on purpose.** The whole feature ships gated by a kill switch,
+`adminActive()` at the top of `firestore.rules`, currently hardcoded to
+`false`. With it off, `isAdmin()` evaluates to false for anyone, including a
+correctly-signed-in admin — the panel renders, but every write it attempts is
+still rejected by the rules. To go live: create the admin's Firebase Auth
+user (Email/Password, matching `ADMIN_EMAIL`), flip `adminActive()` to `true`,
+and republish rules:
+
+```bash
+firebase deploy --only firestore:rules
+```
 
 ### Weekly standings
 

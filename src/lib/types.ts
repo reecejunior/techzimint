@@ -151,6 +151,8 @@ export interface Startup {
   isTrending: boolean;
   rankHistory: RankHistory[];
   status: 'approved' | 'pending' | 'rejected';
+  /** Set by an admin when rejecting. Empty otherwise. */
+  rejectionReason: string;
   submittedAt: string;
 }
 

@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:firebase": "node scripts/check-firebase.mjs",
+    "find:duplicate-reviews": "node scripts/find-duplicate-reviews.mjs",
+    "remove:duplicate-reviews": "node scripts/remove-duplicate-reviews.mjs",
     "seed": "node scripts/seed.mjs",
     "snapshot-ranks": "node scripts/snapshot-ranks.mjs",
     "test:logic": "node --experimental-strip-types --no-warnings scripts/logic-check.mts"
