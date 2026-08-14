@@ -13,6 +13,7 @@ import {
   subscribeToFeed,
   subscribeToMyHelpfulMarks,
   subscribeToMyLikes,
+  subscribeToMyNotifications,
   subscribeToReviews,
   subscribeToStartupPosts,
   subscribeToStartups,
@@ -20,6 +21,7 @@ import {
 } from './firestore';
 import type {
   Comment,
+  Notification,
   Period,
   Post,
   Review,
@@ -334,6 +336,28 @@ export function useAllStartupsForAdmin(): AsyncState<Startup[]> {
   }, []);
 
   if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  return state;
+}
+
+/** This visitor's notifications, newest first. Empty until they've done
+ *  something that establishes their anonymous session (ensureSignedIn is
+ *  called inside the subscription itself, same as useMyLikes). */
+export function useMyNotifications(): AsyncState<Notification[]> {
+  const [state, setState] = useState<AsyncState<Notification[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToMyNotifications(
+      notifications => setState({ data: notifications, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: null };
   return state;
 }
 

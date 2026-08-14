@@ -72,6 +72,11 @@ export interface Comment {
   authorAvatar: string;
   body: string;
   createdAt: string;
+  /** The top-level comment this replies to, or null. One level of nesting —
+   *  replying to a reply attaches to that reply's own parent, not to it. */
+  parentId: string | null;
+  /** True when authorId matched the startup's ownerId at write time. */
+  isFounder: boolean;
 }
 
 /* ─── Reviews ─────────────────────────────────────────────── */
@@ -206,4 +211,29 @@ export interface ReviewWithStartup extends Review {
   startupId: string;
   startupName: string;
   startupSlug: string;
+}
+
+/* ─── Notifications ───────────────────────────────────────── */
+
+/**
+ * `reply` fires when the founder replies to your comment — attributed to the
+ * startup, not the founder's typed name, since that's the point of it.
+ * `like`, `comment` and `review` fire for the founder when their startup
+ * gets one, attributed to whoever did it.
+ */
+export type NotificationType = 'reply' | 'like' | 'comment' | 'review';
+
+export interface Notification {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  startupId: string;
+  startupSlug: string;
+  startupName: string;
+  /** Who triggered it. Empty for `like` — likes carry no name at all. */
+  actorName: string;
+  /** The comment/reply/review text, truncated. Empty for `like`. */
+  snippet: string;
+  read: boolean;
+  createdAt: string;
 }

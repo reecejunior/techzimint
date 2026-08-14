@@ -1,0 +1,143 @@
+.root {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-xs);
+  color: var(--ink-700);
+  transition: background var(--fast) var(--ease);
+}
+
+.trigger:hover {
+  background: var(--surface);
+}
+
+.dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, 92vw);
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--white);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  box-shadow: 0 12px 32px rgba(20, 16, 12, 0.12);
+  z-index: 250;
+  animation: riseIn var(--normal) var(--ease);
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.panelTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.markAll {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--brand-text);
+}
+
+.markAll:hover {
+  color: var(--orange-700);
+}
+
+.empty {
+  padding: var(--s-5) var(--s-4);
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--hairline);
+  transition: background var(--fast) var(--ease);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item:hover {
+  background: var(--surface);
+}
+
+.item[data-unread] {
+  background: var(--surface-2);
+}
+
+.item[data-unread]:hover {
+  background: var(--surface-2);
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--ink-400);
+}
+
+.itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.itemText {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-700);
+  overflow-wrap: anywhere;
+}
+
+.item[data-unread] .itemText {
+  color: var(--ink-900);
+  font-weight: 500;
+}
+
+.itemTime {
+  font-size: 11px;
+  color: var(--ink-400);
+}

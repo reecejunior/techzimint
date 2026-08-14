@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 import styles from './Nav.module.css';
 
 const LINKS = [
@@ -58,6 +59,8 @@ export default function Nav() {
         <Link href="/submit" className={styles.cta} id="nav-submit-btn">
           Submit a startup
         </Link>
+
+        <NotificationBell />
 
         <button
           type="button"

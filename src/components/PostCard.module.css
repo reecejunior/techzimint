@@ -286,6 +286,50 @@
   max-width: 62ch;
 }
 
+.replyBtn {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-400);
+}
+
+.replyBtn:hover {
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Replies sit indented under their parent, roughly under where the parent's
+   own text starts — the avatar column width plus its gap. */
+.replies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  margin-left: calc(28px + var(--s-3));
+}
+
+.replyingTo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 13px;
+  color: var(--ink-500);
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+}
+
+.replyCancel {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-400);
+}
+
+.replyCancel:hover {
+  color: var(--ink-900);
+}
+
 /* ── Comment form ───────────────────────────────────────── */
 .form {
   display: flex;

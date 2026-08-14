@@ -14,6 +14,7 @@ import {
   setDoc,
   startAfter,
   Timestamp,
+  updateDoc,
   where,
   type DocumentData,
   type DocumentSnapshot,
@@ -31,6 +32,8 @@ import {
 import type {
   Category,
   Comment,
+  Notification,
+  NotificationType,
   Post,
   PostDraft,
   PostVideo,
@@ -189,6 +192,8 @@ function mapComment(snap: QueryDocumentSnapshot<DocumentData>): Comment {
     authorName: String(d.authorName ?? 'Anonymous'),
     authorAvatar: String(d.authorAvatar ?? '??'),
     body: String(d.body ?? ''),
+    parentId: d.parentId ? String(d.parentId) : null,
+    isFounder: Boolean(d.isFounder),
     createdAt: toIso(d.createdAt),
   };
 }
@@ -208,6 +213,45 @@ function mapReview(snap: QueryDocumentSnapshot<DocumentData>): Review {
     comment: String(d.comment ?? ''),
     createdAt: toIso(d.createdAt),
     helpfulCount: num(d.helpfulCount),
+  };
+}
+
+function mapNotification(snap: QueryDocumentSnapshot<DocumentData>): Notification {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    recipientId: String(d.recipientId ?? ''),
+    type: (d.type ?? 'comment') as Notification['type'],
+    startupId: String(d.startupId ?? ''),
+    startupSlug: String(d.startupSlug ?? ''),
+    startupName: String(d.startupName ?? 'Untitled'),
+    actorName: String(d.actorName ?? ''),
+    snippet: String(d.snippet ?? ''),
+    read: Boolean(d.read),
+    createdAt: toIso(d.createdAt),
+  };
+}
+
+/** Shape shared by every notification write — see Notification in types.ts. */
+function notificationPayload(params: {
+  recipientId: string;
+  type: NotificationType;
+  startupId: string;
+  startupSlug: string;
+  startupName: string;
+  actorName?: string;
+  snippet?: string;
+}) {
+  return {
+    recipientId: params.recipientId,
+    type: params.type,
+    startupId: params.startupId,
+    startupSlug: params.startupSlug,
+    startupName: params.startupName,
+    actorName: (params.actorName ?? '').trim().slice(0, 60),
+    snippet: (params.snippet ?? '').trim().slice(0, 200),
+    read: false,
+    createdAt: serverTimestamp(),
   };
 }
 
@@ -452,6 +496,20 @@ export async function toggleLike(startupId: string, postId: string): Promise<boo
       weekKey,
       monthKey,
     });
+
+    if (s.ownerId && s.ownerId !== user.uid) {
+      tx.set(
+        doc(collection(db, 'notifications')),
+        notificationPayload({
+          recipientId: s.ownerId,
+          type: 'like',
+          startupId,
+          startupSlug: String(s.slug ?? ''),
+          startupName: String(s.name ?? 'Untitled'),
+        }),
+      );
+    }
+
     return true;
   });
 }
@@ -476,11 +534,17 @@ export function subscribeToComments(
   );
 }
 
+/**
+ * @param parentId The top-level comment being replied to, or omitted for a
+ *   new top-level comment. Replying to a reply attaches to that reply's own
+ *   parent — there is only one level of nesting.
+ */
 export async function addComment(
   startupId: string,
   postId: string,
   body: string,
   authorName: string,
+  parentId: string | null = null,
 ): Promise<void> {
   const text = body.trim();
   if (!text) throw new Error('Write something first.');
@@ -490,11 +554,20 @@ export async function addComment(
   const startupRef = doc(db, 'startups', startupId);
   const postRef = doc(db, 'startups', startupId, 'posts', postId);
   const commentRef = doc(collection(db, 'startups', startupId, 'posts', postId, 'comments'));
+  const parentRef = parentId ? doc(db, 'startups', startupId, 'posts', postId, 'comments', parentId) : null;
   const name = authorName.trim() || 'Anonymous';
 
   await runTransaction(db, async tx => {
-    const postSnap = await tx.get(postRef);
+    const [postSnap, startupSnap, parentSnap] = await Promise.all([
+      tx.get(postRef),
+      tx.get(startupRef),
+      parentRef ? tx.get(parentRef) : Promise.resolve(null),
+    ]);
     if (!postSnap.exists()) throw new Error('That post no longer exists.');
+    if (!startupSnap.exists()) throw new Error('That startup no longer exists.');
+
+    const startup = startupSnap.data();
+    const isFounder = startup.ownerId === user.uid;
 
     tx.set(commentRef, {
       postId,
@@ -503,10 +576,48 @@ export async function addComment(
       authorName: name,
       authorAvatar: initialsOf(name),
       body: text,
+      parentId,
+      isFounder,
       createdAt: serverTimestamp(),
     });
     tx.update(postRef, { commentCount: increment(1) });
     tx.update(startupRef, { commentCount: increment(1) });
+
+    // The founder replying to someone's comment — attributed to the startup,
+    // not whatever name the founder typed, since that's the point of it.
+    if (isFounder && parentSnap?.exists()) {
+      const parentAuthorId = String(parentSnap.data()?.authorId ?? '');
+      if (parentAuthorId && parentAuthorId !== user.uid) {
+        tx.set(
+          doc(collection(db, 'notifications')),
+          notificationPayload({
+            recipientId: parentAuthorId,
+            type: 'reply',
+            startupId,
+            startupSlug: String(startup.slug ?? ''),
+            startupName: String(startup.name ?? 'Untitled'),
+            snippet: text,
+          }),
+        );
+      }
+    }
+
+    // Anyone else commenting (top-level or a reply) tells the founder there's
+    // new activity on their startup.
+    if (startup.ownerId && startup.ownerId !== user.uid) {
+      tx.set(
+        doc(collection(db, 'notifications')),
+        notificationPayload({
+          recipientId: startup.ownerId,
+          type: 'comment',
+          startupId,
+          startupSlug: String(startup.slug ?? ''),
+          startupName: String(startup.name ?? 'Untitled'),
+          actorName: name,
+          snippet: text,
+        }),
+      );
+    }
   });
 }
 
@@ -576,6 +687,24 @@ export async function addReview(startupId: string, draft: ReviewDraft): Promise<
       ratingSumUsefulness: increment(draft.ratingUsefulness),
       ratingSumWouldPay: increment(draft.ratingWouldPay),
     });
+
+    // Only on a genuinely new review — an edit would just re-notify the
+    // founder about an opinion they already heard.
+    const ownerId = String(startupSnap.data().ownerId ?? '');
+    if (ownerId && ownerId !== user.uid) {
+      tx.set(
+        doc(collection(db, 'notifications')),
+        notificationPayload({
+          recipientId: ownerId,
+          type: 'review',
+          startupId,
+          startupSlug: String(startupSnap.data().slug ?? ''),
+          startupName: String(startupSnap.data().name ?? 'Untitled'),
+          actorName: authorName,
+          snippet: draft.comment,
+        }),
+      );
+    }
   });
 }
 
@@ -882,9 +1011,9 @@ export function rejectStartup(startupId: string, reason: string): Promise<void> 
 }
 
 /**
- * Removes a single comment without touching the rest of its thread. Deleting
- * a whole post already cascades its comments; this is for taking down one
- * abusive reply and leaving the rest intact.
+ * Removes a comment. If it's a top-level comment with replies, those are
+ * removed with it — a reply pointing at a `parentId` that no longer exists
+ * would simply stop rendering rather than being cleanly gone.
  */
 export async function deleteComment(startupId: string, postId: string, commentId: string): Promise<void> {
   const db = getDb();
@@ -892,11 +1021,63 @@ export async function deleteComment(startupId: string, postId: string, commentId
   const postRef = doc(db, 'startups', startupId, 'posts', postId);
   const commentRef = doc(db, 'startups', startupId, 'posts', postId, 'comments', commentId);
 
+  const repliesSnap = await getDocs(
+    query(
+      collection(db, 'startups', startupId, 'posts', postId, 'comments'),
+      where('parentId', '==', commentId),
+    ),
+  );
+
   await runTransaction(db, async tx => {
     const commentSnap = await tx.get(commentRef);
     if (!commentSnap.exists()) return;
     tx.delete(commentRef);
-    tx.update(postRef, { commentCount: increment(-1) });
-    tx.update(startupRef, { commentCount: increment(-1) });
+    for (const r of repliesSnap.docs) tx.delete(r.ref);
+    const removed = 1 + repliesSnap.size;
+    tx.update(postRef, { commentCount: increment(-removed) });
+    tx.update(startupRef, { commentCount: increment(-removed) });
   });
+}
+
+/* ─── Notifications ───────────────────────────────────────── */
+
+const NOTIFICATIONS_PAGE_SIZE = 30;
+
+/** This visitor's most recent notifications, newest first. */
+export function subscribeToMyNotifications(
+  onData: (notifications: Notification[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  let stop = () => {};
+  let cancelled = false;
+
+  ensureSignedIn()
+    .then(user => {
+      if (cancelled) return;
+      const q = query(
+        collection(getDb(), 'notifications'),
+        where('recipientId', '==', user.uid),
+        orderBy('createdAt', 'desc'),
+        limit(NOTIFICATIONS_PAGE_SIZE),
+      );
+      stop = onSnapshot(
+        q,
+        snap => onData(snap.docs.map(mapNotification)),
+        err => onError(err as Error),
+      );
+    })
+    .catch(err => onError(err as Error));
+
+  return () => {
+    cancelled = true;
+    stop();
+  };
+}
+
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  await updateDoc(doc(getDb(), 'notifications', notificationId), { read: true });
+}
+
+export async function markAllNotificationsRead(notificationIds: string[]): Promise<void> {
+  await Promise.all(notificationIds.map(id => markNotificationRead(id)));
 }

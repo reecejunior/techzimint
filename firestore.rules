@@ -240,7 +240,18 @@ service cloud.firestore {
                         && request.resource.data.authorId == request.auth.uid
                         && request.resource.data.body is string
                         && request.resource.data.body.size() > 0
-                        && request.resource.data.body.size() <= 1000;
+                        && request.resource.data.body.size() <= 1000
+                        // isFounder is set from data the client can't fake:
+                        // it must match whether this writer owns the startup.
+                        && request.resource.data.isFounder ==
+                           (get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid)
+                        // A reply's target must be a real, top-level comment —
+                        // this keeps nesting at exactly one level: replying to
+                        // a reply is rejected here, and the client instead
+                        // re-parents it to the reply's own parent.
+                        && (request.resource.data.parentId == null
+                            || (request.resource.data.parentId is string
+                                && get(/databases/$(database)/documents/startups/$(startupId)/posts/$(postId)/comments/$(request.resource.data.parentId)).data.parentId == null));
 
           // Comments are not editable. Deleting one at a time is an admin
           // moderation action; the founder can still remove a whole post,
@@ -313,6 +324,32 @@ service cloud.firestore {
     match /reviewers/{reviewerId} {
       allow read: if true;
       allow write: if false;
+    }
+
+    // A notification is written by the actor (liker/commenter/reviewer/
+    // founder-replying) but addressed to someone else — the recipient can
+    // only ever read and mark-read their own, never the actor's identity.
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.recipientId == request.auth.uid;
+
+      allow create: if signedIn()
+                    && request.resource.data.recipientId is string
+                    && request.resource.data.recipientId != request.auth.uid
+                    && request.resource.data.type in ['reply', 'like', 'comment', 'review']
+                    && request.resource.data.startupId is string
+                    && request.resource.data.read == false
+                    && request.resource.data.actorName is string
+                    && request.resource.data.actorName.size() <= 60
+                    && request.resource.data.snippet is string
+                    && request.resource.data.snippet.size() <= 200;
+
+      // The recipient may only flip it to read — nothing else about a
+      // notification is theirs to change.
+      allow update: if signedIn()
+                    && resource.data.recipientId == request.auth.uid
+                    && touched().hasOnly(['read']);
+
+      allow delete: if false;
     }
   }
 }

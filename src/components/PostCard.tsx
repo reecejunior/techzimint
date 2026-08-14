@@ -7,8 +7,9 @@ import clsx from 'clsx';
 import { addComment, deleteComment, deletePost, toggleLike } from '@/lib/firestore';
 import { useComments } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
-import type { Post } from '@/lib/types';
+import type { Comment, Post } from '@/lib/types';
 import Avatar from '@/components/ui/Avatar';
+import Badge from '@/components/ui/Badge';
 import Logo from '@/components/ui/Logo';
 import PostMedia from '@/components/ui/PostMedia';
 import styles from './PostCard.module.css';
@@ -192,6 +193,15 @@ function CommentThread({ post, isAdmin }: { post: Post; isAdmin: boolean }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<{ id: string; authorName: string } | null>(null);
+
+  const topLevel = comments.filter(c => !c.parentId);
+  const repliesByParent = new Map<string, Comment[]>();
+  for (const c of comments) {
+    if (!c.parentId) continue;
+    if (!repliesByParent.has(c.parentId)) repliesByParent.set(c.parentId, []);
+    repliesByParent.get(c.parentId)!.push(c);
+  }
 
   async function remove(commentId: string) {
     setRemovingId(commentId);
@@ -212,8 +222,9 @@ function CommentThread({ post, isAdmin }: { post: Post; isAdmin: boolean }) {
     setSending(true);
     setError(null);
     try {
-      await addComment(post.startupId, post.id, body, name);
+      await addComment(post.startupId, post.id, body, name, replyTo?.id ?? null);
       setBody('');
+      setReplyTo(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not post that comment.');
     } finally {
@@ -225,37 +236,35 @@ function CommentThread({ post, isAdmin }: { post: Post; isAdmin: boolean }) {
     <section className={styles.thread}>
       {loading ? (
         <p className={styles.threadEmpty}>Loading comments…</p>
-      ) : comments.length === 0 ? (
+      ) : topLevel.length === 0 ? (
         <p className={styles.threadEmpty}>No comments yet. Start the conversation.</p>
       ) : (
         <ul className={styles.comments}>
-          {comments.map(c => (
-            <li key={c.id} className={styles.comment}>
-              <Avatar initials={c.authorAvatar} size="sm" color="#8A7C70" />
-              <div className={styles.commentBody}>
-                <p className={styles.commentHead}>
-                  <span className={styles.commentAuthor}>{c.authorName}</span>
-                  <time className={styles.commentTime} dateTime={c.createdAt}>
-                    {timeAgo(c.createdAt)}
-                  </time>
-                </p>
-                <p className={styles.commentText}>{c.body}</p>
-              </div>
-              {isAdmin && (
-                <button
-                  type="button"
-                  className={styles.commentDelete}
-                  onClick={() => remove(c.id)}
-                  disabled={removingId === c.id}
-                  aria-label={`Remove this comment from ${c.authorName}`}
-                  title="Remove comment"
-                >
-                  {removingId === c.id ? (
-                    <Loader2 size={12} className={styles.spin} aria-hidden="true" />
-                  ) : (
-                    <X size={12} aria-hidden="true" />
-                  )}
-                </button>
+          {topLevel.map(c => (
+            <li key={c.id}>
+              <CommentRow
+                comment={c}
+                isAdmin={isAdmin}
+                removingId={removingId}
+                onRemove={remove}
+                onReply={() => setReplyTo({ id: c.id, authorName: c.authorName })}
+              />
+              {(repliesByParent.get(c.id) ?? []).length > 0 && (
+                <ul className={styles.replies}>
+                  {repliesByParent.get(c.id)!.map(r => (
+                    <li key={r.id}>
+                      <CommentRow
+                        comment={r}
+                        isAdmin={isAdmin}
+                        removingId={removingId}
+                        onRemove={remove}
+                        // Replying to a reply re-parents to its own top-level
+                        // parent — there's only one level of nesting.
+                        onReply={() => setReplyTo({ id: c.id, authorName: r.authorName })}
+                      />
+                    </li>
+                  ))}
+                </ul>
               )}
             </li>
           ))}
@@ -263,6 +272,14 @@ function CommentThread({ post, isAdmin }: { post: Post; isAdmin: boolean }) {
       )}
 
       <form className={styles.form} onSubmit={send}>
+        {replyTo && (
+          <p className={styles.replyingTo}>
+            Replying to <strong>{replyTo.authorName}</strong>
+            <button type="button" className={styles.replyCancel} onClick={() => setReplyTo(null)}>
+              Cancel
+            </button>
+          </p>
+        )}
         <input
           className={styles.nameInput}
           placeholder="Your name (optional)"
@@ -274,17 +291,17 @@ function CommentThread({ post, isAdmin }: { post: Post; isAdmin: boolean }) {
         <div className={styles.formRow}>
           <input
             className={styles.commentInput}
-            placeholder={`Add a comment on ${post.startupName}…`}
+            placeholder={replyTo ? `Reply to ${replyTo.authorName}…` : `Add a comment on ${post.startupName}…`}
             maxLength={1000}
             value={body}
             onChange={e => setBody(e.target.value)}
-            aria-label="Your comment"
+            aria-label={replyTo ? `Reply to ${replyTo.authorName}` : 'Your comment'}
           />
           <button
             type="submit"
             className={styles.send}
             disabled={!body.trim() || sending}
-            aria-label="Post comment"
+            aria-label={replyTo ? 'Post reply' : 'Post comment'}
           >
             <Send size={15} aria-hidden="true" />
           </button>
@@ -296,5 +313,54 @@ function CommentThread({ post, isAdmin }: { post: Post; isAdmin: boolean }) {
         )}
       </form>
     </section>
+  );
+}
+
+function CommentRow({
+  comment,
+  isAdmin,
+  removingId,
+  onRemove,
+  onReply,
+}: {
+  comment: Comment;
+  isAdmin: boolean;
+  removingId: string | null;
+  onRemove: (id: string) => void;
+  onReply: () => void;
+}) {
+  return (
+    <div className={styles.comment}>
+      <Avatar initials={comment.authorAvatar} size="sm" color="#8A7C70" />
+      <div className={styles.commentBody}>
+        <p className={styles.commentHead}>
+          <span className={styles.commentAuthor}>{comment.authorName}</span>
+          {comment.isFounder && <Badge variant="founder">Founder</Badge>}
+          <time className={styles.commentTime} dateTime={comment.createdAt}>
+            {timeAgo(comment.createdAt)}
+          </time>
+        </p>
+        <p className={styles.commentText}>{comment.body}</p>
+        <button type="button" className={styles.replyBtn} onClick={onReply}>
+          Reply
+        </button>
+      </div>
+      {isAdmin && (
+        <button
+          type="button"
+          className={styles.commentDelete}
+          onClick={() => onRemove(comment.id)}
+          disabled={removingId === comment.id}
+          aria-label={`Remove this comment from ${comment.authorName}`}
+          title="Remove comment"
+        >
+          {removingId === comment.id ? (
+            <Loader2 size={12} className={styles.spin} aria-hidden="true" />
+          ) : (
+            <X size={12} aria-hidden="true" />
+          )}
+        </button>
+      )}
+    </div>
   );
 }
