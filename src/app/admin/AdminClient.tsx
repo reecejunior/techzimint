@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import {
-  AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Loader2, LogOut, RotateCcw, ShieldCheck, X,
+  AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Loader2, LogOut, Mail, RotateCcw,
+  ShieldCheck, Sparkles, Trophy, X,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
 import { approveStartup, rejectStartup, saveTechzimChoice } from '@/lib/firestore';
@@ -17,8 +18,10 @@ export default function AdminClient() {
 
   if (loading) {
     return (
-      <div className={`wrap ${styles.page}`}>
-        <div className={`skel ${styles.skelBlock}`} />
+      <div className={styles.shell}>
+        <div className={`wrap ${styles.page}`}>
+          <div className={`skel ${styles.skelBlock}`} />
+        </div>
       </div>
     );
   }
@@ -29,17 +32,47 @@ export default function AdminClient() {
     // sign in at all", so it gets the login form, not a rejection notice.
     const realAccount = user && !user.isAnonymous;
     return (
-      <div className={`wrap ${styles.page}`}>
-        {realAccount ? <NotAuthorized email={user.email} /> : <LoginForm />}
+      <div className={styles.shell}>
+        <div className={`wrap ${styles.gateWrap}`}>
+          {realAccount ? <NotAuthorized email={user.email} /> : <LoginForm />}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`wrap ${styles.page}`}>
-      <ChoiceEditor />
-      <Queue />
+    <div className={styles.shell}>
+      <div className={`wrap ${styles.page}`}>
+        <AdminHeader email={user?.email ?? null} />
+        <div className={styles.stack}>
+          <ChoiceEditor />
+          <Queue />
+        </div>
+      </div>
     </div>
+  );
+}
+
+function AdminHeader({ email }: { email: string | null }) {
+  return (
+    <header className={styles.shellHeader}>
+      <div>
+        <span className={styles.shellEyebrow}>Techzim Startups</span>
+        <h1 className={styles.shellTitle}>Admin</h1>
+      </div>
+      <div className={styles.shellRight}>
+        {email && (
+          <span className={styles.shellUser}>
+            <Mail size={13} aria-hidden="true" />
+            {email}
+          </span>
+        )}
+        <button type="button" className={styles.signOut} onClick={() => void signOutAdmin()}>
+          <LogOut size={14} aria-hidden="true" />
+          Sign out
+        </button>
+      </div>
+    </header>
   );
 }
 
@@ -100,12 +133,19 @@ function ChoiceEditor() {
   }
 
   return (
-    <section className={styles.choiceSection}>
-      <h1 className={styles.title}>Techzim&apos;s Choice</h1>
-      <p className={styles.subtitle}>
-        Up to 5, in order — this is what replaces the leaderboard for visitors. An empty note is
-        fine; add one when there&apos;s something worth saying about the pick.
-      </p>
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <span className={styles.cardIcon} data-tone="brand">
+          <Trophy size={16} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className={styles.cardTitle}>Techzim&apos;s Choice</h2>
+          <p className={styles.cardSubtitle}>
+            Up to 5, in order — this is what visitors see instead of a leaderboard. An empty note
+            is fine; add one when there&apos;s something worth saying about the pick.
+          </p>
+        </div>
+      </div>
 
       {current.length > 0 && (
         <ul className={styles.choiceList}>
@@ -186,7 +226,12 @@ function ChoiceEditor() {
           {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
           {saving ? 'Saving…' : loading ? 'Loading current picks…' : 'Save picks'}
         </button>
-        {saved && <span className={styles.choiceSaved}>Saved.</span>}
+        {saved && (
+          <span className={styles.choiceSaved}>
+            <Sparkles size={13} aria-hidden="true" />
+            Saved
+          </span>
+        )}
       </div>
 
       {error && (
@@ -238,35 +283,47 @@ function LoginForm() {
 
   return (
     <div className={styles.gate}>
-      <ShieldCheck size={28} className={styles.gateIcon} strokeWidth={1.5} aria-hidden="true" />
+      <span className={styles.gateBadge} data-tone="brand">
+        <ShieldCheck size={22} strokeWidth={1.75} aria-hidden="true" />
+      </span>
       <h1 className={styles.gateTitle}>Admin sign-in</h1>
+      <p className={styles.gateLede}>Techzim Startups moderation &amp; Techzim&apos;s Choice</p>
+
       <form className={styles.loginForm} onSubmit={submit}>
-        <input
-          type="email"
-          className={styles.input}
-          placeholder="Email"
-          autoComplete="username"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          className={styles.input}
-          placeholder="Password"
-          autoComplete="current-password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-        />
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Email</span>
+          <input
+            type="email"
+            className={styles.input}
+            placeholder="you@techzim.co.zw"
+            autoComplete="username"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+        </label>
+
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Password</span>
+          <input
+            type="password"
+            className={styles.input}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+          />
+        </label>
+
         <button type="submit" className={styles.submitBtn} disabled={busy}>
           {busy && <Loader2 size={15} className={styles.spin} aria-hidden="true" />}
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
 
         {resetSent ? (
-          <p className={styles.gateText}>
-            Check {email.trim()} for a link to set your password.
+          <p className={styles.gateNotice}>
+            Check <strong>{email.trim()}</strong> for a link to set your password.
           </p>
         ) : (
           <button type="button" className={styles.forgotLink} onClick={forgotPassword} disabled={busy}>
@@ -287,10 +344,12 @@ function LoginForm() {
 function NotAuthorized({ email }: { email: string | null }) {
   return (
     <div className={styles.gate}>
-      <AlertTriangle size={28} className={styles.gateIconWarn} strokeWidth={1.5} aria-hidden="true" />
+      <span className={styles.gateBadge} data-tone="warn">
+        <AlertTriangle size={22} strokeWidth={1.75} aria-hidden="true" />
+      </span>
       <h1 className={styles.gateTitle}>Not authorised</h1>
       <p className={styles.gateText}>
-        {email ?? 'This account'} doesn&apos;t have access to the admin panel.
+        <strong>{email ?? 'This account'}</strong> doesn&apos;t have access to the admin panel.
       </p>
       <button type="button" className={styles.submitBtn} onClick={() => void signOutAdmin()}>
         <LogOut size={14} aria-hidden="true" />
@@ -304,21 +363,20 @@ function Queue() {
   const { data: startups, loading, error } = useAllStartupsForAdmin();
 
   return (
-    <>
-      <header className={styles.header}>
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <span className={styles.cardIcon} data-tone="neutral">
+          <ShieldCheck size={16} aria-hidden="true" />
+        </span>
         <div>
-          <h2 className={styles.title}>Moderation</h2>
-          <p className={styles.subtitle}>
+          <h2 className={styles.cardTitle}>Moderation</h2>
+          <p className={styles.cardSubtitle}>
             Every startup, newest submission first. Rejecting one pulls it out of the feed
             immediately (and off Techzim&apos;s Choice, if it&apos;s currently picked) — its own page
             still loads, marked as removed.
           </p>
         </div>
-        <button type="button" className={styles.signOut} onClick={() => void signOutAdmin()}>
-          <LogOut size={14} aria-hidden="true" />
-          Sign out
-        </button>
-      </header>
+      </div>
 
       {error ? (
         <ErrorState message={error} />
@@ -337,7 +395,7 @@ function Queue() {
           ))}
         </ul>
       )}
-    </>
+    </section>
   );
 }
 
