@@ -76,6 +76,23 @@
   cursor: progress;
 }
 
+.forgotLink {
+  font-size: 13px;
+  color: var(--ink-400);
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.forgotLink:hover:not(:disabled) {
+  color: var(--ink-900);
+}
+
+.forgotLink:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .formError {
   font-size: 13px;
   color: var(--orange-800);

@@ -20,7 +20,7 @@ import {
   type DocumentSnapshot,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
-import { ADMIN_EMAIL, ensureSignedIn, getDb } from './firebase';
+import { ADMIN_EMAILS, ensureSignedIn, getDb } from './firebase';
 import {
   computeScore,
   initialsOf,
@@ -846,7 +846,7 @@ export async function deletePost(startupId: string, postId: string): Promise<voi
     if (!startupSnap.exists()) throw new Error('That startup no longer exists.');
 
     const startup = startupSnap.data();
-    if (startup.ownerId !== user.uid && user.email !== ADMIN_EMAIL) {
+    if (startup.ownerId !== user.uid && !(user.email && ADMIN_EMAILS.includes(user.email))) {
       throw new Error('Only the founder who posted this can delete it.');
     }
 
@@ -963,8 +963,8 @@ export async function submitStartup(input: StartupSubmission): Promise<string> {
 /* ─── Admin moderation ────────────────────────────────────── */
 /*
  * Gated by firestore.rules, not by this module — every function here writes
- * a shape that only passes the rules if the caller is signed in as
- * ADMIN_EMAIL, and that rule is itself held behind a kill switch until the
+ * a shape that only passes the rules if the caller is signed in as one of
+ * ADMIN_EMAILS, and that rule is itself held behind a kill switch until the
  * feature is activated. See firestore.rules' adminActive().
  */
 

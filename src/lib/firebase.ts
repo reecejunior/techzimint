@@ -2,6 +2,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import {
   getAuth,
+  sendPasswordResetEmail,
   signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
@@ -10,14 +11,14 @@ import {
 } from 'firebase/auth';
 
 /**
- * The one real account on a site where everyone else browses anonymously.
- * Mirrored as a literal in firestore.rules (rules can't import a JS
- * constant) — change both together if this ever moves.
+ * The real accounts on a site where everyone else browses anonymously.
+ * Mirrored as a literal list in firestore.rules (rules can't import a JS
+ * constant) — change both together if this ever changes.
  */
-export const ADMIN_EMAIL = 'chimutashureece@gmail.com';
+export const ADMIN_EMAILS = ['chimutashureece@gmail.com', 'limbikani@techzim.co.zw'];
 
 export function isAdminUser(user: User | null): boolean {
-  return Boolean(user?.email && user.email === ADMIN_EMAIL);
+  return Boolean(user?.email && ADMIN_EMAILS.includes(user.email));
 }
 
 const firebaseConfig = {
@@ -86,6 +87,17 @@ export function ensureSignedIn(): Promise<User> {
  */
 export function signInAdmin(email: string, password: string): Promise<User> {
   return signInWithEmailAndPassword(getFirebaseAuth(), email, password).then(c => c.user);
+}
+
+/**
+ * Emails a secure, one-time link that lets the account holder set their own
+ * password — for a first-time invite (the account exists with a throwaway
+ * password nobody tells them) as much as for a genuine "forgot it" case.
+ * Firebase's own page handles the actual reset; nothing here sees the new
+ * password.
+ */
+export function sendAdminPasswordReset(email: string): Promise<void> {
+  return sendPasswordResetEmail(getFirebaseAuth(), email);
 }
 
 /**

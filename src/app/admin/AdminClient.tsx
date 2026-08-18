@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Loader2, LogOut, RotateCcw, ShieldCheck, X,
 } from 'lucide-react';
-import { signInAdmin, signOutAdmin } from '@/lib/firebase';
+import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
 import { approveStartup, rejectStartup, saveTechzimChoice } from '@/lib/firestore';
 import { useAdminAuth, useAllStartupsForAdmin, useStartups, useTechzimChoice } from '@/lib/hooks';
 import type { Startup, TechzimChoicePick } from '@/lib/types';
@@ -203,6 +203,7 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -213,6 +214,23 @@ function LoginForm() {
       await signInAdmin(email.trim(), password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not sign in.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function forgotPassword() {
+    if (busy || !email.trim()) {
+      setError('Enter your email above first, then click this again.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await sendAdminPasswordReset(email.trim());
+      setResetSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send that email.');
     } finally {
       setBusy(false);
     }
@@ -245,6 +263,17 @@ function LoginForm() {
           {busy && <Loader2 size={15} className={styles.spin} aria-hidden="true" />}
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
+
+        {resetSent ? (
+          <p className={styles.gateText}>
+            Check {email.trim()} for a link to set your password.
+          </p>
+        ) : (
+          <button type="button" className={styles.forgotLink} onClick={forgotPassword} disabled={busy}>
+            Forgot your password, or signing in for the first time?
+          </button>
+        )}
+
         {error && (
           <p className={styles.formError} role="alert">
             {error}

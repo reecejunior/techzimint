@@ -12,17 +12,17 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admin/review panel — built, but held inert until explicitly activated.
-    // Flip this to `true` and republish when ready to switch it on; every
-    // isAdmin() branch below evaluates to false regardless of who's signed
-    // in until that happens, so no real privileged write can succeed.
+    // Admin/review panel — active. isAdmin() below only ever matches the one
+    // email hardcoded there, so this doesn't open anything up beyond that
+    // one account.
     function adminActive() {
-      return false;
+      return true;
     }
 
-    // Mirrors ADMIN_EMAIL in src/lib/firebase.ts — update both together.
+    // Mirrors ADMIN_EMAILS in src/lib/firebase.ts — update both together.
     function isAdmin() {
-      return adminActive() && signedIn() && request.auth.token.email == 'chimutashureece@gmail.com';
+      return adminActive() && signedIn()
+             && request.auth.token.email in ['chimutashureece@gmail.com', 'limbikani@techzim.co.zw'];
     }
 
     function mine() {
