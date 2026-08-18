@@ -4,8 +4,6 @@ export type Region = 'Harare' | 'Bulawayo' | 'Mutare' | 'Gweru' | 'Pan-African';
 export const categories: Category[] = ['Fintech', 'Agritech', 'Logistics', 'Edtech', 'Healthtech', 'E-commerce', 'SaaS'];
 export const regions: Region[] = ['Harare', 'Bulawayo', 'Mutare', 'Gweru', 'Pan-African'];
 
-export type Period = 'week' | 'month';
-
 /* ─── Media ───────────────────────────────────────────────── */
 
 export interface PostImage {
@@ -211,6 +209,16 @@ export interface ReviewWithStartup extends Review {
   startupId: string;
   startupName: string;
   startupSlug: string;
+}
+
+/* ─── Techzim's Choice ────────────────────────────────────── */
+
+/** One editorial pick. Order in the array is the rank shown (1st = index 0). */
+export interface TechzimChoicePick {
+  startupId: string;
+  /** A short editorial line on why it's picked. Optional — an empty string
+   *  just shows the pick with no commentary. */
+  note: string;
 }
 
 /* ─── Notifications ───────────────────────────────────────── */

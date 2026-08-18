@@ -326,6 +326,38 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Techzim's Choice — an editorial top-5, replacing the algorithmic
+    // leaderboard on that page. Publicly readable like everything else; only
+    // the admin can write it, and — like the rest of the admin panel — that
+    // power stays off until adminActive() is flipped on.
+    match /techzimChoice/{docId} {
+      allow read: if true;
+      allow write: if isAdmin()
+                   && request.resource.data.picks is list
+                   && request.resource.data.picks.size() <= 5;
+    }
+
+    // The weekly-digest mailing list. Deliberately unreadable by clients —
+    // an email address is more sensitive than anything else this app stores,
+    // and there is no legitimate reason a browser needs to list it. Only the
+    // Admin-SDK-backed send job (src/lib/server/) ever reads it, which
+    // bypasses these rules entirely.
+    match /subscribers/{subscriberId} {
+      allow read: if false;
+
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['email', 'active', 'createdAt'])
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() <= 200
+                    && request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+[.][^\\s@]+$')
+                    && request.resource.data.active == true;
+
+      // Unsubscribing goes through /api/unsubscribe (Admin SDK), not a
+      // client write — a link in an email has no session to authenticate.
+      allow update: if false;
+      allow delete: if false;
+    }
+
     // A notification is written by the actor (liker/commenter/reviewer/
     // founder-replying) but addressed to someone else — the recipient can
     // only ever read and mark-read their own, never the actor's identity.

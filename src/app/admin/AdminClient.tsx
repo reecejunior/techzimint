@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, ExternalLink, Loader2, LogOut, RotateCcw, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Loader2, LogOut, RotateCcw, ShieldCheck, X,
+} from 'lucide-react';
 import { signInAdmin, signOutAdmin } from '@/lib/firebase';
-import { approveStartup, rejectStartup } from '@/lib/firestore';
-import { useAdminAuth, useAllStartupsForAdmin } from '@/lib/hooks';
-import type { Startup } from '@/lib/types';
+import { approveStartup, rejectStartup, saveTechzimChoice } from '@/lib/firestore';
+import { useAdminAuth, useAllStartupsForAdmin, useStartups, useTechzimChoice } from '@/lib/hooks';
+import type { Startup, TechzimChoicePick } from '@/lib/types';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
@@ -35,8 +37,164 @@ export default function AdminClient() {
 
   return (
     <div className={`wrap ${styles.page}`}>
+      <ChoiceEditor />
       <Queue />
     </div>
+  );
+}
+
+function ChoiceEditor() {
+  const { data: startups } = useStartups();
+  const { data: picks, loading } = useTechzimChoice();
+  const [draft, setDraft] = useState<TechzimChoicePick[] | null>(null);
+  const [addId, setAddId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Falls back to the live doc until the admin makes their first edit, at
+  // which point `draft` is non-null and wins — otherwise every snapshot
+  // update would clobber whatever they're mid-way through editing.
+  const current = draft ?? picks;
+  const startupById = new Map(startups.map(s => [s.id, s]));
+  const available = startups.filter(s => !current.some(p => p.startupId === s.id));
+
+  function change(next: TechzimChoicePick[]) {
+    setDraft(next);
+    setSaved(false);
+  }
+
+  function addPick() {
+    if (!addId || current.length >= 5) return;
+    change([...current, { startupId: addId, note: '' }]);
+    setAddId('');
+  }
+
+  function removePick(id: string) {
+    change(current.filter(p => p.startupId !== id));
+  }
+
+  function updateNote(id: string, note: string) {
+    change(current.map(p => (p.startupId === id ? { ...p, note } : p)));
+  }
+
+  function move(index: number, dir: -1 | 1) {
+    const target = index + dir;
+    if (target < 0 || target >= current.length) return;
+    const next = [...current];
+    [next[index], next[target]] = [next[target], next[index]];
+    change(next);
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      await saveTechzimChoice(current);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.choiceSection}>
+      <h1 className={styles.title}>Techzim&apos;s Choice</h1>
+      <p className={styles.subtitle}>
+        Up to 5, in order — this is what replaces the leaderboard for visitors. An empty note is
+        fine; add one when there&apos;s something worth saying about the pick.
+      </p>
+
+      {current.length > 0 && (
+        <ul className={styles.choiceList}>
+          {current.map((p, i) => {
+            const s = startupById.get(p.startupId);
+            return (
+              <li key={p.startupId} className={styles.choiceRow}>
+                <div className={styles.choiceMove}>
+                  <button
+                    type="button"
+                    className={styles.choiceMoveBtn}
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0}
+                    aria-label="Move up"
+                  >
+                    <ChevronUp size={14} aria-hidden="true" />
+                  </button>
+                  <span className={styles.choiceRank}>{i + 1}</span>
+                  <button
+                    type="button"
+                    className={styles.choiceMoveBtn}
+                    onClick={() => move(i, 1)}
+                    disabled={i === current.length - 1}
+                    aria-label="Move down"
+                  >
+                    <ChevronDown size={14} aria-hidden="true" />
+                  </button>
+                </div>
+
+                <div className={styles.choiceBody}>
+                  <span className={styles.choiceName}>{s?.name ?? `(missing: ${p.startupId})`}</span>
+                  <input
+                    className={styles.choiceNote}
+                    placeholder="Why it's picked (optional)"
+                    maxLength={280}
+                    value={p.note}
+                    onChange={e => updateNote(p.startupId, e.target.value)}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.choiceRemove}
+                  onClick={() => removePick(p.startupId)}
+                  aria-label={`Remove ${s?.name ?? 'this pick'}`}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {current.length < 5 && (
+        <div className={styles.choiceAdd}>
+          <select
+            className={styles.choiceSelect}
+            value={addId}
+            onChange={e => setAddId(e.target.value)}
+            aria-label="Add a product to Techzim's Choice"
+          >
+            <option value="">Add a product…</option>
+            {available.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <button type="button" className={styles.choiceAddBtn} onClick={addPick} disabled={!addId}>
+            Add
+          </button>
+        </div>
+      )}
+
+      <div className={styles.choiceActions}>
+        <button type="button" className={styles.submitBtn} onClick={save} disabled={saving || loading}>
+          {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
+          {saving ? 'Saving…' : loading ? 'Loading current picks…' : 'Save picks'}
+        </button>
+        {saved && <span className={styles.choiceSaved}>Saved.</span>}
+      </div>
+
+      {error && (
+        <p className={styles.formError} role="alert">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -120,10 +278,11 @@ function Queue() {
     <>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Moderation</h1>
+          <h2 className={styles.title}>Moderation</h2>
           <p className={styles.subtitle}>
-            Every startup, newest submission first. Rejecting one pulls it out of the feed and
-            leaderboard immediately — its own page still loads, marked as removed.
+            Every startup, newest submission first. Rejecting one pulls it out of the feed
+            immediately (and off Techzim&apos;s Choice, if it&apos;s currently picked) — its own page
+            still loads, marked as removed.
           </p>
         </div>
         <button type="button" className={styles.signOut} onClick={() => void signOutAdmin()}>

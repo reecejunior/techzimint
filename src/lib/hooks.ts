@@ -18,16 +18,17 @@ import {
   subscribeToStartupPosts,
   subscribeToStartups,
   subscribeToStartupsForAdmin,
+  subscribeToTechzimChoice,
 } from './firestore';
 import type {
   Comment,
   Notification,
-  Period,
   Post,
   Review,
   Reviewer,
   ReviewWithStartup,
   Startup,
+  TechzimChoicePick,
 } from './types';
 
 const NOT_CONFIGURED =
@@ -411,19 +412,23 @@ export function useReviewerProfile(username: string): AsyncState<Profile> {
   return state;
 }
 
-/* ─── Leaderboard ─────────────────────────────────────────── */
+/* ─── Techzim's Choice ────────────────────────────────────── */
 
-export function useLeaderboard(
-  startups: Startup[],
-  period: Period,
-  category: string,
-  region: string,
-): Startup[] {
-  return useMemo(() => {
-    const rankOf = (s: Startup) => (period === 'week' ? s.rankWeek : s.rankMonth);
-    return startups
-      .filter(s => category === 'all' || s.category === category)
-      .filter(s => region === 'all' || s.region === region)
-      .sort((a, b) => rankOf(a) - rankOf(b));
-  }, [startups, period, category, region]);
+export function useTechzimChoice(): AsyncState<TechzimChoicePick[]> {
+  const [state, setState] = useState<AsyncState<TechzimChoicePick[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToTechzimChoice(
+      picks => setState({ data: picks, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: null };
+  return state;
 }

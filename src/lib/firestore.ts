@@ -45,6 +45,7 @@ import type {
   Startup,
   StartupSubmission,
   PostImage,
+  TechzimChoicePick,
 } from './types';
 
 export { periodKeys, slugify, withRanks } from './ranking';
@@ -1080,4 +1081,60 @@ export async function markNotificationRead(notificationId: string): Promise<void
 
 export async function markAllNotificationsRead(notificationIds: string[]): Promise<void> {
   await Promise.all(notificationIds.map(id => markNotificationRead(id)));
+}
+
+/* ─── Weekly digest subscription ─────────────────────────────
+ * The subscriber list itself is not client-readable (see firestore.rules) —
+ * only the weekly send, running with the Firebase Admin SDK, ever reads it.
+ * That also means duplicate signups for one address can't be checked for
+ * here; the send job de-duplicates by email instead. */
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function subscribeEmail(email: string): Promise<void> {
+  const trimmed = email.trim().toLowerCase();
+  if (!EMAIL_RE.test(trimmed)) throw new Error('Enter a valid email address.');
+
+  await ensureSignedIn();
+  await setDoc(doc(collection(getDb(), 'subscribers')), {
+    email: trimmed,
+    active: true,
+    createdAt: serverTimestamp(),
+  });
+}
+
+/* ─── Techzim's Choice ────────────────────────────────────────
+ * A single document holding an ordered list of picks, rather than the
+ * derived, everyone-can-move-it ranking the rest of the site uses — this one
+ * only ever changes when an admin writes it. Gated by the same isAdmin() +
+ * adminActive() kill switch as the rest of the admin panel; see
+ * firestore.rules. */
+
+const TECHZIM_CHOICE_REF_PATH = ['techzimChoice', 'current'] as const;
+
+export function subscribeToTechzimChoice(
+  onData: (picks: TechzimChoicePick[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    doc(getDb(), ...TECHZIM_CHOICE_REF_PATH),
+    snap => {
+      const raw = snap.data()?.picks;
+      const picks: TechzimChoicePick[] = Array.isArray(raw)
+        ? raw
+            .filter(p => p && typeof p.startupId === 'string')
+            .map(p => ({ startupId: String(p.startupId), note: String(p.note ?? '') }))
+        : [];
+      onData(picks);
+    },
+    err => onError(err as Error),
+  );
+}
+
+export async function saveTechzimChoice(picks: TechzimChoicePick[]): Promise<void> {
+  const trimmed = picks.slice(0, 5).map(p => ({ startupId: p.startupId, note: p.note.trim().slice(0, 280) }));
+  await setDoc(doc(getDb(), ...TECHZIM_CHOICE_REF_PATH), {
+    picks: trimmed,
+    updatedAt: serverTimestamp(),
+  });
 }

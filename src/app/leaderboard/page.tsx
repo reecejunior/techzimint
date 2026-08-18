@@ -1,64 +1,28 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
-import { Flame, Heart, MessageCircle, Minus, Star, TrendingDown, TrendingUp } from 'lucide-react';
-import { categories, regions, type Period, type Startup } from '@/lib/types';
-import { useLeaderboard, useStartups } from '@/lib/hooks';
+import { Heart, MessageCircle, Star } from 'lucide-react';
+import type { Startup, TechzimChoicePick } from '@/lib/types';
+import { useStartups, useTechzimChoice } from '@/lib/hooks';
 import Badge from '@/components/ui/Badge';
 import Logo from '@/components/ui/Logo';
+import SubscribeForm from '@/components/SubscribeForm';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
 import styles from './page.module.css';
 
-/* ── Rank movement since the last recorded standings ── */
-function Delta({ d }: { d: number }) {
-  if (d > 0)
-    return (
-      <span className={styles.deltaUp}>
-        <TrendingUp size={11} aria-hidden="true" />
-        {d}
-        <span className="sr-only">places up</span>
-      </span>
-    );
-  if (d < 0)
-    return (
-      <span className={styles.deltaDown}>
-        <TrendingDown size={11} aria-hidden="true" />
-        {Math.abs(d)}
-        <span className="sr-only">places down</span>
-      </span>
-    );
-  return (
-    <span className={styles.deltaFlat}>
-      <Minus size={11} aria-hidden="true" />
-      <span className="sr-only">No change</span>
-    </span>
-  );
-}
-
-/* ── One row ──
-   A plain container with the anchor stretched across it, so the whole row is one
-   target without nesting anything interactive inside a link. */
-function Row({ startup, period }: { startup: Startup; period: Period }) {
-  const rank = period === 'week' ? startup.rankWeek : startup.rankMonth;
-  const delta = period === 'week' ? startup.rankDeltaWeek : startup.rankDeltaMonth;
-  const likes = period === 'week' ? startup.weeklyLikes : startup.monthlyLikes;
-  const score = period === 'week' ? startup.scoreWeek : startup.scoreMonth;
-
+/* ── One pick ──
+   A plain container with the anchor stretched across it, so the whole row is
+   one target without nesting anything interactive inside a link. */
+function Row({ rank, pick, startup }: { rank: number; pick: TechzimChoicePick; startup: Startup }) {
   return (
     <article className={styles.row} data-top={rank <= 3 ? rank : undefined} id={`row-${startup.slug}`}>
       <div className={styles.rankCell}>
         <span className={styles.rankNum}>{rank}</span>
-        <Delta d={delta} />
       </div>
 
       <div className={styles.rowLogo}>
-        <Logo
-          name={startup.name}
-          url={startup.logoUrl}
-          initials={startup.logoInitials}
-          size="md"
-        />
+        <Logo name={startup.name} url={startup.logoUrl} initials={startup.logoInitials} size="md" />
       </div>
 
       <div className={styles.rowInfo}>
@@ -68,22 +32,17 @@ function Row({ startup, period }: { startup: Startup; period: Period }) {
               {startup.name}
             </Link>
           </h3>
-          {startup.isTrending && (
-            <Badge variant="trending">
-              <Flame size={9} aria-hidden="true" />
-              Trending
-            </Badge>
-          )}
         </div>
 
         <p className={styles.rowTagline}>{startup.tagline}</p>
 
-        {/* The three signals that produced the score, in weight order. */}
+        {pick.note && <p className={styles.rowNote}>“{pick.note}”</p>}
+
         <div className={styles.rowBadges}>
           <Badge variant="category">{startup.category}</Badge>
           <span className={styles.rowStat}>
             <Heart size={11} aria-hidden="true" />
-            {likes}
+            {startup.likeCount}
             <span className="sr-only"> likes</span>
           </span>
           <span className={styles.rowStat}>
@@ -98,13 +57,7 @@ function Row({ startup, period }: { startup: Startup; period: Period }) {
               {startup.reviewCount === 1 ? ' review' : ' reviews'}
             </span>
           </span>
-          <span className={styles.rowScoreInline}>{score.toLocaleString()} pts</span>
         </div>
-      </div>
-
-      <div className={styles.rowScore}>
-        <span className={styles.rowScoreNum}>{score.toLocaleString()}</span>
-        <span className={styles.rowScoreLabel}>score</span>
       </div>
     </article>
   );
@@ -123,22 +76,32 @@ function RowSkeleton() {
         <div className={`skel ${styles.skelLine}`} />
         <div className={`skel ${styles.skelLineShort}`} />
       </div>
-      <div className={styles.rowScore} />
     </div>
   );
 }
 
 export default function LeaderboardPage() {
-  const [period, setPeriod] = useState<Period>('week');
-  const [category, setCategory] = useState('all');
-  const [region, setRegion] = useState('all');
+  const { data: startups, loading: startupsLoading, error: startupsError } = useStartups();
+  const { data: picks, loading: picksLoading, error: picksError } = useTechzimChoice();
 
-  const { data: startups, loading, error } = useStartups();
-  const ranked = useLeaderboard(startups, period, category, region);
+  const loading = startupsLoading || picksLoading;
+  const error = startupsError ?? picksError;
+
+  // Picks name a startup id; resolve against the live approved set so a
+  // rejected or since-removed pick just quietly drops off the list instead
+  // of crashing the page.
+  const byId = useMemo(() => new Map(startups.map(s => [s.id, s])), [startups]);
+  const resolved = useMemo(
+    () =>
+      picks
+        .map(pick => ({ pick, startup: byId.get(pick.startupId) }))
+        .filter((r): r is { pick: TechzimChoicePick; startup: Startup } => Boolean(r.startup)),
+    [picks, byId],
+  );
 
   const totals = useMemo(
     () => ({
-      startups: startups.length,
+      products: startups.length,
       likes: startups.reduce((n, s) => n + s.weeklyLikes, 0),
       reviews: startups.reduce((n, s) => n + s.reviewCount, 0),
     }),
@@ -150,16 +113,16 @@ export default function LeaderboardPage() {
       <header className={styles.masthead}>
         <div className={`wrap ${styles.mastheadInner}`}>
           <div className={styles.mastheadLeft}>
-            <h1 className={styles.pageTitle}>Leaderboard</h1>
+            <h1 className={styles.pageTitle}>Techzim&apos;s Choice</h1>
             <p className={styles.pageDesc}>
-              Ranked by what the community does in the feed — likes, comments and reviews.
+              Five products our team is genuinely paying attention to right now — picked by us, not a formula.
             </p>
           </div>
 
           <div className={styles.mastheadStats}>
             <span className={styles.mStat}>
-              <span className={styles.mStatNum}>{loading ? '—' : totals.startups}</span>
-              <span className={styles.mStatLabel}>startups</span>
+              <span className={styles.mStatNum}>{loading ? '—' : totals.products}</span>
+              <span className={styles.mStatLabel}>products</span>
             </span>
             <span className={styles.mStat}>
               <span className={styles.mStatNum}>
@@ -175,70 +138,8 @@ export default function LeaderboardPage() {
         </div>
       </header>
 
-      <div className={styles.controls}>
-        <div className={`wrap ${styles.controlsInner}`}>
-          <div className={styles.toggle} role="group" aria-label="Ranking period">
-            <button
-              id="period-week-btn"
-              className={styles.toggleBtn}
-              data-active={period === 'week' || undefined}
-              aria-pressed={period === 'week'}
-              onClick={() => setPeriod('week')}
-            >
-              This week
-            </button>
-            <button
-              id="period-month-btn"
-              className={styles.toggleBtn}
-              data-active={period === 'month' || undefined}
-              aria-pressed={period === 'month'}
-              onClick={() => setPeriod('month')}
-            >
-              This month
-            </button>
-          </div>
-
-          <div className={styles.chipScroller}>
-            <div className={styles.chips} role="group" aria-label="Filter by category">
-              <button
-                id="filter-all-btn"
-                className={styles.chip}
-                data-active={category === 'all' || undefined}
-                aria-pressed={category === 'all'}
-                onClick={() => setCategory('all')}
-              >
-                All
-              </button>
-              {categories.map(c => (
-                <button
-                  key={c}
-                  id={`filter-${c.toLowerCase()}-btn`}
-                  className={styles.chip}
-                  data-active={category === c || undefined}
-                  aria-pressed={category === c}
-                  onClick={() => setCategory(category === c ? 'all' : c)}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <select
-            id="region-select"
-            className={styles.regionSelect}
-            value={region}
-            onChange={e => setRegion(e.target.value)}
-            aria-label="Filter by region"
-          >
-            <option value="all">All regions</option>
-            {regions.map(r => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className={`wrap ${styles.subscribeWrap}`}>
+        <SubscribeForm />
       </div>
 
       <div className={`wrap ${styles.listWrap}`}>
@@ -246,26 +147,23 @@ export default function LeaderboardPage() {
           <ErrorState message={error} />
         ) : loading ? (
           <>
-            <p className={styles.listMeta}>Loading the leaderboard…</p>
+            <p className={styles.listMeta}>Loading Techzim&apos;s Choice…</p>
             <div className={styles.list}>
-              {Array.from({ length: 6 }, (_, i) => (
+              {Array.from({ length: 5 }, (_, i) => (
                 <RowSkeleton key={i} />
               ))}
             </div>
           </>
-        ) : ranked.length === 0 ? (
-          <EmptyState title="No startups match your filters">
-            Try a different category, or <Link href="/submit">submit a startup</Link>.
+        ) : resolved.length === 0 ? (
+          <EmptyState title="Techzim hasn't published picks yet">
+            Check back soon, or browse <Link href="/">everything in the feed</Link>.
           </EmptyState>
         ) : (
           <>
-            <p className={styles.listMeta} aria-live="polite">
-              {ranked.length} startup{ranked.length !== 1 ? 's' : ''} ·{' '}
-              {period === 'week' ? 'this week' : 'this month'}
-            </p>
+            <p className={styles.listMeta}>Updated whenever Techzim changes its picks.</p>
             <div className={styles.list}>
-              {ranked.map(s => (
-                <Row key={s.id} startup={s} period={period} />
+              {resolved.map((r, i) => (
+                <Row key={r.startup.id} rank={i + 1} pick={r.pick} startup={r.startup} />
               ))}
             </div>
           </>

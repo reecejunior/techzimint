@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ArrowRight, Loader2, Trophy } from 'lucide-react';
-import { useAdminAuth, useFeed, useMyLikes, useMyUid, useStartups } from '@/lib/hooks';
-import { categories } from '@/lib/types';
+import { useAdminAuth, useFeed, useMyLikes, useMyUid, useStartups, useTechzimChoice } from '@/lib/hooks';
+import { categories, type Startup } from '@/lib/types';
 import PostCard from '@/components/PostCard';
 import Logo from '@/components/ui/Logo';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
@@ -16,6 +16,7 @@ export default function FeedPage() {
   const uid = useMyUid();
   const { isAdmin } = useAdminAuth();
   const { data: startups } = useStartups();
+  const { data: choicePicks } = useTechzimChoice();
   const [category, setCategory] = useState('all');
 
   /* Category lives on the startup, not the post, so filter through the
@@ -39,20 +40,26 @@ export default function FeedPage() {
     [posts, category, categoryById],
   );
 
+  const startupById = useMemo(() => new Map(startups.map(s => [s.id, s])), [startups]);
   const topThree = useMemo(
-    () => [...startups].sort((a, b) => a.rankWeek - b.rankWeek).slice(0, 3),
-    [startups],
+    () =>
+      choicePicks
+        .slice(0, 3)
+        .map(pick => startupById.get(pick.startupId))
+        .filter((s): s is Startup => Boolean(s)),
+    [choicePicks, startupById],
   );
 
   return (
     <div className={styles.page}>
       <header className={`wrap ${styles.masthead}`}>
-        <h1 className={styles.title}>Find startups</h1>
+        <h1 className={styles.title}>Find products</h1>
         <p className={styles.desc}>
           What Zimbabwean and African founders are shipping. Like what works, ask questions in
-          the comments, and leave a review once you&apos;ve tried it — that&apos;s what moves the{' '}
+          the comments, and leave a review once you&apos;ve tried it — and see what our team is
+          watching in{' '}
           <Link href="/leaderboard" className={styles.inlineLink}>
-            leaderboard
+            Techzim&apos;s Choice
           </Link>
           .
         </p>
@@ -143,28 +150,27 @@ export default function FeedPage() {
           <section className={styles.sideCard}>
             <h2 className={styles.sideTitle}>
               <Trophy size={14} aria-hidden="true" />
-              Top this week
+              Techzim&apos;s Choice
             </h2>
 
             {topThree.length === 0 ? (
-              <p className={styles.sideEmpty}>Ranks appear once startups are posted.</p>
+              <p className={styles.sideEmpty}>Techzim hasn&apos;t published picks yet.</p>
             ) : (
               <ol className={styles.topList}>
-                {topThree.map(s => (
+                {topThree.map((s, i) => (
                   <li key={s.id} className={styles.topItem}>
-                    <span className={styles.topRank}>{s.rankWeek}</span>
+                    <span className={styles.topRank}>{i + 1}</span>
                     <Logo name={s.name} url={s.logoUrl} initials={s.logoInitials} size="sm" />
                     <Link href={`/startups/${s.slug}`} className={styles.topName}>
                       {s.name}
                     </Link>
-                    <span className={styles.topScore}>{s.scoreWeek.toLocaleString()}</span>
                   </li>
                 ))}
               </ol>
             )}
 
             <Link href="/leaderboard" className={styles.sideLink}>
-              Full leaderboard
+              See all picks
               <ArrowRight size={13} aria-hidden="true" />
             </Link>
           </section>

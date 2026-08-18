@@ -8,8 +8,8 @@ import NotificationBell from './NotificationBell';
 import styles from './Nav.module.css';
 
 const LINKS = [
-  { href: '/', label: 'Find startups' },
-  { href: '/leaderboard', label: 'Leaderboard' },
+  { href: '/', label: 'Find products' },
+  { href: '/leaderboard', label: "Techzim's Choice" },
 ];
 
 export default function Nav() {
