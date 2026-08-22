@@ -33,6 +33,8 @@ import type {
   Category,
   Comment,
   Notification,
+  NotificationEmailMode,
+  NotificationPref,
   NotificationType,
   Post,
   PostDraft,
@@ -813,6 +815,17 @@ export async function addPost(startupId: string, draft: PostDraft): Promise<void
 }
 
 /**
+ * Admin correction to a post's text — a typo, something that needs to come
+ * down a notch without deleting the whole update. Gated by firestore.rules
+ * to touch only `body`; images and video stay as posted.
+ */
+export async function editPost(startupId: string, postId: string, body: string): Promise<void> {
+  const text = body.trim();
+  if (!text) throw new Error('A post needs some text.');
+  await updateDoc(doc(getDb(), 'startups', startupId, 'posts', postId), { body: text });
+}
+
+/**
  * Deletes a post. Only the founder who owns the startup may do this.
  *
  * Comments are removed first, outside the transaction — a transaction can
@@ -1081,6 +1094,63 @@ export async function markNotificationRead(notificationId: string): Promise<void
 
 export async function markAllNotificationsRead(notificationIds: string[]): Promise<void> {
   await Promise.all(notificationIds.map(id => markNotificationRead(id)));
+}
+
+/* ─── Notification email preference ──────────────────────────
+ * Doc id is the visitor's own uid, so this is readable/writable only by
+ * them — the actual sending happens server-side (see src/lib/server/),
+ * which bypasses these rules entirely via the Admin SDK. */
+
+function mapNotificationPref(snap: DocumentSnapshot<DocumentData>): NotificationPref | null {
+  const d = snap.data();
+  if (!d) return null;
+  return {
+    email: String(d.email ?? ''),
+    mode: (d.mode === 'instant' || d.mode === 'daily' ? d.mode : 'off') as NotificationPref['mode'],
+    lastNotifiedAt: toIso(d.lastNotifiedAt),
+  };
+}
+
+export function subscribeToMyNotificationPref(
+  onData: (pref: NotificationPref | null) => void,
+  onError: (err: Error) => void,
+): () => void {
+  let stop = () => {};
+  let cancelled = false;
+
+  ensureSignedIn()
+    .then(user => {
+      if (cancelled) return;
+      stop = onSnapshot(
+        doc(getDb(), 'notificationPrefs', user.uid),
+        snap => onData(mapNotificationPref(snap)),
+        err => onError(err as Error),
+      );
+    })
+    .catch(err => onError(err as Error));
+
+  return () => {
+    cancelled = true;
+    stop();
+  };
+}
+
+const EMAIL_PREF_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function saveNotificationPref(email: string, mode: NotificationEmailMode): Promise<void> {
+  const trimmed = email.trim().toLowerCase();
+  if (mode !== 'off' && !EMAIL_PREF_RE.test(trimmed)) {
+    throw new Error('Enter a valid email address.');
+  }
+
+  const user = await ensureSignedIn();
+  await setDoc(doc(getDb(), 'notificationPrefs', user.uid), {
+    email: mode === 'off' ? '' : trimmed,
+    mode,
+    // A fresh cursor: turning this on shouldn't dump the visitor's entire
+    // notification history into their first email.
+    lastNotifiedAt: serverTimestamp(),
+  });
 }
 
 /* ─── Weekly digest subscription ─────────────────────────────

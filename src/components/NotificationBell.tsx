@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, Heart, MessageCircle, Star } from 'lucide-react';
-import { markAllNotificationsRead, markNotificationRead } from '@/lib/firestore';
-import { useMyNotifications } from '@/lib/hooks';
+import { Bell, Heart, Loader2, MessageCircle, Star } from 'lucide-react';
+import { markAllNotificationsRead, markNotificationRead, saveNotificationPref } from '@/lib/firestore';
+import { useMyNotificationPref, useMyNotifications } from '@/lib/hooks';
+import { messageFor } from '@/lib/notificationText';
 import { timeAgo } from '@/lib/ranking';
-import type { Notification } from '@/lib/types';
+import type { Notification, NotificationEmailMode } from '@/lib/types';
 import styles from './NotificationBell.module.css';
 
 const ICONS: Record<Notification['type'], typeof Bell> = {
@@ -15,23 +16,6 @@ const ICONS: Record<Notification['type'], typeof Bell> = {
   like: Heart,
   review: Star,
 };
-
-function messageFor(n: Notification): string {
-  switch (n.type) {
-    case 'reply':
-      // Attributed to the startup, not the founder's typed name — replying
-      // as the founder is the whole point of this one.
-      return `${n.startupName} replied: "${n.snippet}"`;
-    case 'comment':
-      return `${n.actorName || 'Someone'} commented on ${n.startupName}: "${n.snippet}"`;
-    case 'review':
-      return n.snippet
-        ? `${n.actorName || 'Someone'} reviewed ${n.startupName}: "${n.snippet}"`
-        : `${n.actorName || 'Someone'} reviewed ${n.startupName}.`;
-    case 'like':
-      return `Someone liked ${n.startupName}.`;
-  }
-}
 
 /**
  * A quiet bell — everyone's anonymous, so this is scoped to whatever this
@@ -126,8 +110,104 @@ export default function NotificationBell() {
               })}
             </ul>
           )}
+
+          <EmailPrefForm />
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Everyone here is anonymous by default — this is the one place a visitor
+ * can optionally hand over an email, specifically to get these same
+ * notifications even when they're not on this browser to see the bell.
+ */
+function EmailPrefForm() {
+  const { data: pref, loading } = useMyNotificationPref();
+  const [email, setEmail] = useState('');
+  const [mode, setMode] = useState<NotificationEmailMode>('daily');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Only seed the form from the live doc once, the first time it's loaded —
+  // otherwise every snapshot update would overwrite text mid-edit.
+  const [seeded, setSeeded] = useState(false);
+
+  if (!loading && !seeded && pref) {
+    setEmail(pref.email);
+    setMode(pref.mode);
+    setSeeded(true);
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await saveNotificationPref(email, email.trim() ? mode : 'off');
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save that.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className={styles.prefForm} onSubmit={save}>
+      <span className={styles.prefLabel}>Also get these by email</span>
+      <div className={styles.prefRow}>
+        <input
+          type="email"
+          className={styles.prefInput}
+          placeholder="you@example.com"
+          value={email}
+          onChange={e => {
+            setEmail(e.target.value);
+            setSaved(false);
+          }}
+        />
+        <select
+          className={styles.prefSelect}
+          value={mode}
+          onChange={e => {
+            setMode(e.target.value as NotificationEmailMode);
+            setSaved(false);
+          }}
+          aria-label="How often to email"
+        >
+          <option value="daily">Daily</option>
+          <option value="instant">As they happen</option>
+        </select>
+      </div>
+      <div className={styles.prefActions}>
+        <button type="submit" className={styles.prefSave} disabled={saving}>
+          {saving && <Loader2 size={12} className={styles.spin} aria-hidden="true" />}
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        {saved && <span className={styles.prefSaved}>Saved</span>}
+        {!saving && pref && pref.mode !== 'off' && (
+          <button
+            type="button"
+            className={styles.prefOff}
+            onClick={() => {
+              setEmail('');
+              setMode('daily');
+              void saveNotificationPref('', 'off');
+              setSaved(true);
+            }}
+          >
+            Turn off
+          </button>
+        )}
+      </div>
+      {error && (
+        <p className={styles.prefError} role="alert">
+          {error}
+        </p>
+      )}
+    </form>
   );
 }

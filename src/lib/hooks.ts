@@ -13,6 +13,7 @@ import {
   subscribeToFeed,
   subscribeToMyHelpfulMarks,
   subscribeToMyLikes,
+  subscribeToMyNotificationPref,
   subscribeToMyNotifications,
   subscribeToReviews,
   subscribeToStartupPosts,
@@ -23,6 +24,7 @@ import {
 import type {
   Comment,
   Notification,
+  NotificationPref,
   Post,
   Review,
   Reviewer,
@@ -359,6 +361,26 @@ export function useMyNotifications(): AsyncState<Notification[]> {
   }, []);
 
   if (!isFirebaseConfigured) return { data: [], loading: false, error: null };
+  return state;
+}
+
+/** This visitor's email-notification preference, or null if never set. */
+export function useMyNotificationPref(): AsyncState<NotificationPref | null> {
+  const [state, setState] = useState<AsyncState<NotificationPref | null>>({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToMyNotificationPref(
+      pref => setState({ data: pref, loading: false, error: null }),
+      err => setState({ data: null, loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: null, loading: false, error: null };
   return state;
 }
 

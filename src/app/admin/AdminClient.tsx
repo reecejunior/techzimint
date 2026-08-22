@@ -2,19 +2,27 @@
 
 import { useState } from 'react';
 import {
-  AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Loader2, LogOut, Mail, RotateCcw,
-  ShieldCheck, Sparkles, Trophy, X,
+  AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Loader2, LogOut, Mail,
+  MessageCircle, Pencil, PlaySquare, RotateCcw, ShieldCheck, Sparkles, Trash2, Trophy, X,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
-import { approveStartup, rejectStartup, saveTechzimChoice } from '@/lib/firestore';
-import { useAdminAuth, useAllStartupsForAdmin, useStartups, useTechzimChoice } from '@/lib/hooks';
-import type { Startup, TechzimChoicePick } from '@/lib/types';
+import {
+  approveStartup, deletePost, editPost, rejectStartup, saveTechzimChoice,
+} from '@/lib/firestore';
+import {
+  useAdminAuth, useAllStartupsForAdmin, useStartupPosts, useStartups, useTechzimChoice,
+} from '@/lib/hooks';
+import { timeAgo } from '@/lib/ranking';
+import type { Post, Startup, TechzimChoicePick } from '@/lib/types';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
 
+type Tab = 'choice' | 'moderation';
+
 export default function AdminClient() {
   const { user, isAdmin, loading } = useAdminAuth();
+  const [tab, setTab] = useState<Tab>('choice');
 
   if (loading) {
     return (
@@ -44,10 +52,34 @@ export default function AdminClient() {
     <div className={styles.shell}>
       <div className={`wrap ${styles.page}`}>
         <AdminHeader email={user?.email ?? null} />
-        <div className={styles.stack}>
-          <ChoiceEditor />
-          <Queue />
+        <StatsStrip />
+
+        <div className={styles.tabs} role="tablist" aria-label="Admin sections">
+          <button
+            type="button"
+            role="tab"
+            className={styles.tab}
+            data-active={tab === 'choice' || undefined}
+            aria-selected={tab === 'choice'}
+            onClick={() => setTab('choice')}
+          >
+            <Trophy size={14} aria-hidden="true" />
+            Techzim&apos;s Choice
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={styles.tab}
+            data-active={tab === 'moderation' || undefined}
+            aria-selected={tab === 'moderation'}
+            onClick={() => setTab('moderation')}
+          >
+            <ShieldCheck size={14} aria-hidden="true" />
+            Moderation
+          </button>
         </div>
+
+        {tab === 'choice' ? <ChoiceEditor /> : <Queue />}
       </div>
     </div>
   );
@@ -73,6 +105,31 @@ function AdminHeader({ email }: { email: string | null }) {
         </button>
       </div>
     </header>
+  );
+}
+
+function StatsStrip() {
+  const { data: startups, loading } = useAllStartupsForAdmin();
+  const { data: picks } = useTechzimChoice();
+
+  const live = startups.filter(s => s.status === 'approved').length;
+  const rejected = startups.filter(s => s.status === 'rejected').length;
+
+  return (
+    <div className={styles.stats}>
+      <div className={styles.statItem}>
+        <span className={styles.statNum}>{loading ? '—' : live}</span>
+        <span className={styles.statLabel}>live products</span>
+      </div>
+      <div className={styles.statItem}>
+        <span className={styles.statNum}>{loading ? '—' : rejected}</span>
+        <span className={styles.statLabel}>rejected</span>
+      </div>
+      <div className={styles.statItem}>
+        <span className={styles.statNum}>{picks.length}/5</span>
+        <span className={styles.statLabel}>Choice picks</span>
+      </div>
+    </div>
   );
 }
 
@@ -371,9 +428,10 @@ function Queue() {
         <div>
           <h2 className={styles.cardTitle}>Moderation</h2>
           <p className={styles.cardSubtitle}>
-            Every startup, newest submission first. Rejecting one pulls it out of the feed
-            immediately (and off Techzim&apos;s Choice, if it&apos;s currently picked) — its own page
-            still loads, marked as removed.
+            Every startup, newest submission first. Expand one to read, edit or remove its
+            updates. Rejecting a startup pulls it out of the feed immediately (and off
+            Techzim&apos;s Choice, if it&apos;s currently picked) — its own page still loads,
+            marked as removed.
           </p>
         </div>
       </div>
@@ -404,6 +462,7 @@ function Row({ startup }: { startup: Startup }) {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [postsOpen, setPostsOpen] = useState(false);
 
   async function reject() {
     setBusy(true);
@@ -433,72 +492,236 @@ function Row({ startup }: { startup: Startup }) {
 
   return (
     <li className={styles.row}>
-      <Logo name={startup.name} url={startup.logoUrl} initials={startup.logoInitials} size="md" />
+      <div className={styles.rowGrid}>
+        <Logo name={startup.name} url={startup.logoUrl} initials={startup.logoInitials} size="md" />
 
-      <div className={styles.rowBody}>
-        <div className={styles.rowHead}>
-          <span className={styles.rowName}>{startup.name}</span>
-          <span className={styles.status} data-status={startup.status}>
-            {startup.status}
-          </span>
-        </div>
-        <p className={styles.rowTagline}>{startup.tagline}</p>
-        {startup.founders.length > 0 && (
-          <p className={styles.rowFounders}>by {startup.founders.join(' & ')}</p>
-        )}
-        {startup.status === 'rejected' && startup.rejectionReason && (
-          <p className={styles.rowReason}>Reason: {startup.rejectionReason}</p>
-        )}
-        {startup.website && (
-          <a href={startup.website} target="_blank" rel="noopener noreferrer" className={styles.rowLink}>
-            {startup.website.replace(/^https?:\/\//, '')}
-            <ExternalLink size={11} aria-hidden="true" />
-          </a>
-        )}
-
-        {reasonOpen && (
-          <div className={styles.reasonBox}>
-            <input
-              className={styles.reasonInput}
-              placeholder="Reason (optional, shown only to you)"
-              maxLength={500}
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-              autoFocus
-            />
-            <div className={styles.reasonActions}>
-              <button type="button" className={styles.reasonCancel} onClick={() => setReasonOpen(false)}>
-                Cancel
-              </button>
-              <button type="button" className={styles.reasonConfirm} onClick={reject} disabled={busy}>
-                {busy && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
-                Confirm reject
-              </button>
-            </div>
+        <div className={styles.rowBody}>
+          <div className={styles.rowHead}>
+            <span className={styles.rowName}>{startup.name}</span>
+            <span className={styles.status} data-status={startup.status}>
+              {startup.status}
+            </span>
           </div>
-        )}
+          <p className={styles.rowTagline}>{startup.tagline}</p>
+          {startup.founders.length > 0 && (
+            <p className={styles.rowFounders}>by {startup.founders.join(' & ')}</p>
+          )}
+          {startup.status === 'rejected' && startup.rejectionReason && (
+            <p className={styles.rowReason}>Reason: {startup.rejectionReason}</p>
+          )}
+          {startup.website && (
+            <a href={startup.website} target="_blank" rel="noopener noreferrer" className={styles.rowLink}>
+              {startup.website.replace(/^https?:\/\//, '')}
+              <ExternalLink size={11} aria-hidden="true" />
+            </a>
+          )}
 
-        {error && (
-          <p className={styles.formError} role="alert">
-            {error}
-          </p>
-        )}
-      </div>
+          {reasonOpen && (
+            <div className={styles.reasonBox}>
+              <input
+                className={styles.reasonInput}
+                placeholder="Reason (optional, shown only to you)"
+                maxLength={500}
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                autoFocus
+              />
+              <div className={styles.reasonActions}>
+                <button type="button" className={styles.reasonCancel} onClick={() => setReasonOpen(false)}>
+                  Cancel
+                </button>
+                <button type="button" className={styles.reasonConfirm} onClick={reject} disabled={busy}>
+                  {busy && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
+                  Confirm reject
+                </button>
+              </div>
+            </div>
+          )}
 
-      <div className={styles.rowActions}>
-        {startup.status === 'rejected' ? (
-          <button type="button" className={styles.restoreBtn} onClick={restore} disabled={busy}>
-            {busy ? <Loader2 size={13} className={styles.spin} aria-hidden="true" /> : <RotateCcw size={13} aria-hidden="true" />}
-            Restore
-          </button>
-        ) : (
-          !reasonOpen && (
-            <button type="button" className={styles.rejectBtn} onClick={() => setReasonOpen(true)} disabled={busy}>
-              Reject
+          {error && (
+            <p className={styles.formError} role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className={styles.rowActions}>
+          {startup.status === 'rejected' ? (
+            <button type="button" className={styles.restoreBtn} onClick={restore} disabled={busy}>
+              {busy ? <Loader2 size={13} className={styles.spin} aria-hidden="true" /> : <RotateCcw size={13} aria-hidden="true" />}
+              Restore
             </button>
-          )
+          ) : (
+            !reasonOpen && (
+              <button type="button" className={styles.rejectBtn} onClick={() => setReasonOpen(true)} disabled={busy}>
+                Reject
+              </button>
+            )
+          )}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className={styles.postsToggle}
+        onClick={() => setPostsOpen(o => !o)}
+        aria-expanded={postsOpen}
+      >
+        <MessageCircle size={13} aria-hidden="true" />
+        {startup.postCount} update{startup.postCount === 1 ? '' : 's'}
+        {postsOpen ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}
+      </button>
+
+      {postsOpen && <PostsPanel startupId={startup.id} />}
+    </li>
+  );
+}
+
+function PostsPanel({ startupId }: { startupId: string }) {
+  const { data: posts, loading } = useStartupPosts(startupId);
+
+  if (loading) return <p className={styles.postsEmpty}>Loading updates…</p>;
+  if (posts.length === 0) return <p className={styles.postsEmpty}>No updates posted yet.</p>;
+
+  return (
+    <div className={styles.postsPanel}>
+      {posts.map(post => (
+        <PostRow key={post.id} post={post} />
+      ))}
+    </div>
+  );
+}
+
+function PostRow({ post }: { post: Post }) {
+  const [editing, setEditing] = useState(false);
+  const [body, setBody] = useState(post.body);
+  const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      await editPost(post.startupId, post.id, body);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save that.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    try {
+      await deletePost(post.startupId, post.id);
+      // The live subscription drops it from the list on success.
+    } catch (err) {
+      setDeleting(false);
+      setConfirmingDelete(false);
+      setError(err instanceof Error ? err.message : 'Could not delete that.');
+    }
+  }
+
+  return (
+    <article className={styles.postItem}>
+      <div className={styles.postMeta}>
+        <span className={styles.postKind}>{post.isLaunch ? 'Launch' : 'Update'}</span>
+        <time dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
+        <span className={styles.postStat}>
+          <Heart size={11} aria-hidden="true" /> {post.likeCount}
+        </span>
+        <span className={styles.postStat}>
+          <MessageCircle size={11} aria-hidden="true" /> {post.commentCount}
+        </span>
+        {post.images.length > 0 && (
+          <span className={styles.postStat}>
+            <ImageIcon size={11} aria-hidden="true" /> {post.images.length}
+          </span>
+        )}
+        {post.video && (
+          <span className={styles.postStat}>
+            <PlaySquare size={11} aria-hidden="true" /> video
+          </span>
         )}
       </div>
-    </li>
+
+      {editing ? (
+        <>
+          <textarea
+            className={styles.postTextarea}
+            value={body}
+            onChange={e => setBody(e.target.value)}
+            maxLength={2000}
+            rows={3}
+            autoFocus
+          />
+          <div className={styles.postItemActions}>
+            <button
+              type="button"
+              className={styles.reasonCancel}
+              onClick={() => {
+                setEditing(false);
+                setBody(post.body);
+                setError(null);
+              }}
+            >
+              Cancel
+            </button>
+            <button type="button" className={styles.reasonConfirm} onClick={save} disabled={saving || !body.trim()}>
+              {saving && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
+              Save
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          {post.body && <p className={styles.postBody}>{post.body}</p>}
+
+          {post.images.length > 0 && (
+            <div className={styles.postImages}>
+              {post.images.map((img, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={i} src={img.url} alt="" className={styles.postImage} />
+              ))}
+            </div>
+          )}
+
+          <div className={styles.postItemActions}>
+            <button type="button" className={styles.postEditBtn} onClick={() => setEditing(true)}>
+              <Pencil size={12} aria-hidden="true" />
+              Edit
+            </button>
+            <button
+              type="button"
+              className={styles.postDeleteBtn}
+              data-confirming={confirmingDelete || undefined}
+              onClick={remove}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <Loader2 size={12} className={styles.spin} aria-hidden="true" />
+              ) : (
+                <Trash2 size={12} aria-hidden="true" />
+              )}
+              {confirmingDelete ? 'Confirm delete' : 'Delete'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {error && (
+        <p className={styles.formError} role="alert">
+          {error}
+        </p>
+      )}
+    </article>
   );
 }

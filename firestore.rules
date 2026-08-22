@@ -227,6 +227,14 @@ service cloud.firestore {
         // its posts. Nothing else on the post moves.
         allow update: if isAdmin() && touched().hasOnly(['approved']);
 
+        // Admin correction: fixes the post's text, nothing else — images and
+        // video stay exactly as posted.
+        allow update: if isAdmin()
+                      && touched().hasOnly(['body'])
+                      && request.resource.data.body is string
+                      && request.resource.data.body.size() > 0
+                      && request.resource.data.body.size() <= 2000;
+
         // The founder who owns this startup may remove a post they posted;
         // the admin may remove any post.
         allow delete: if signedIn()
@@ -382,6 +390,22 @@ service cloud.firestore {
                     && touched().hasOnly(['read']);
 
       allow delete: if false;
+    }
+
+    // A visitor's own opt-in for getting their notifications by email too.
+    // Doc id is their own uid, so this is naturally one-per-visitor and only
+    // they can ever read or write it. The send jobs run server-side with the
+    // Admin SDK and never go through these rules at all.
+    match /notificationPrefs/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      allow write: if signedIn()
+                   && request.auth.uid == uid
+                   && request.resource.data.mode in ['instant', 'daily', 'off']
+                   && request.resource.data.email is string
+                   && request.resource.data.email.size() <= 200
+                   && (request.resource.data.mode == 'off'
+                       || request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+[.][^\\s@]+$'));
     }
   }
 }

@@ -245,3 +245,18 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+export type NotificationEmailMode = 'instant' | 'daily' | 'off';
+
+/**
+ * One visitor's opt-in for getting notifications by email too, not just in
+ * the bell. Doc id is their own anonymous uid — same one-per-visitor trick
+ * `likes` and `reviews` use.
+ */
+export interface NotificationPref {
+  email: string;
+  mode: NotificationEmailMode;
+  /** Cursor for the send job — only notifications created after this are
+   *  eligible for the next email, so nobody gets the same one twice. */
+  lastNotifiedAt: string;
+}

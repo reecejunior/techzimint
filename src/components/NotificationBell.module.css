@@ -141,3 +141,99 @@
   font-size: 11px;
   color: var(--ink-400);
 }
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+/* ── Email preference ─────────────────────────────────────── */
+.prefForm {
+  padding: var(--s-3) var(--s-4);
+  border-top: 1px solid var(--hairline);
+  background: var(--surface);
+}
+
+.prefLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-500);
+  margin-bottom: 6px;
+}
+
+.prefRow {
+  display: flex;
+  gap: 6px;
+}
+
+.prefInput {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-xs);
+  font-size: 13px;
+  background: var(--white);
+}
+
+.prefInput:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.prefSelect {
+  flex-shrink: 0;
+  padding: 7px 8px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-xs);
+  font-size: 12.5px;
+  background: var(--white);
+}
+
+.prefActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
+.prefSave {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--r-xs);
+  background: var(--ink-900);
+  color: var(--white);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.prefSave:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.prefSaved {
+  font-size: 12px;
+  color: #2F6B3A;
+  font-weight: 500;
+}
+
+.prefOff {
+  font-size: 12px;
+  color: var(--ink-400);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prefOff:hover {
+  color: var(--orange-800);
+}
+
+.prefError {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--orange-800);
+}
