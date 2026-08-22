@@ -2,9 +2,13 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, Heart, Loader2, MessageCircle, Star } from 'lucide-react';
-import { markAllNotificationsRead, markNotificationRead, saveNotificationPref } from '@/lib/firestore';
-import { useMyNotificationPref, useMyNotifications } from '@/lib/hooks';
+import { Bell, BellRing, Heart, Loader2, MessageCircle, Star } from 'lucide-react';
+import { requestPushToken } from '@/lib/firebase';
+import {
+  markAllNotificationsRead, markNotificationRead, removePushToken, saveNotificationPref,
+  savePushToken,
+} from '@/lib/firestore';
+import { useMyNotificationPref, useMyNotifications, useMyPushTokens } from '@/lib/hooks';
 import { messageFor } from '@/lib/notificationText';
 import { timeAgo } from '@/lib/ranking';
 import type { Notification, NotificationEmailMode } from '@/lib/types';
@@ -111,8 +115,84 @@ export default function NotificationBell() {
             </ul>
           )}
 
+          <PushToggle />
           <EmailPrefForm />
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Push arrives even when this tab is closed, without asking for an email —
+ * the closest thing to instant this app can do without a paid backend
+ * trigger. Only ever covers *this* browser/device; a visitor on a second
+ * device would enable it separately there.
+ */
+function PushToggle() {
+  const tokens = useMyPushTokens();
+  const [thisToken, setThisToken] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Once we know which token belongs to this browser, it doubles as proof
+  // push is already on here — no separate "enabled" flag to keep in sync.
+  const enabledHere = Boolean(thisToken) && tokens.includes(thisToken as string);
+
+  async function enable() {
+    setBusy(true);
+    setError(null);
+    try {
+      const token = await requestPushToken();
+      if (!token) {
+        setError("Permission wasn't granted, or push isn't supported in this browser.");
+        return;
+      }
+      await savePushToken(token);
+      setThisToken(token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not enable push.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disable() {
+    if (!thisToken) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await removePushToken(thisToken);
+      setThisToken(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not turn that off.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className={styles.prefForm}>
+      <div className={styles.pushRow}>
+        <span className={styles.prefLabel}>
+          <BellRing size={13} aria-hidden="true" />
+          Push notifications on this device
+        </span>
+        {enabledHere ? (
+          <button type="button" className={styles.prefOff} onClick={disable} disabled={busy}>
+            Turn off
+          </button>
+        ) : (
+          <button type="button" className={styles.prefSave} onClick={enable} disabled={busy}>
+            {busy && <Loader2 size={12} className={styles.spin} aria-hidden="true" />}
+            {busy ? 'Enabling…' : 'Enable'}
+          </button>
+        )}
+      </div>
+      {error && (
+        <p className={styles.prefError} role="alert">
+          {error}
+        </p>
       )}
     </div>
   );

@@ -161,6 +161,20 @@
   margin-bottom: 6px;
 }
 
+.pushRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.pushRow .prefLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
 .prefRow {
   display: flex;
   gap: 6px;

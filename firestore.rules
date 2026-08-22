@@ -407,5 +407,17 @@ service cloud.firestore {
                    && (request.resource.data.mode == 'off'
                        || request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+[.][^\\s@]+$'));
     }
+
+    // Web push tokens — one doc per visitor, an array because one uid can
+    // span more than one browser/device. The /api/push/notify route reads
+    // this with the Admin SDK, bypassing these rules entirely.
+    match /pushTokens/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+
+      allow write: if signedIn()
+                   && request.auth.uid == uid
+                   && request.resource.data.tokens is list
+                   && request.resource.data.tokens.size() <= 10;
+    }
   }
 }

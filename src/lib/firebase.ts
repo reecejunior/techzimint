@@ -111,6 +111,34 @@ export function signOutAdmin(): Promise<void> {
 }
 
 /**
+ * Asks for notification permission and registers this browser for push, if
+ * the platform supports it (Safari's support is patchy; this returns null
+ * rather than throwing when it's unavailable). Returns the FCM token to
+ * save, or null if permission was denied or push isn't supported here.
+ */
+export async function requestPushToken(): Promise<string | null> {
+  if (typeof window === 'undefined' || !isFirebaseConfigured) return null;
+
+  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+  if (!vapidKey) {
+    throw new Error(
+      'Push isn’t configured yet — generate a Web Push certificate in the Firebase console ' +
+        '(Project settings → Cloud Messaging) and set NEXT_PUBLIC_FIREBASE_VAPID_KEY.',
+    );
+  }
+
+  const { getMessaging, getToken, isSupported } = await import('firebase/messaging');
+  if (!(await isSupported())) return null;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return null;
+
+  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  const messaging = getMessaging(getFirebaseApp());
+  return getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+}
+
+/**
  * Analytics only exists in the browser, and only when the environment supports
  * it (it is unavailable in SSR and in some privacy modes). Fire-and-forget.
  */

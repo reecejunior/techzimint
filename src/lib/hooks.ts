@@ -15,6 +15,7 @@ import {
   subscribeToMyLikes,
   subscribeToMyNotificationPref,
   subscribeToMyNotifications,
+  subscribeToMyPushTokens,
   subscribeToReviews,
   subscribeToStartupPosts,
   subscribeToStartups,
@@ -382,6 +383,16 @@ export function useMyNotificationPref(): AsyncState<NotificationPref | null> {
 
   if (!isFirebaseConfigured) return { data: null, loading: false, error: null };
   return state;
+}
+
+/** FCM tokens registered for this visitor, across every device/browser. */
+export function useMyPushTokens(): string[] {
+  const [tokens, setTokens] = useState<string[]>([]);
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToMyPushTokens(setTokens, () => setTokens([]));
+  }, []);
+  return tokens;
 }
 
 /* ─── Profiles ────────────────────────────────────────────── */

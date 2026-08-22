@@ -1,4 +1,6 @@
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
   collectionGroup,
   doc,
@@ -458,9 +460,11 @@ export async function toggleLike(startupId: string, postId: string): Promise<boo
   const startupRef = doc(db, 'startups', startupId);
   const postRef = doc(db, 'startups', startupId, 'posts', postId);
   const ref_ = doc(db, 'likes', likeId(postId, user.uid));
+  const notificationRef = doc(collection(db, 'notifications'));
+  let notified = false;
   const { weekKey, monthKey } = periodKeys();
 
-  return runTransaction(db, async tx => {
+  const result = await runTransaction(db, async tx => {
     const [likeSnap, startupSnap] = await Promise.all([tx.get(ref_), tx.get(startupRef)]);
     if (!startupSnap.exists()) throw new Error('That startup no longer exists.');
     const s = startupSnap.data();
@@ -502,7 +506,7 @@ export async function toggleLike(startupId: string, postId: string): Promise<boo
 
     if (s.ownerId && s.ownerId !== user.uid) {
       tx.set(
-        doc(collection(db, 'notifications')),
+        notificationRef,
         notificationPayload({
           recipientId: s.ownerId,
           type: 'like',
@@ -511,10 +515,14 @@ export async function toggleLike(startupId: string, postId: string): Promise<boo
           startupName: String(s.name ?? 'Untitled'),
         }),
       );
+      notified = true;
     }
 
     return true;
   });
+
+  if (notified) notifyPush(notificationRef.id);
+  return result;
 }
 
 /* ─── Comments ────────────────────────────────────────────── */
@@ -558,6 +566,9 @@ export async function addComment(
   const postRef = doc(db, 'startups', startupId, 'posts', postId);
   const commentRef = doc(collection(db, 'startups', startupId, 'posts', postId, 'comments'));
   const parentRef = parentId ? doc(db, 'startups', startupId, 'posts', postId, 'comments', parentId) : null;
+  const replyNotificationRef = doc(collection(db, 'notifications'));
+  const commentNotificationRef = doc(collection(db, 'notifications'));
+  const notifiedIds: string[] = [];
   const name = authorName.trim() || 'Anonymous';
 
   await runTransaction(db, async tx => {
@@ -592,7 +603,7 @@ export async function addComment(
       const parentAuthorId = String(parentSnap.data()?.authorId ?? '');
       if (parentAuthorId && parentAuthorId !== user.uid) {
         tx.set(
-          doc(collection(db, 'notifications')),
+          replyNotificationRef,
           notificationPayload({
             recipientId: parentAuthorId,
             type: 'reply',
@@ -602,6 +613,7 @@ export async function addComment(
             snippet: text,
           }),
         );
+        notifiedIds.push(replyNotificationRef.id);
       }
     }
 
@@ -609,7 +621,7 @@ export async function addComment(
     // new activity on their startup.
     if (startup.ownerId && startup.ownerId !== user.uid) {
       tx.set(
-        doc(collection(db, 'notifications')),
+        commentNotificationRef,
         notificationPayload({
           recipientId: startup.ownerId,
           type: 'comment',
@@ -620,8 +632,11 @@ export async function addComment(
           snippet: text,
         }),
       );
+      notifiedIds.push(commentNotificationRef.id);
     }
   });
+
+  notifiedIds.forEach(notifyPush);
 }
 
 /* ─── Reviews ─────────────────────────────────────────────── */
@@ -640,6 +655,8 @@ export async function addReview(startupId: string, draft: ReviewDraft): Promise<
   const db = getDb();
   const startupRef = doc(db, 'startups', startupId);
   const reviewRef = doc(db, 'startups', startupId, 'reviews', user.uid);
+  const notificationRef = doc(collection(db, 'notifications'));
+  let notified = false;
 
   await runTransaction(db, async tx => {
     const [startupSnap, existingSnap] = await Promise.all([tx.get(startupRef), tx.get(reviewRef)]);
@@ -696,7 +713,7 @@ export async function addReview(startupId: string, draft: ReviewDraft): Promise<
     const ownerId = String(startupSnap.data().ownerId ?? '');
     if (ownerId && ownerId !== user.uid) {
       tx.set(
-        doc(collection(db, 'notifications')),
+        notificationRef,
         notificationPayload({
           recipientId: ownerId,
           type: 'review',
@@ -707,8 +724,11 @@ export async function addReview(startupId: string, draft: ReviewDraft): Promise<
           snippet: draft.comment,
         }),
       );
+      notified = true;
     }
   });
+
+  if (notified) notifyPush(notificationRef.id);
 }
 
 const helpfulId = (reviewId: string, uid: string) => `${reviewId}__${uid}`;
@@ -1150,6 +1170,74 @@ export async function saveNotificationPref(email: string, mode: NotificationEmai
     // A fresh cursor: turning this on shouldn't dump the visitor's entire
     // notification history into their first email.
     lastNotifiedAt: serverTimestamp(),
+  });
+}
+
+/* ─── Web push ────────────────────────────────────────────────
+ * Doc id is the visitor's own uid, same as the email preference — but this
+ * one holds an array, since one person's push-enabled uid can span more than
+ * one browser/device, each with its own FCM token. */
+
+export function subscribeToMyPushTokens(
+  onData: (tokens: string[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  let stop = () => {};
+  let cancelled = false;
+
+  ensureSignedIn()
+    .then(user => {
+      if (cancelled) return;
+      stop = onSnapshot(
+        doc(getDb(), 'pushTokens', user.uid),
+        snap => {
+          const raw = snap.data()?.tokens;
+          onData(Array.isArray(raw) ? raw.filter((t): t is string => typeof t === 'string') : []);
+        },
+        err => onError(err as Error),
+      );
+    })
+    .catch(err => onError(err as Error));
+
+  return () => {
+    cancelled = true;
+    stop();
+  };
+}
+
+export async function savePushToken(token: string): Promise<void> {
+  const user = await ensureSignedIn();
+  await setDoc(
+    doc(getDb(), 'pushTokens', user.uid),
+    { tokens: arrayUnion(token), updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+export async function removePushToken(token: string): Promise<void> {
+  const user = await ensureSignedIn();
+  await setDoc(
+    doc(getDb(), 'pushTokens', user.uid),
+    { tokens: arrayRemove(token), updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+/**
+ * Fire-and-forget: tells the server "a notification with this id was just
+ * created, push it now if the recipient has a device registered." The route
+ * re-reads the notification itself via the Admin SDK rather than trusting
+ * anything else in this call, so there's nothing here for a malicious caller
+ * to spoof beyond re-announcing a notification that's already real.
+ */
+function notifyPush(notificationId: string): void {
+  fetch('/api/push/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notificationId }),
+  }).catch(() => {
+    /* Best-effort — the in-app bell and email prefs still cover this
+       notification either way. */
   });
 }
 
