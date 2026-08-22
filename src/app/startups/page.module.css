@@ -1,0 +1,245 @@
+.page {
+  padding-bottom: var(--s-20);
+}
+
+.count {
+  font-size: 15px;
+  color: var(--ink-500);
+}
+
+.count strong {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: var(--track-heading);
+  color: var(--ink-900);
+  margin-right: 6px;
+}
+
+/* ── Controls ──
+   Sticky under the nav so search stays reachable while scrolling a long list. */
+.controls {
+  position: sticky;
+  top: calc(var(--nav-h) - 1px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding-block: var(--s-3);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hairline);
+  max-width: none;
+  padding-inline: clamp(20px, 5vw, 40px);
+}
+
+.searchWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: min(280px, 42vw);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-400);
+  pointer-events: none;
+}
+
+.search {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  background: var(--white);
+  transition: border-color var(--fast) var(--ease);
+}
+
+.search::placeholder {
+  color: var(--ink-400);
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.chipScroller {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin-block: -6px;
+  padding-block: 6px;
+}
+
+.chipScroller::-webkit-scrollbar {
+  display: none;
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+}
+
+.chip {
+  padding: 6px 13px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  letter-spacing: var(--track-caption);
+  color: var(--ink-500);
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.chip:hover:not([data-active]) {
+  background: #F0EDEA;
+  color: var(--ink-900);
+}
+
+.chip[data-active] {
+  background: var(--ink-900);
+  color: var(--white);
+  font-weight: 500;
+}
+
+/* ── Grid ── */
+.body {
+  padding-top: var(--s-6);
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--ink-400);
+  margin-bottom: var(--s-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--s-4);
+}
+
+.skelCard {
+  height: 178px;
+  border-radius: var(--r-lg);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--white);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.card:hover {
+  border-color: var(--hairline-strong);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.cardHead {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.cardName {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: var(--track-body);
+  line-height: 1.25;
+}
+
+.cardLink {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.card:hover .cardLink {
+  color: var(--brand-text);
+}
+
+.cardTagline {
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--ink-500);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Counts sit on the bottom edge, pushed there so cards of differing tagline
+   length still align along their footer. */
+.stats {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: auto;
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--hairline);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.stat dt {
+  display: flex;
+  align-items: center;
+}
+
+.posts {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+
+@media (max-width: 640px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-3);
+  }
+
+  .searchWrap {
+    width: 100%;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

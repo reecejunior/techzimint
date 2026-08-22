@@ -5,8 +5,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Triggered by Vercel Cron once a day (see vercel.json). Same batching logic
- * as notify-instant, just for visitors who opted into `mode: 'daily'`.
+ * Triggered by Vercel Cron once a day (see vercel.json) — the only email
+ * notification job that actually runs on the current plan.
+ *
+ * Sweeps `instant` alongside `daily`: Hobby won't schedule a cron more often
+ * than daily, so instant *email* isn't achievable here, and delivering a day
+ * late beats delivering never. Push is the real instant path.
  */
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization');
@@ -14,6 +18,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const result = await runNotifyBatch('daily');
+  const result = await runNotifyBatch(['daily', 'instant']);
   return NextResponse.json(result);
 }

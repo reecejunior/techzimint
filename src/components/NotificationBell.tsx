@@ -27,7 +27,7 @@ const ICONS: Record<Notification['type'], typeof Bell> = {
  * Clear localStorage or switch devices and the history doesn't follow.
  */
 export default function NotificationBell() {
-  const { data: notifications } = useMyNotifications();
+  const { data: notifications, loading, error } = useMyNotifications();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +87,17 @@ export default function NotificationBell() {
             )}
           </div>
 
-          {notifications.length === 0 ? (
+          {/* An error must never render as "nothing yet" — that reads as
+              "you have no notifications" when the truth is "this is
+              broken", and it hides real faults (a missing index, denied
+              rules) behind a reassuring empty state. */}
+          {error ? (
+            <p className={styles.failed} role="alert">
+              Notifications couldn&apos;t load. {error}
+            </p>
+          ) : loading ? (
+            <p className={styles.empty}>Loading…</p>
+          ) : notifications.length === 0 ? (
             <p className={styles.empty}>Nothing yet — likes, comments and replies show up here.</p>
           ) : (
             <ul className={styles.list}>
@@ -258,8 +268,8 @@ function EmailPrefForm() {
           }}
           aria-label="How often to email"
         >
-          <option value="daily">Daily</option>
-          <option value="instant">As they happen</option>
+          <option value="daily">Daily summary</option>
+          <option value="instant">Every notification</option>
         </select>
       </div>
       <div className={styles.prefActions}>

@@ -1,0 +1,63 @@
+/* Generous air above the fold, then a hairline to hand off to the content.
+   The eyebrow does the "where am I" work so the title can stay a plain noun. */
+.root {
+  padding-top: var(--s-16);
+  padding-bottom: var(--s-8);
+  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--white) 100%);
+}
+
+.inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-8);
+  flex-wrap: wrap;
+}
+
+.text {
+  max-width: 46ch;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--brand-text);
+  margin-bottom: var(--s-3);
+}
+
+.title {
+  font-size: clamp(32px, 5vw, 44px);
+  font-weight: 600;
+  letter-spacing: var(--track-display);
+  line-height: 1.06;
+}
+
+.desc {
+  margin-top: var(--s-3);
+  font-size: 17px;
+  color: var(--ink-500);
+  line-height: 1.5;
+}
+
+.aside {
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+
+@media (max-width: 640px) {
+  .root {
+    padding-top: var(--s-10);
+    padding-bottom: var(--s-6);
+  }
+
+  .desc {
+    font-size: 16px;
+  }
+}

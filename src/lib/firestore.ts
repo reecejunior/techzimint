@@ -183,6 +183,9 @@ function mapPost(snap: QueryDocumentSnapshot<DocumentData>): Post {
     commentCount: num(d.commentCount),
     approved: d.approved !== false,
     isLaunch: Boolean(d.isLaunch),
+    // Older posts predate the flag — fall back to the video itself so they
+    // still read correctly even before the backfill script has run.
+    hasVideo: typeof d.hasVideo === 'boolean' ? d.hasVideo : Boolean(mapVideo(d.video)),
     createdAt: toIso(d.createdAt),
   };
 }
@@ -311,6 +314,46 @@ export async function fetchFeedPage(
   const q = query(
     collectionGroup(getDb(), 'posts'),
     where('approved', '==', true),
+    orderBy('createdAt', 'desc'),
+    startAfter(Timestamp.fromDate(new Date(afterIso))),
+    limit(pageSize),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(mapPost);
+}
+
+/* ─── Video feed ──────────────────────────────────────────────
+ * Same shape as the main feed, narrowed to posts that carry a video.
+ * `hasVideo` exists precisely because Firestore can't ask for "video is not
+ * null" — see the Post type. */
+
+export function subscribeToVideoFeed(
+  onData: (posts: Post[]) => void,
+  onError: (err: Error) => void,
+  pageSize = FEED_PAGE_SIZE,
+): () => void {
+  const q = query(
+    collectionGroup(getDb(), 'posts'),
+    where('approved', '==', true),
+    where('hasVideo', '==', true),
+    orderBy('createdAt', 'desc'),
+    limit(pageSize),
+  );
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapPost)),
+    err => onError(err as Error),
+  );
+}
+
+export async function fetchVideoFeedPage(
+  afterIso: string,
+  pageSize = FEED_PAGE_SIZE,
+): Promise<Post[]> {
+  const q = query(
+    collectionGroup(getDb(), 'posts'),
+    where('approved', '==', true),
+    where('hasVideo', '==', true),
     orderBy('createdAt', 'desc'),
     startAfter(Timestamp.fromDate(new Date(afterIso))),
     limit(pageSize),
@@ -828,6 +871,7 @@ export async function addPost(startupId: string, draft: PostDraft): Promise<void
       // Mirrors the parent so the feed can filter without a join.
       approved: s.status === 'approved',
       isLaunch: false,
+      hasVideo: Boolean(video),
       createdAt: serverTimestamp(),
     });
     tx.update(startupRef, { postCount: increment(1) });
@@ -987,6 +1031,7 @@ export async function submitStartup(input: StartupSubmission): Promise<string> {
     // Mirrors the startup's status so the feed can filter in one query.
     approved: true,
     isLaunch: true,
+    hasVideo: Boolean(video),
     createdAt: serverTimestamp(),
   });
 

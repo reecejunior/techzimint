@@ -12,14 +12,20 @@ function sleep(ms: number) {
 }
 
 /**
- * Shared by both cron routes — "instant" and "daily" are the same mechanism
- * at different frequencies, not two different code paths. Each visitor's
- * `lastNotifiedAt` is the cursor: only notifications created after it are
- * eligible, so nobody gets the same one twice even across the two jobs.
+ * One mechanism for every email cadence — the cadence is just how often the
+ * caller runs it. Each visitor's `lastNotifiedAt` is the cursor: only
+ * notifications created after it are eligible, so nobody gets the same one
+ * twice even if two jobs overlap.
+ *
+ * The daily job deliberately sweeps `instant` as well. Vercel's Hobby plan
+ * won't run a cron more than once a day, so a genuinely instant *email* isn't
+ * available here — sweeping both means someone who asked for instant still
+ * gets their notifications, a day later, rather than nothing at all. Push
+ * (which the client triggers directly) is the real instant path.
  */
-export async function runNotifyBatch(mode: 'instant' | 'daily') {
+export async function runNotifyBatch(modes: ('instant' | 'daily')[]) {
   const db = getAdminDb();
-  const prefsSnap = await db.collection('notificationPrefs').where('mode', '==', mode).get();
+  const prefsSnap = await db.collection('notificationPrefs').where('mode', 'in', modes).get();
 
   let sent = 0;
   let failed = 0;
@@ -58,16 +64,16 @@ export async function runNotifyBatch(mode: 'instant' | 'daily') {
       };
     });
 
-    const html = renderNotificationEmail({ siteUrl: SITE_URL, notifications, cadence: mode });
+    const html = renderNotificationEmail({ siteUrl: SITE_URL, notifications });
     const newestCreatedAt = notifsSnap.docs[notifsSnap.docs.length - 1].data().createdAt;
 
     try {
       await sendEmail({
         to: email,
         subject:
-          mode === 'instant'
-            ? "There's new activity on Techzim Startups"
-            : "Today's activity on Techzim Startups",
+          notifications.length === 1
+            ? 'You have a new notification on Techzim Startups'
+            : `You have ${notifications.length} new notifications on Techzim Startups`,
         html,
       });
       // Only move the cursor on a successful send — a failed send should be

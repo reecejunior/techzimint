@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { ArrowRight, Loader2, Trophy } from 'lucide-react';
 import { useAdminAuth, useFeed, useMyLikes, useMyUid, useStartups, useTechzimChoice } from '@/lib/hooks';
 import { categories, type Startup } from '@/lib/types';
+import PageHeader from '@/components/PageHeader';
 import PostCard from '@/components/PostCard';
 import Logo from '@/components/ui/Logo';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
@@ -52,18 +53,10 @@ export default function FeedPage() {
 
   return (
     <div className={styles.page}>
-      <header className={`wrap ${styles.masthead}`}>
-        <h1 className={styles.title}>Find products</h1>
-        <p className={styles.desc}>
-          What Zimbabwean and African founders are shipping. Like what works, ask questions in
-          the comments, and leave a review once you&apos;ve tried it — and see what our team is
-          watching in{' '}
-          <Link href="/leaderboard" className={styles.inlineLink}>
-            Techzim&apos;s Choice
-          </Link>
-          .
-        </p>
-      </header>
+      <PageHeader eyebrow="What's shipping" title="The feed">
+        What Zimbabwean and African founders are building right now. Like what works, ask
+        questions in the comments, and leave a review once you&apos;ve tried it.
+      </PageHeader>
 
       <div className={styles.layout}>
         <main className={styles.feedColumn}>

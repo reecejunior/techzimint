@@ -7,6 +7,7 @@ import {
   FEED_PAGE_SIZE,
   fetchFeedPage,
   fetchStartupBySlug,
+  fetchVideoFeedPage,
   getReviewerByUsername,
   getReviewsByAuthor,
   subscribeToComments,
@@ -21,6 +22,7 @@ import {
   subscribeToStartups,
   subscribeToStartupsForAdmin,
   subscribeToTechzimChoice,
+  subscribeToVideoFeed,
 } from './firestore';
 import type {
   Comment,
@@ -58,12 +60,20 @@ interface FeedState extends AsyncState<Post[]> {
   loadMore: () => void;
 }
 
+type FeedSubscribe = (
+  onData: (posts: Post[]) => void,
+  onError: (err: Error) => void,
+) => () => void;
+
 /**
  * The newest page of the feed stays live over a websocket so new posts, likes
  * and comment counts arrive on their own. Older pages are fetched once and
  * appended — keeping every page subscribed would mean an open listener per page.
+ *
+ * Parameterised by which query to run so the main feed and the video-only
+ * feed share this pagination logic rather than duplicating it.
  */
-export function useFeed(): FeedState {
+function useFeedQuery(subscribe: FeedSubscribe, fetchPage: (afterIso: string) => Promise<Post[]>): FeedState {
   const [live, setLive] = useState<AsyncState<Post[]>>({
     data: [],
     loading: true,
@@ -75,11 +85,11 @@ export function useFeed(): FeedState {
 
   useEffect(() => {
     if (!isFirebaseConfigured) return;
-    return subscribeToFeed(
+    return subscribe(
       posts => setLive({ data: posts, loading: false, error: null }),
       err => setLive({ data: [], loading: false, error: err.message }),
     );
-  }, []);
+  }, [subscribe]);
 
   const posts = useMemo(() => {
     // A live post can also exist in an older page after a like reorders nothing
@@ -93,7 +103,7 @@ export function useFeed(): FeedState {
     if (!last || loadingMore || exhausted) return;
 
     setLoadingMore(true);
-    fetchFeedPage(last.createdAt)
+    fetchPage(last.createdAt)
       .then(page => {
         if (page.length < FEED_PAGE_SIZE) setExhausted(true);
         setOlder(prev => {
@@ -103,7 +113,7 @@ export function useFeed(): FeedState {
       })
       .catch(() => setExhausted(true))
       .finally(() => setLoadingMore(false));
-  }, [posts, loadingMore, exhausted]);
+  }, [posts, loadingMore, exhausted, fetchPage]);
 
   if (!isFirebaseConfigured) {
     return {
@@ -124,6 +134,16 @@ export function useFeed(): FeedState {
     loadingMore,
     loadMore,
   };
+}
+
+/** Everything, newest first. */
+export function useFeed(): FeedState {
+  return useFeedQuery(subscribeToFeed, fetchFeedPage);
+}
+
+/** Only posts carrying a video, newest first. */
+export function useVideoFeed(): FeedState {
+  return useFeedQuery(subscribeToVideoFeed, fetchVideoFeedPage);
 }
 
 export function useStartupPosts(startupId: string | undefined): AsyncState<Post[]> {

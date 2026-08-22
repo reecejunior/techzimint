@@ -58,6 +58,9 @@ export interface Post {
   /** Mirrors the parent startup's status so the feed can filter in one query. */
   approved: boolean;
   isLaunch: boolean;
+  /** Denormalised `video != null`, because Firestore cannot query for the
+   *  absence of a field — /videos filters on this in one query instead. */
+  hasVideo: boolean;
   createdAt: string;
 }
 

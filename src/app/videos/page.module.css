@@ -1,0 +1,81 @@
+.page {
+  padding-bottom: var(--s-20);
+}
+
+.body {
+  padding-top: var(--s-8);
+}
+
+/* Two up on desktop, one on a phone. auto-fill rather than a fixed count so
+   the cards keep a sane width if --max-w ever changes. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--s-5);
+}
+
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: var(--s-8);
+  padding: 13px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-700);
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.more:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--ink-400);
+}
+
+.more:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+/* ── Loading ── */
+.skelCard {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.skelFrame {
+  aspect-ratio: 16 / 9;
+  border-radius: 0;
+}
+
+.skelBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+}
+
+.skelTag {
+  width: 45%;
+  height: 28px;
+}
+
+.skelLine {
+  width: 80%;
+  height: 14px;
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: var(--s-4);
+  }
+}

@@ -82,6 +82,17 @@
   color: var(--ink-400);
 }
 
+.failed {
+  margin: var(--s-3) var(--s-4);
+  padding: 9px 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--orange-800);
+  background: #FBEDE7;
+  border-radius: var(--r-sm);
+  overflow-wrap: anywhere;
+}
+
 .list {
   display: flex;
   flex-direction: column;

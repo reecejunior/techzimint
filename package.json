@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:firebase": "node scripts/check-firebase.mjs",
+    "backfill:has-video": "node scripts/backfill-has-video.mjs",
     "find:duplicate-reviews": "node scripts/find-duplicate-reviews.mjs",
     "remove:duplicate-reviews": "node scripts/remove-duplicate-reviews.mjs",
     "seed": "node scripts/seed.mjs",

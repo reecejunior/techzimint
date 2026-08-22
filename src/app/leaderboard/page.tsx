@@ -7,6 +7,7 @@ import type { Startup, TechzimChoicePick } from '@/lib/types';
 import { useStartups, useTechzimChoice } from '@/lib/hooks';
 import Badge from '@/components/ui/Badge';
 import Logo from '@/components/ui/Logo';
+import PageHeader from '@/components/PageHeader';
 import SubscribeForm from '@/components/SubscribeForm';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
 import styles from './page.module.css';
@@ -110,16 +111,11 @@ export default function LeaderboardPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.masthead}>
-        <div className={`wrap ${styles.mastheadInner}`}>
-          <div className={styles.mastheadLeft}>
-            <h1 className={styles.pageTitle}>Techzim&apos;s Choice</h1>
-            <p className={styles.pageDesc}>
-              Five products our team is genuinely paying attention to right now — picked by us, not a formula.
-            </p>
-          </div>
-
-          <div className={styles.mastheadStats}>
+      <PageHeader
+        eyebrow="Editorial"
+        title="Techzim's Choice"
+        aside={
+          <>
             <span className={styles.mStat}>
               <span className={styles.mStatNum}>{loading ? '—' : totals.products}</span>
               <span className={styles.mStatLabel}>products</span>
@@ -134,9 +130,12 @@ export default function LeaderboardPage() {
               <span className={styles.mStatNum}>{loading ? '—' : totals.reviews}</span>
               <span className={styles.mStatLabel}>reviews</span>
             </span>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      >
+        Five products our team is genuinely paying attention to right now — picked by us, not a
+        formula.
+      </PageHeader>
 
       <div className={`wrap ${styles.subscribeWrap}`}>
         <SubscribeForm />

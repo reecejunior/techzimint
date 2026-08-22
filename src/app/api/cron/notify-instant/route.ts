@@ -5,11 +5,13 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Triggered by Vercel Cron on a short interval (see vercel.json) — "instant"
- * on a platform without a real-time trigger means "checked often," not
- * "the moment it happens." A visitor opted into `mode: 'instant'` gets an
- * email the next time this runs, batching anything that landed since the
- * last one so a burst of activity doesn't become a burst of emails.
+ * Sweeps only the `instant` opt-ins.
+ *
+ * Deliberately NOT in vercel.json: Hobby caps crons at two jobs, no more than
+ * daily, and a rejected config fails the whole deployment. This stays here as
+ * a manual/external trigger — call it from an outside scheduler, or add it to
+ * vercel.json on a paid plan where a sub-daily schedule is actually allowed.
+ * Until then notify-daily sweeps `instant` too, so nobody is dropped.
  */
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization');
@@ -17,6 +19,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const result = await runNotifyBatch('instant');
+  const result = await runNotifyBatch(['instant']);
   return NextResponse.json(result);
 }

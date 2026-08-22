@@ -29,10 +29,8 @@ function row(n: Notification, siteUrl: string): string {
 export function renderNotificationEmail(params: {
   siteUrl: string;
   notifications: Notification[];
-  cadence: 'instant' | 'daily';
 }): string {
-  const { siteUrl, notifications, cadence } = params;
-  const heading = cadence === 'instant' ? "There's new activity" : "Today's activity";
+  const { siteUrl, notifications } = params;
 
   return `<!doctype html>
 <html>
@@ -44,7 +42,7 @@ export function renderNotificationEmail(params: {
             <span style="font:700 17px ${FONT};color:${INK_900};">Techzim <span style="color:${BRAND};">Startups</span></span>
           </td></tr>
           <tr><td style="padding:0 32px 20px;">
-            <span style="font:400 14px ${FONT};color:${INK_400};">${heading} — ${notifications.length} thing${notifications.length === 1 ? '' : 's'} you'd want to see.</span>
+            <span style="font:400 14px ${FONT};color:${INK_400};">${notifications.length} thing${notifications.length === 1 ? '' : 's'} you'd want to see.</span>
           </td></tr>
 
           <tr><td style="padding:0 32px 4px;">
