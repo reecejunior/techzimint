@@ -1,4 +1,4 @@
-import type { PostImage } from './types';
+import type { PostImage, PostVideo } from './types';
 
 /**
  * Uploading images straight from a device.
@@ -164,4 +164,132 @@ export function uploadImageFile(
         xhr.send(form);
       }),
   );
+}
+
+/* ─── Video ───────────────────────────────────────────────────
+ * ImgBB is images-only and Firebase Storage needs the paid plan, so video
+ * goes to ImageKit: free tier, and signup works from Zimbabwe (Cloudinary's
+ * did not, which is why this isn't that).
+ *
+ * Unlike the ImgBB flow above, nothing secret ships in the bundle. The
+ * public key is public by design, and each upload is authorised by a
+ * short-lived signature minted by /api/upload-auth using a private key that
+ * stays on the server. That also gives one obvious place to add rate
+ * limiting later.
+ */
+
+const IMAGEKIT_ENDPOINT = 'https://upload.imagekit.io/api/v1/files/upload';
+const IMAGEKIT_PUBLIC_KEY = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ?? '';
+
+export const videoUploadsEnabled = Boolean(IMAGEKIT_PUBLIC_KEY);
+
+/**
+ * Deliberately conservative. Most of this audience is on mobile data, and a
+ * founder pushing a 90 MB file up a slow connection will give up long
+ * before the host complains.
+ */
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+export const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
+
+export function validateVideoUpload(file: File): string | null {
+  if (!ACCEPTED_VIDEO_TYPES.includes(file.type)) {
+    return 'Videos must be MP4, MOV or WebM.';
+  }
+  if (file.size > MAX_VIDEO_BYTES) {
+    return `That video is ${mb(file.size)}. The limit is ${mb(MAX_VIDEO_BYTES)} — try trimming it, or paste a YouTube link instead.`;
+  }
+  return null;
+}
+
+interface ImageKitResponse {
+  url?: string;
+  filePath?: string;
+  fileId?: string;
+  message?: string;
+}
+
+/**
+ * Uploads one video and returns the record stored on the post.
+ *
+ * No client-side transcoding: re-encoding video in a browser is slow,
+ * unreliable across devices, and would routinely take longer than the
+ * upload it is meant to shorten. The size cap does that job instead.
+ *
+ * `path` keeps ImageKit's fileId so a future admin delete has something to
+ * call — the URL alone is not enough to remove the asset.
+ */
+export async function uploadVideoFile(
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<PostVideo> {
+  const problem = validateVideoUpload(file);
+  if (problem) throw new Error(problem);
+  if (!videoUploadsEnabled) {
+    throw new Error(
+      'Video uploads are not configured. Add NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY and ' +
+        'IMAGEKIT_PRIVATE_KEY, or paste a YouTube or Vimeo link instead.',
+    );
+  }
+
+  // Fetch a fresh signature per upload; they are single-use and short-lived.
+  const authRes = await fetch('/api/upload-auth', { cache: 'no-store' });
+  if (!authRes.ok) {
+    throw new Error(
+      authRes.status === 503
+        ? 'Video uploads are not configured on the server yet.'
+        : 'Could not start the upload. Try again.',
+    );
+  }
+  const auth = (await authRes.json()) as { token: string; expire: number; signature: string };
+
+  return new Promise<PostVideo>((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('fileName', file.name);
+    form.append('publicKey', IMAGEKIT_PUBLIC_KEY);
+    form.append('token', auth.token);
+    form.append('expire', String(auth.expire));
+    form.append('signature', auth.signature);
+    form.append('folder', '/techzim-startups');
+    // Never collide with an existing file of the same name.
+    form.append('useUniqueFileName', 'true');
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', IMAGEKIT_ENDPOINT);
+    // Generous: a 50 MB file on a slow mobile connection is genuinely slow.
+    xhr.timeout = 600000;
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
+    };
+
+    xhr.onload = () => {
+      let body: ImageKitResponse;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        reject(new Error('The video host returned something unreadable.'));
+        return;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && body.url) {
+        resolve({ kind: 'upload', url: body.url, path: body.fileId });
+        return;
+      }
+
+      reject(
+        new Error(
+          body.message ??
+            (xhr.status === 400
+              ? 'The video host rejected that file. Check the public key matches the private key.'
+              : `Upload failed (${xhr.status}).`),
+        ),
+      );
+    };
+
+    xhr.onerror = () => reject(new Error('Upload failed — check your connection.'));
+    xhr.ontimeout = () => reject(new Error('Upload timed out. Try a shorter video.'));
+
+    xhr.send(form);
+  });
 }

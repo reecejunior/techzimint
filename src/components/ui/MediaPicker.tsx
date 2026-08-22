@@ -3,7 +3,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Film, ImagePlus, Link2, Loader2, X } from 'lucide-react';
 import { MAX_IMAGES_PER_POST, imageFromUrl } from '@/lib/media';
-import { ACCEPTED_UPLOAD_TYPES, uploadImageFile, uploadsEnabled } from '@/lib/upload';
+import {
+  ACCEPTED_UPLOAD_TYPES, ACCEPTED_VIDEO_TYPES, MAX_VIDEO_BYTES, uploadImageFile,
+  uploadVideoFile, uploadsEnabled, videoUploadsEnabled,
+} from '@/lib/upload';
 import { parseVideoUrl } from '@/lib/ranking';
 import type { PostImage, PostVideo } from '@/lib/types';
 import styles from './MediaPicker.module.css';
@@ -32,8 +35,11 @@ let jobSeq = 0;
  * whose screenshots already live somewhere shouldn't have to re-upload them,
  * and because it is the fallback if the upload host is not configured.
  *
- * Video is always a YouTube/Vimeo link: hosting video is a different order of
- * cost, and both platforms already solve playback and bandwidth.
+ * Video can be uploaded from the device or linked. Linking is still the
+ * better path for anything long — YouTube handles transcoding, adaptive
+ * streaming and bandwidth for free, which no upload tier here can match.
+ * Upload exists for the short clip a founder shot on their phone and has
+ * no interest in publishing to a channel first.
  */
 export default function MediaPicker({
   images,
@@ -43,11 +49,13 @@ export default function MediaPicker({
   onBusyChange,
 }: MediaPickerProps) {
   const fileInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState(video?.kind === 'embed' ? video.url : '');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [checking, setChecking] = useState(false);
   const [linkOpen, setLinkOpen] = useState(!uploadsEnabled);
+  const [videoLinkOpen, setVideoLinkOpen] = useState(!videoUploadsEnabled);
   const [error, setError] = useState<string | null>(null);
   const imageId = useId();
   const videoId = useId();
@@ -143,6 +151,29 @@ export default function MediaPicker({
       setError(err instanceof Error ? err.message : 'That link could not be used.');
     } finally {
       setChecking(false);
+    }
+  }
+
+  /* ── Upload a video from the device ── */
+  async function handleVideoFile(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+
+    const job = { id: ++jobSeq, name: file.name, percent: 0 };
+    setJobs(prev => [...prev, job]);
+
+    try {
+      const uploaded = await uploadVideoFile(file, percent =>
+        setJobs(prev => prev.map(j => (j.id === job.id ? { ...j, percent } : j))),
+      );
+      onVideoChange(uploaded);
+      // A post carries one video, so an upload replaces any pasted link.
+      setVideoUrl('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That video could not be uploaded.');
+    } finally {
+      setJobs(prev => prev.filter(j => j.id !== job.id));
+      if (videoInput.current) videoInput.current.value = '';
     }
   }
 
@@ -267,32 +298,82 @@ export default function MediaPicker({
 
       {/* ── Video ── */}
       <div className={styles.group}>
-        <label htmlFor={videoId} className={styles.label}>
+        <span className={styles.label}>
           <Film size={15} aria-hidden="true" />
           Demo video
-        </label>
+        </span>
 
-        <div className={styles.row}>
-          <input
-            id={videoId}
-            className={styles.input}
-            placeholder="https://youtube.com/watch?v=…"
-            value={videoUrl}
-            onChange={e => setVideoUrl(e.target.value)}
-            onBlur={applyVideo}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                applyVideo();
-              }
-            }}
-          />
-          <button type="button" className={styles.add} onClick={applyVideo} disabled={!videoUrl.trim()}>
-            Add
+        <div className={styles.actions}>
+          {videoUploadsEnabled && (
+            <button
+              type="button"
+              className={styles.upload}
+              onClick={() => videoInput.current?.click()}
+              disabled={busy}
+            >
+              <Film size={15} aria-hidden="true" />
+              Upload a video
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={styles.linkToggle}
+            onClick={() => setVideoLinkOpen(o => !o)}
+            aria-expanded={videoLinkOpen}
+          >
+            <Link2 size={15} aria-hidden="true" />
+            {videoUploadsEnabled ? 'Or paste a link' : 'Paste a video link'}
           </button>
+
+          <input
+            ref={videoInput}
+            type="file"
+            accept={ACCEPTED_VIDEO_TYPES.join(',')}
+            className="sr-only"
+            onChange={e => void handleVideoFile(e.target.files?.[0])}
+          />
         </div>
 
-        <p className={styles.hint}>YouTube or Vimeo. Upload there, paste the link here.</p>
+        {videoLinkOpen && (
+          <div className={styles.row}>
+            <label htmlFor={videoId} className="sr-only">
+              Video link
+            </label>
+            <input
+              id={videoId}
+              className={styles.input}
+              placeholder="https://youtube.com/watch?v=…"
+              value={videoUrl}
+              onChange={e => setVideoUrl(e.target.value)}
+              onBlur={applyVideo}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  applyVideo();
+                }
+              }}
+            />
+            <button type="button" className={styles.add} onClick={applyVideo} disabled={!videoUrl.trim()}>
+              Add
+            </button>
+          </div>
+        )}
+
+        <p className={styles.hint}>
+          {videoUploadsEnabled ? (
+            <>
+              MP4, MOV or WebM up to {Math.round(MAX_VIDEO_BYTES / (1024 * 1024))} MB. For anything
+              longer, a YouTube link streams better and costs your viewers less data.
+            </>
+          ) : (
+            <>
+              YouTube or Vimeo. Device uploads are off — add{' '}
+              <code>NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY</code> and{' '}
+              <code>IMAGEKIT_PRIVATE_KEY</code> to turn them on.
+            </>
+          )}
+        </p>
       </div>
 
       {error && (
@@ -323,7 +404,7 @@ export default function MediaPicker({
             <div className={styles.preview} data-video>
               <span className={styles.videoTag}>
                 <Film size={15} aria-hidden="true" />
-                {video.provider ?? 'Video'}
+                {video.kind === 'upload' ? 'Uploaded' : (video.provider ?? 'Video')}
               </span>
               <button
                 type="button"
