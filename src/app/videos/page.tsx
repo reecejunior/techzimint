@@ -1,16 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useMyLikes, useVideoFeed } from '@/lib/hooks';
 import PageHeader from '@/components/PageHeader';
 import VideoCard from '@/components/VideoCard';
+import VideoReel from '@/components/VideoReel';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
 import styles from './page.module.css';
 
 export default function VideosPage() {
   const { data: posts, loading, error, hasMore, loadingMore, loadMore } = useVideoFeed();
   const likes = useMyLikes();
+  /** Index the reel opened at, or null when the grid is showing. */
+  const [reelAt, setReelAt] = useState<number | null>(null);
 
   return (
     <div className={styles.page}>
@@ -18,6 +22,15 @@ export default function VideosPage() {
         Demos, walkthroughs and launch clips from Zimbabwean and African founders — see the
         product working before you try it.
       </PageHeader>
+
+      {reelAt !== null && (
+        <VideoReel
+          posts={posts}
+          startIndex={reelAt}
+          likedIds={likes}
+          onClose={() => setReelAt(null)}
+        />
+      )}
 
       <div className={`wrap ${styles.body}`}>
         {error ? (
@@ -36,8 +49,13 @@ export default function VideosPage() {
         ) : (
           <>
             <div className={styles.grid}>
-              {posts.map(post => (
-                <VideoCard key={post.id} post={post} liked={likes.has(post.id)} />
+              {posts.map((post, i) => (
+                <VideoCard
+                  key={post.id}
+                  post={post}
+                  liked={likes.has(post.id)}
+                  onOpen={() => setReelAt(i)}
+                />
               ))}
             </div>
 

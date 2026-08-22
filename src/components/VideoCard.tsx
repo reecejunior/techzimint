@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Heart, MessageCircle, Play } from 'lucide-react';
 import clsx from 'clsx';
 import { toggleLike } from '@/lib/firestore';
-import { embedSrc, timeAgo } from '@/lib/ranking';
+import { timeAgo } from '@/lib/ranking';
 import type { Post } from '@/lib/types';
 import Logo from '@/components/ui/Logo';
 import styles from './VideoCard.module.css';
@@ -18,12 +18,19 @@ import styles from './VideoCard.module.css';
  * post might carry, so it sits below the copy. Here the video *is* the
  * content, so it takes the top of the card and the copy is the caption.
  *
- * Players stay click-to-load for the same reason as PostMedia: mounting an
- * iframe per card would pull a third-party bundle for every video on screen
- * whether or not anyone watches.
+ * The poster hands off to the full-screen reel rather than playing inline —
+ * a 320px-wide player is a poor way to watch a UI demo, and it also keeps
+ * this grid free of third-party player bundles entirely.
  */
-export default function VideoCard({ post, liked }: { post: Post; liked: boolean }) {
-  const [playing, setPlaying] = useState(false);
+export default function VideoCard({
+  post,
+  liked,
+  onOpen,
+}: {
+  post: Post;
+  liked: boolean;
+  onOpen: () => void;
+}) {
   const [pendingLike, setPendingLike] = useState(false);
   const [optimistic, setOptimistic] = useState<{ liked: boolean; delta: number } | null>(null);
 
@@ -51,39 +58,27 @@ export default function VideoCard({ post, liked }: { post: Post; liked: boolean 
   return (
     <article className={styles.card}>
       <div className={styles.frame}>
-        {video.kind === 'upload' ? (
-          <video className={styles.player} src={video.url} controls preload="metadata" />
-        ) : playing && video.provider && video.embedId ? (
-          <iframe
-            className={styles.player}
-            src={`${embedSrc(video.provider, video.embedId)}&autoplay=1`}
-            title={`${post.startupName} video`}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <button
-            type="button"
-            className={styles.poster}
-            onClick={() => setPlaying(true)}
-            aria-label={`Play ${post.startupName} video`}
-          >
-            {video.provider === 'youtube' && video.embedId ? (
-              // eslint-disable-next-line @next/next/no-img-element -- third-party thumbnail
-              <img
-                src={`https://i.ytimg.com/vi/${video.embedId}/hqdefault.jpg`}
-                alt=""
-                className={styles.posterImg}
-                loading="lazy"
-              />
-            ) : (
-              <span className={styles.posterFallback} aria-hidden="true" />
-            )}
-            <span className={styles.playBadge}>
-              <Play size={20} fill="currentColor" aria-hidden="true" />
-            </span>
-          </button>
-        )}
+        <button
+          type="button"
+          className={styles.poster}
+          onClick={onOpen}
+          aria-label={`Watch ${post.startupName} video full screen`}
+        >
+          {video.provider === 'youtube' && video.embedId ? (
+            // eslint-disable-next-line @next/next/no-img-element -- third-party thumbnail
+            <img
+              src={`https://i.ytimg.com/vi/${video.embedId}/hqdefault.jpg`}
+              alt=""
+              className={styles.posterImg}
+              loading="lazy"
+            />
+          ) : (
+            <span className={styles.posterFallback} aria-hidden="true" />
+          )}
+          <span className={styles.playBadge}>
+            <Play size={20} fill="currentColor" aria-hidden="true" />
+          </span>
+        </button>
       </div>
 
       <div className={styles.body}>
