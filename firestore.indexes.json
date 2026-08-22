@@ -9,7 +9,6 @@
       ]
     },
     {
-      "_comment": "The email/push send jobs page forward through new notifications.",
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
@@ -18,7 +17,6 @@
       ]
     },
     {
-      "_comment": "The in-app bell reads newest-first. Direction matters — this is a separate index from the ASCENDING one above, not a variant of it.",
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [

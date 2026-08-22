@@ -1,5 +1,4 @@
 {
-  "$comment": "Two crons, each at most once a day — Vercel's Hobby plan caps both the count and the frequency, and a config it rejects fails the whole deployment. Anything genuinely instant goes through /api/push/notify, which the client triggers directly and needs no schedule.",
   "crons": [
     {
       "path": "/api/cron/weekly-digest",

@@ -258,6 +258,36 @@ don't — the arrows just keep comparing to the last time it ran.
 
 ---
 
+## Notifications
+
+Three delivery paths, all free, all opt-in from the bell in the nav:
+
+| Path | How it fires | Reaches |
+| --- | --- | --- |
+| In-app bell | Live Firestore listener | Same browser only |
+| Email | `/api/cron/notify-daily`, 06:00 UTC | Any device |
+| Web push | `/api/push/notify`, triggered by the client the moment a notification is written | That browser, tab open or not |
+
+**Two gotchas worth knowing before debugging this.**
+
+*Both* notification indexes are required, and they are **not** interchangeable —
+`firestore.indexes.json` declares `(recipientId ASC, createdAt ASC)` for the send
+jobs and `(recipientId ASC, createdAt DESC)` for the bell. Firestore treats a
+direction change as a different index, so creating one leaves the other query
+failing. The bell surfaces that failure in the dropdown rather than rendering an
+empty state, because "nothing yet" reading as "no notifications" is exactly how
+this stayed hidden the first time.
+
+`vercel.json` deliberately schedules only **two** crons, each at most daily.
+Vercel's Hobby plan caps both the count and the frequency, and a config it
+rejects fails the entire deployment — not just the cron. `/api/cron/notify-instant`
+therefore exists but is unscheduled: `notify-daily` sweeps the `instant` opt-ins
+too, so nobody is silently dropped, and genuinely instant delivery is push's job.
+Neither config file takes comments — both schemas reject unknown keys — which is
+why this note lives here.
+
+---
+
 ## Scripts
 
 | Command | Does |
@@ -269,6 +299,9 @@ don't — the arrows just keep comparing to the last time it ran.
 | `npm run check:firebase` | Reports which Firebase setup steps are still pending |
 | `npm run seed` | Loads starting content. `-- --force` also migrates existing docs |
 | `npm run snapshot-ranks` | Records this week's standings |
+| `npm run backfill:has-video` | Stamps `hasVideo` on existing posts so `/videos` can find them |
+| `npm run find:duplicate-reviews` | Reports authors with more than one review per startup |
+| `npm run remove:duplicate-reviews` | Keeps the newest review per author, rolls back the rest |
 
 ---
 
