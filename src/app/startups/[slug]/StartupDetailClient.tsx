@@ -1,17 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-    ArrowLeft, Globe, Heart, Loader2, MessageCircle, MessageSquare, Play, Smartphone, Star,
-    ThumbsUp,
+    ArrowLeft, Globe, Heart, Loader2, MessageCircle, MessageSquare, Pencil, Play, Smartphone,
+    Star, ThumbsUp, X,
 } from 'lucide-react';
-import { addPost, addReview, toggleHelpful } from '@/lib/firestore';
+import { addPost, addReview, editStartup, toggleHelpful } from '@/lib/firestore';
 import {
     useAdminAuth, useMyHelpfulMarks, useMyLikes, useMyUid, useReviews, useStartup, useStartupPosts,
 } from '@/lib/hooks';
-import type { PostVideo, RankHistory, Review, Startup, PostImage } from '@/lib/types';
+import { imageFromUrl } from '@/lib/media';
+import { ACCEPTED_UPLOAD_TYPES, uploadImageFile, uploadsEnabled } from '@/lib/upload';
+import type { PostVideo, RankHistory, Review, Startup, PostImage, StartupEditInput } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import Avatar from '@/components/ui/Avatar';
 import Logo from '@/components/ui/Logo';
@@ -344,6 +346,221 @@ function PostComposer({ startupId }: { startupId: string }) {
     );
 }
 
+/* ─── Founder editing their own listing ───
+ * Identity (name/slug) and curation (category/region) are deliberately not
+ * here — see StartupEditInput. firestore.rules enforces the same boundary
+ * independently, so this is a UI convenience, not the real access control.
+ */
+function EditStartupForm({ startup, onDone }: { startup: Startup; onDone: () => void }) {
+    const fileInput = useRef<HTMLInputElement>(null);
+
+    const [tagline, setTagline] = useState(startup.tagline);
+    const [description, setDescription] = useState(startup.description);
+    const [website, setWebsite] = useState(startup.website);
+    const [demo, setDemo] = useState(startup.demo ?? '');
+    const [apk, setApk] = useState(startup.apk ?? '');
+    const [founders, setFounders] = useState(startup.founders.join(', '));
+    const [logo, setLogo] = useState<PostImage | null>(
+        startup.logoUrl ? { url: startup.logoUrl } : null,
+    );
+    const [logoLinkText, setLogoLinkText] = useState('');
+    const [logoBusy, setLogoBusy] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function uploadLogo(file: File | undefined) {
+        if (!file) return;
+        setLogoBusy(true);
+        setError(null);
+        try {
+            setLogo(await uploadImageFile(file));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'That logo could not be uploaded.');
+        } finally {
+            setLogoBusy(false);
+        }
+    }
+
+    async function applyLogoLink() {
+        const url = logoLinkText.trim();
+        if (!url) return;
+        setLogoBusy(true);
+        setError(null);
+        try {
+            // Loading the image proves the link really is one before it's stored.
+            setLogo(await imageFromUrl(url));
+            setLogoLinkText('');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'That logo link could not be used.');
+        } finally {
+            setLogoBusy(false);
+        }
+    }
+
+    async function submit(e: React.FormEvent) {
+        e.preventDefault();
+        if (saving || logoBusy) return;
+
+        if (founders.split(',').map(f => f.trim()).filter(Boolean).length > 6) {
+            setError('List at most 6 founders.');
+            return;
+        }
+
+        setSaving(true);
+        setError(null);
+        try {
+            const input: StartupEditInput = { tagline, description, website, demo, apk, founders, logo };
+            await editStartup(startup.id, input);
+            onDone();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not save those changes.');
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <form className={styles.editForm} onSubmit={submit}>
+            <div className={styles.editLogoRow}>
+                <Logo name={startup.name} url={logo?.url} initials={startup.logoInitials} size="lg" />
+                <div className={styles.editLogoActions}>
+                    {uploadsEnabled && (
+                        <button
+                            type="button"
+                            className={styles.editLogoBtn}
+                            onClick={() => fileInput.current?.click()}
+                            disabled={logoBusy}
+                        >
+                            {logo ? 'Change logo' : 'Add a logo'}
+                        </button>
+                    )}
+                    {logo && (
+                        <button
+                            type="button"
+                            className={styles.editLogoBtn}
+                            onClick={() => setLogo(null)}
+                            disabled={logoBusy}
+                        >
+                            Remove
+                        </button>
+                    )}
+                    <input
+                        ref={fileInput}
+                        type="file"
+                        accept={ACCEPTED_UPLOAD_TYPES.join(',')}
+                        className="sr-only"
+                        onChange={e => void uploadLogo(e.target.files?.[0])}
+                    />
+                </div>
+            </div>
+
+            <input
+                className={styles.formInput}
+                placeholder={uploadsEnabled ? '…or paste a logo link' : 'https://…/logo.png'}
+                value={logoLinkText}
+                disabled={logoBusy}
+                onChange={e => setLogoLinkText(e.target.value)}
+                onBlur={() => void applyLogoLink()}
+                onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        void applyLogoLink();
+                    }
+                }}
+            />
+
+            <label className={styles.formLabel} htmlFor="edit-tagline">
+                Tagline
+            </label>
+            <input
+                id="edit-tagline"
+                className={styles.formInput}
+                maxLength={100}
+                value={tagline}
+                onChange={e => setTagline(e.target.value)}
+            />
+
+            <label className={styles.formLabel} htmlFor="edit-description">
+                Description
+            </label>
+            <textarea
+                id="edit-description"
+                className={styles.formTextarea}
+                rows={4}
+                maxLength={2000}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+            />
+
+            <label className={styles.formLabel} htmlFor="edit-founders">
+                Founders
+            </label>
+            <input
+                id="edit-founders"
+                className={styles.formInput}
+                value={founders}
+                onChange={e => setFounders(e.target.value)}
+            />
+            <p className={styles.charHint}>Separate multiple founders with commas</p>
+
+            <label className={styles.formLabel} htmlFor="edit-website">
+                Website
+            </label>
+            <input
+                id="edit-website"
+                className={styles.formInput}
+                type="url"
+                maxLength={300}
+                placeholder="https://…"
+                value={website}
+                onChange={e => setWebsite(e.target.value)}
+            />
+
+            <label className={styles.formLabel} htmlFor="edit-demo">
+                Demo link <span className={styles.optional}>(optional)</span>
+            </label>
+            <input
+                id="edit-demo"
+                className={styles.formInput}
+                type="url"
+                maxLength={300}
+                placeholder="https://…"
+                value={demo}
+                onChange={e => setDemo(e.target.value)}
+            />
+
+            <label className={styles.formLabel} htmlFor="edit-apk">
+                APK link <span className={styles.optional}>(optional)</span>
+            </label>
+            <input
+                id="edit-apk"
+                className={styles.formInput}
+                type="url"
+                maxLength={300}
+                placeholder="https://…"
+                value={apk}
+                onChange={e => setApk(e.target.value)}
+            />
+
+            {error && (
+                <p className={styles.formError} role="alert">
+                    {error}
+                </p>
+            )}
+
+            <div className={styles.formActions}>
+                <button type="button" className={styles.formCancel} onClick={onDone} disabled={saving}>
+                    Cancel
+                </button>
+                <button type="submit" className={styles.formSubmit} disabled={saving || logoBusy}>
+                    {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
+                    {saving ? 'Saving…' : 'Save changes'}
+                </button>
+            </div>
+        </form>
+    );
+}
+
 /* ─── MAIN ─── */
 export default function StartupDetailClient({ slug }: { slug: string }) {
     const { data: startup, loading, error } = useStartup(slug);
@@ -388,6 +605,7 @@ function Loaded({ startup }: { startup: Startup }) {
     const { isAdmin } = useAdminAuth();
     const [showForm, setShowForm] = useState(false);
     const [justSubmitted, setJustSubmitted] = useState(false);
+    const [editingStartup, setEditingStartup] = useState(false);
 
     const isOwner = Boolean(uid && startup.ownerId && uid === startup.ownerId);
     const myReview = uid ? reviews.find(r => r.authorId === uid) ?? null : null;
@@ -439,20 +657,38 @@ function Loaded({ startup }: { startup: Startup }) {
                         </div>
                     </div>
 
-                    <dl className={styles.headerStats}>
-                        <div className={styles.headerStat}>
-                            <dt><Heart size={13} aria-hidden="true" /> Likes</dt>
-                            <dd>{startup.likeCount}</dd>
-                        </div>
-                        <div className={styles.headerStat}>
-                            <dt><MessageCircle size={13} aria-hidden="true" /> Comments</dt>
-                            <dd>{startup.commentCount}</dd>
-                        </div>
-                        <div className={styles.headerStat}>
-                            <dt><Star size={13} aria-hidden="true" /> Reviews</dt>
-                            <dd>{startup.reviewCount}</dd>
-                        </div>
-                    </dl>
+                    <div className={styles.headerRight}>
+                        <dl className={styles.headerStats}>
+                            <div className={styles.headerStat}>
+                                <dt><Heart size={13} aria-hidden="true" /> Likes</dt>
+                                <dd>{startup.likeCount}</dd>
+                            </div>
+                            <div className={styles.headerStat}>
+                                <dt><MessageCircle size={13} aria-hidden="true" /> Comments</dt>
+                                <dd>{startup.commentCount}</dd>
+                            </div>
+                            <div className={styles.headerStat}>
+                                <dt><Star size={13} aria-hidden="true" /> Reviews</dt>
+                                <dd>{startup.reviewCount}</dd>
+                            </div>
+                        </dl>
+
+                        {isOwner && (
+                            <button
+                                type="button"
+                                className={styles.editTrigger}
+                                onClick={() => setEditingStartup(o => !o)}
+                                aria-expanded={editingStartup}
+                            >
+                                {editingStartup ? (
+                                    <X size={13} aria-hidden="true" />
+                                ) : (
+                                    <Pencil size={13} aria-hidden="true" />
+                                )}
+                                {editingStartup ? 'Close' : 'Edit details'}
+                            </button>
+                        )}
+                    </div>
                 </header>
 
                 {(startup.website || startup.demo || startup.apk) && (
@@ -479,6 +715,10 @@ function Loaded({ startup }: { startup: Startup }) {
                 )}
 
                 {startup.description && <p className={styles.description}>{startup.description}</p>}
+
+                {isOwner && editingStartup && (
+                    <EditStartupForm startup={startup} onDone={() => setEditingStartup(false)} />
+                )}
 
                 <div className={styles.grid}>
                     <div className={styles.main}>

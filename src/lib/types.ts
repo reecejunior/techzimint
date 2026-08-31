@@ -199,6 +199,22 @@ export interface PostDraft {
   video: PostVideo | null;
 }
 
+/**
+ * What the owner may change about their own listing after it's live. Name,
+ * slug, category and region are deliberately absent — identity and curation
+ * stay fixed once submitted, both here and in firestore.rules.
+ */
+export interface StartupEditInput {
+  tagline: string;
+  description: string;
+  website: string;
+  demo: string;
+  apk: string;
+  founders: string;
+  /** null clears the logo back to the initials fallback. */
+  logo: PostImage | null;
+}
+
 export interface ReviewDraft {
   ratingUX: number;
   ratingUsefulness: number;

@@ -15,7 +15,13 @@ import {
  * Mirrored as a literal list in firestore.rules (rules can't import a JS
  * constant) — change both together if this ever changes.
  */
-export const ADMIN_EMAILS = ['chimutashureece@gmail.com', 'limbikani@techzim.co.zw'];
+export const ADMIN_EMAILS = [
+  'chimutashureece@gmail.com',
+  'limbikani@techzim.co.zw',
+  'lufayi@techzim.co.zw',
+  'tavyromeo@gmail.com',
+  'theo@techzim.co.zw',
+];
 
 export function isAdminUser(user: User | null): boolean {
   return Boolean(user?.email && ADMIN_EMAILS.includes(user.email));

@@ -18,6 +18,7 @@ import {
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
   type DocumentData,
   type DocumentSnapshot,
   type QueryDocumentSnapshot,
@@ -47,6 +48,7 @@ import type {
   Reviewer,
   ReviewWithStartup,
   Startup,
+  StartupEditInput,
   StartupSubmission,
   PostImage,
   TechzimChoicePick,
@@ -936,6 +938,44 @@ export async function deletePost(startupId: string, postId: string): Promise<voi
       commentCount: increment(-num(post.commentCount)),
     });
   });
+}
+
+/**
+ * The owner updating their own listing's presentable details — logo,
+ * tagline, description, links, and the founder credit line. Identity
+ * (name/slug) and curation (category/region) stay fixed; firestore.rules
+ * enforces that boundary independently of this client code.
+ *
+ * The feed renders each post from a denormalized copy of the startup's logo
+ * rather than joining to the live doc — see addPost/submitStartup. A logo
+ * change is invisible everywhere that matters if that copy is left stale, so
+ * this fans the new URL out to every post already under this startup.
+ * Startups here run to a handful of posts at most, so one batch covers it.
+ */
+export async function editStartup(startupId: string, input: StartupEditInput): Promise<void> {
+  await ensureSignedIn();
+  const db = getDb();
+  const founders = input.founders
+    .split(',')
+    .map(f => f.trim())
+    .filter(Boolean);
+  const logoUrl = input.logo?.url ?? '';
+
+  await updateDoc(doc(db, 'startups', startupId), {
+    tagline: input.tagline.trim(),
+    description: input.description.trim(),
+    website: input.website.trim(),
+    demo: input.demo.trim(),
+    apk: input.apk.trim(),
+    founders,
+    logoUrl,
+  });
+
+  const posts = await getDocs(collection(db, 'startups', startupId, 'posts'));
+  if (posts.empty) return;
+  const batch = writeBatch(db);
+  posts.forEach(p => batch.update(p.ref, { startupLogoUrl: logoUrl }));
+  await batch.commit();
 }
 
 /* ─── Submissions ─────────────────────────────────────────── */

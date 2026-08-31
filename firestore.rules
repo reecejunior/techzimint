@@ -12,9 +12,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admin/review panel — active. isAdmin() below only ever matches the one
-    // email hardcoded there, so this doesn't open anything up beyond that
-    // one account.
+    // Admin/review panel — active. isAdmin() below only matches the emails
+    // listed there, so this opens nothing beyond those accounts. Every one of
+    // them has full moderation power; there are no partial roles.
     function adminActive() {
       return true;
     }
@@ -22,7 +22,13 @@ service cloud.firestore {
     // Mirrors ADMIN_EMAILS in src/lib/firebase.ts — update both together.
     function isAdmin() {
       return adminActive() && signedIn()
-             && request.auth.token.email in ['chimutashureece@gmail.com', 'limbikani@techzim.co.zw'];
+             && request.auth.token.email in [
+                  'chimutashureece@gmail.com',
+                  'limbikani@techzim.co.zw',
+                  'lufayi@techzim.co.zw',
+                  'tavyromeo@gmail.com',
+                  'theo@techzim.co.zw'
+                ];
     }
 
     function mine() {
@@ -185,6 +191,29 @@ service cloud.firestore {
                        && request.resource.data.ratingSumUsefulness <= resource.data.ratingSumUsefulness + 4
                        && request.resource.data.ratingSumWouldPay >= resource.data.ratingSumWouldPay - 4
                        && request.resource.data.ratingSumWouldPay <= resource.data.ratingSumWouldPay + 4)
+                      ||
+                      // The owner editing their own listing's presentable
+                      // details. Identity (name/slug) and curation
+                      // (category/region) are already frozen by the
+                      // unchanged() checks above this whole OR block — this
+                      // branch only needs to keep the write to these fields
+                      // and validate what lands in them.
+                      (resource.data.ownerId == request.auth.uid
+                       && touched().hasOnly(['logoUrl', 'tagline', 'description', 'website', 'demo', 'apk', 'founders'])
+                       && request.resource.data.tagline is string
+                       && request.resource.data.tagline.size() <= 100
+                       && request.resource.data.description is string
+                       && request.resource.data.description.size() <= 2000
+                       && request.resource.data.website is string
+                       && request.resource.data.website.size() <= 300
+                       && request.resource.data.demo is string
+                       && request.resource.data.demo.size() <= 300
+                       && request.resource.data.apk is string
+                       && request.resource.data.apk.size() <= 300
+                       && request.resource.data.logoUrl is string
+                       && request.resource.data.logoUrl.size() <= 500
+                       && request.resource.data.founders is list
+                       && request.resource.data.founders.size() <= 6)
                     );
 
       // Admin decision: flips status between approved/rejected and records
@@ -214,14 +243,24 @@ service cloud.firestore {
                       && request.resource.data.body.size() <= 2000
                       && request.resource.data.images.size() <= 4;
 
-        // Anyone signed in may nudge a like or comment count; nothing else on a
-        // post is editable, including by its author.
+        // Anyone signed in may nudge a like or comment count; nothing else on
+        // a post is editable this way, including by its author.
         allow update: if signedIn()
                       && (
                         (movedByOne('likeCount') && touched().hasOnly(['likeCount']))
                         ||
                         (movedByOne('commentCount') && touched().hasOnly(['commentCount']))
                       );
+
+        // The owner changing their startup's logo (editStartup()) fans the
+        // new URL out to every post already under it — the feed renders
+        // from this denormalized copy rather than joining to the live
+        // startup doc, so a stale copy here would make the edit invisible
+        // everywhere that matters. get() re-checks ownership server-side
+        // rather than trusting the client's claim.
+        allow update: if signedIn()
+                      && touched().hasOnly(['startupLogoUrl'])
+                      && get(/databases/$(database)/documents/startups/$(startupId)).data.ownerId == request.auth.uid;
 
         // Admin decision: mirrors the parent startup's approve/reject onto
         // its posts. Nothing else on the post moves.
