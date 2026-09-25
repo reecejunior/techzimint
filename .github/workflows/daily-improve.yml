@@ -1,0 +1,70 @@
+name: Daily Improve
+
+# Runs every morning and, if it finds one small, safe improvement worth making,
+# opens a pull request from a daily-improve/<something> branch. It NEVER merges
+# its own PR — a human (Tanatswa) reviews and merges on GitHub.
+#
+# Setup required before this works:
+#   1. Install the Claude GitHub App: https://github.com/apps/claude
+#   2. CLAUDE_CODE_OAUTH_TOKEN secret already added.
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC daily
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+
+jobs:
+  improve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You maintain this codebase, the source for startups.techzim.co.zw.
+
+            First, check whether a daily-improve proposal is already pending:
+              git fetch origin
+              git branch -r --list 'origin/daily-improve/*'
+            For any such branch, check if it's already merged into main with:
+              git merge-base --is-ancestor origin/<branch> origin/main
+            If any daily-improve/* branch exists and is NOT yet merged into main,
+            stop here and do nothing else — only one proposal should be open at a time.
+
+            Otherwise, look for exactly ONE small, safe, well-scoped improvement to
+            make today. Good candidates: a real bug fix, a missing null/undefined
+            check, a small type-safety fix, removing dead code, fixing a broken
+            link or typo, tightening an overly loose eslint/tsconfig rule that's
+            actually safe, or a small readability refactor. Do not do anything
+            risky, large, speculative, or purely stylistic with no real benefit.
+            If you can't find anything worth proposing, do nothing and exit —
+            do not open a trivial or empty PR just to have something to show.
+
+            If you do find something:
+              1. Create a new branch named daily-improve/<short-kebab-description>
+              2. Make the change, keeping the diff minimal and focused
+              3. Set a git identity if needed:
+                 git config user.name "claude[bot]"
+                 git config user.email "claude[bot]@users.noreply.github.com"
+              4. Commit with a clear message: what changed and why
+              5. Push the branch:
+                 git push origin daily-improve/<short-kebab-description>
+              6. Open a pull request against main using the gh CLI, e.g.:
+                 gh pr create --base main --head daily-improve/<short-kebab-description> \
+                   --title "<clear, specific title>" \
+                   --body "<what changed, why, and why it's low-risk>"
+              7. Do NOT merge the pull request yourself, under any circumstances.
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 30
+            --allowedTools "Bash,Read,Edit,Write,Grep,Glob"
