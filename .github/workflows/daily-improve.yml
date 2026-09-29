@@ -4,6 +4,10 @@ name: Daily Improve
 # modest new/enhanced feature — opens a pull request from a daily-improve/<something>
 # branch. It NEVER merges its own PR — a human (Tanatswa) reviews and merges on GitHub.
 #
+# Every run also logs a short growth/product strategy note (target audience,
+# growth ideas, feature backlog) to docs/growth-ideas.md and the run's final
+# message, whether or not it opened a code PR that day.
+#
 # Setup required before this works:
 #   1. Install the Claude GitHub App: https://github.com/apps/claude
 #   2. CLAUDE_CODE_OAUTH_TOKEN secret already added.
@@ -30,6 +34,11 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # TEMPORARY: shows Claude's full reasoning/tool calls in the public
+          # Actions log so we can see why it isn't proposing anything. Turn
+          # this back to "false" once we've confirmed it's exploring properly
+          # — these logs are public on a public repo.
+          show_full_output: true
           prompt: |
             You maintain this codebase, the source for startups.techzim.co.zw —
             a public directory/leaderboard of Zimbabwean and African startups.
@@ -42,7 +51,22 @@ jobs:
             If any daily-improve/* branch exists and is NOT yet merged into main,
             stop here and do nothing else — only one proposal should be open at a time.
 
-            Otherwise, look for exactly ONE worthwhile improvement to make today.
+            Otherwise, before you're allowed to decide there's nothing worth
+            proposing, you must actually survey the codebase first:
+              - Read at least 8-10 real source files across different areas
+                (e.g. src/app, src/components, hooks, lib/utils, firestore
+                helpers, styles) — not just filenames, their actual contents.
+              - Grep for TODO, FIXME, HACK, and "any" (loose typing) across
+                the source tree.
+              - Look for at least one listing/detail page and check it for
+                missing loading/empty/error states, obviously missing a11y
+                attributes, or an incomplete-looking feature.
+            Do this survey even if the answer ends up being "nothing found" —
+            skipping it and exiting early is not acceptable. Spend real turns
+            on this; you have up to 50 available and using only a handful is a
+            sign you stopped too early.
+
+            Then look for exactly ONE worthwhile improvement to make today.
             You have two kinds of candidates to consider, and either is fair game:
 
             A) Fixes and quality improvements (as before): a real bug fix, a
@@ -66,9 +90,56 @@ jobs:
             copy/branding decisions, new third-party integrations or API keys,
             anything touching auth, payments, or data deletion). When in doubt,
             prefer the smaller, safer version of an idea over the more ambitious
-            one. If you can't find anything worth proposing, do nothing and
-            exit — do not open a trivial or empty PR just to have something
-            to show.
+            one.
+
+            If, after the survey above, you genuinely find nothing worth
+            proposing: do not open a trivial or empty PR just to have
+            something to show, but DO end your final message with a short
+            "Survey notes" section listing what you looked at and why each
+            candidate you considered wasn't good enough. This is required
+            even when you're not opening a PR, so a human can tell the
+            difference between "looked hard, found nothing" and "gave up
+            early."
+
+            Before you finish — every single run, regardless of whether you
+            found a code change to propose — also produce a short growth/
+            product strategy note. This is separate from the code-review
+            survey above and matters just as much:
+
+              1. Read docs/growth-ideas.md if it exists, so you don't repeat
+                 ideas already logged there.
+              2. Think about startups.techzim.co.zw as a product, not just a
+                 codebase, and write:
+                 - Target audience: 2-4 concrete audience segments (e.g.
+                   Zimbabwean/African founders, angel investors and VCs,
+                   job seekers, students, corporates/service providers,
+                   diaspora, media) and one line each on what they'd come
+                   for.
+                 - Growth ideas: 3-5 concrete, low-cost ways to bring more
+                   people to the site or get them coming back (content/SEO,
+                   a submission funnel so startups list themselves, a
+                   weekly digest email, social share hooks, partnerships
+                   with hubs/accelerators/universities, a leaderboard or
+                   badge mechanic, etc). Don't repeat ideas already in the
+                   log.
+                 - Feature backlog: 3-5 feature ideas beyond today's pick
+                   (e.g. filter/search by sector or funding stage, a "claim
+                   your listing" flow for founders, an investor-matching
+                   form, an embeddable "featured on Techzim" badge, an RSS/
+                   API feed) — again, skip anything already logged.
+              3. Append a new dated entry with these three lists to
+                 docs/growth-ideas.md (create the file with a one-line
+                 heading if it doesn't exist yet). Keep each entry short —
+                 bullets, not essays.
+              4. Print the same three lists in your final message too, so
+                 they're visible in the run log without opening the file.
+              5. Commit this file: if you're already opening a code PR today,
+                 include it in that same branch/commit. If not, create a
+                 small branch named daily-improve/growth-ideas-<date>,
+                 commit just this file, push it, and open a PR the same way
+                 as a code change (still never merge it yourself) — a docs
+                 update still deserves a quick human look before landing on
+                 main.
 
             If you do find something:
               1. Create a new branch named daily-improve/<short-kebab-description>
