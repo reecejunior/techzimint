@@ -68,6 +68,30 @@
   box-shadow: var(--ring);
 }
 
+.sortWrap {
+  flex-shrink: 0;
+}
+
+.sortSelect {
+  padding: 9px 30px 9px 12px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  color: var(--ink-500);
+  background: var(--white);
+  transition: border-color var(--fast) var(--ease);
+}
+
+.sortSelect:hover {
+  border-color: var(--ink-400);
+}
+
+.sortSelect:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
 .chipScroller {
   flex: 1;
   min-width: 0;
@@ -236,6 +260,14 @@
   }
 
   .searchWrap {
+    width: 100%;
+  }
+
+  .sortWrap {
+    width: 100%;
+  }
+
+  .sortSelect {
     width: 100%;
   }
 
