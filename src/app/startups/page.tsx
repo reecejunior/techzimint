@@ -11,14 +11,46 @@ import Logo from '@/components/ui/Logo';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
 import styles from './page.module.css';
 
+const SORTS = [
+  { key: 'name', label: 'Name (A–Z)' },
+  { key: 'newest', label: 'Newest' },
+  { key: 'likes', label: 'Most liked' },
+  { key: 'reviews', label: 'Most reviewed' },
+  { key: 'rating', label: 'Top rated' },
+] as const;
+type SortKey = (typeof SORTS)[number]['key'];
+
+/** A startup with no reviews has no rating to speak of, so it sorts behind
+    anything that does rather than tying with a genuine 0-star average. */
+function avgRating(s: Startup): number {
+  return s.reviewCount > 0 ? (s.avgUX + s.avgUsefulness + s.avgWouldPay) / 3 : -1;
+}
+
+function sortStartups(list: Startup[], sort: SortKey): Startup[] {
+  const sorted = [...list];
+  switch (sort) {
+    case 'newest':
+      return sorted.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+    case 'likes':
+      return sorted.sort((a, b) => b.likeCount - a.likeCount || a.name.localeCompare(b.name));
+    case 'reviews':
+      return sorted.sort((a, b) => b.reviewCount - a.reviewCount || a.name.localeCompare(b.name));
+    case 'rating':
+      return sorted.sort((a, b) => avgRating(b) - avgRating(a) || a.name.localeCompare(b.name));
+    default:
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
+  }
+}
+
 export default function StartupsPage() {
   const { data: startups, loading, error } = useStartups();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [sort, setSort] = useState<SortKey>('name');
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return startups
+    const filtered = startups
       .filter(s => category === 'all' || s.category === category)
       .filter(
         s =>
@@ -26,9 +58,9 @@ export default function StartupsPage() {
           s.name.toLowerCase().includes(q) ||
           s.tagline.toLowerCase().includes(q) ||
           s.description.toLowerCase().includes(q),
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [startups, category, query]);
+      );
+    return sortStartups(filtered, sort);
+  }, [startups, category, query, sort]);
 
   return (
     <div className={styles.page}>
@@ -58,6 +90,24 @@ export default function StartupsPage() {
             onChange={e => setQuery(e.target.value)}
             aria-label="Search startups"
           />
+        </div>
+
+        <div className={styles.sortWrap}>
+          <label htmlFor="startups-sort" className="sr-only">
+            Sort by
+          </label>
+          <select
+            id="startups-sort"
+            className={styles.sortSelect}
+            value={sort}
+            onChange={e => setSort(e.target.value as SortKey)}
+          >
+            {SORTS.map(s => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.chipScroller}>
