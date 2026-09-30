@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
-    ArrowLeft, Globe, Heart, Loader2, MessageCircle, MessageSquare, Pencil, Play, Smartphone,
-    Star, ThumbsUp, X,
+    ArrowLeft, Check, Globe, Heart, Loader2, MessageCircle, MessageSquare, Pencil, Play, Share2,
+    Smartphone, Star, ThumbsUp, X,
 } from 'lucide-react';
 import { addPost, addReview, editStartup, toggleHelpful } from '@/lib/firestore';
 import {
@@ -561,6 +561,47 @@ function EditStartupForm({ startup, onDone }: { startup: Startup; onDone: () => 
     );
 }
 
+/* ─── Share ───
+ * Native share sheet where it exists (mostly mobile); everywhere else, a
+ * copy-to-clipboard fallback with its own confirmation rather than relying
+ * on whatever toast the OS share sheet would have shown. */
+function ShareButton({ startup }: { startup: Startup }) {
+    const [copied, setCopied] = useState(false);
+
+    async function share() {
+        const url = window.location.href;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: startup.name, text: startup.tagline, url });
+            } catch {
+                // Cancelled by the visitor — nothing to report.
+            }
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Clipboard permission denied — no fallback left to try.
+        }
+    }
+
+    return (
+        <button
+            type="button"
+            className={styles.shareTrigger}
+            onClick={() => void share()}
+            data-copied={copied || undefined}
+        >
+            {copied ? <Check size={13} aria-hidden="true" /> : <Share2 size={13} aria-hidden="true" />}
+            {copied ? 'Copied!' : 'Share'}
+        </button>
+    );
+}
+
 /* ─── MAIN ─── */
 export default function StartupDetailClient({ slug }: { slug: string }) {
     const { data: startup, loading, error } = useStartup(slug);
@@ -673,21 +714,24 @@ function Loaded({ startup }: { startup: Startup }) {
                             </div>
                         </dl>
 
-                        {isOwner && (
-                            <button
-                                type="button"
-                                className={styles.editTrigger}
-                                onClick={() => setEditingStartup(o => !o)}
-                                aria-expanded={editingStartup}
-                            >
-                                {editingStartup ? (
-                                    <X size={13} aria-hidden="true" />
-                                ) : (
-                                    <Pencil size={13} aria-hidden="true" />
-                                )}
-                                {editingStartup ? 'Close' : 'Edit details'}
-                            </button>
-                        )}
+                        <div className={styles.headerActions}>
+                            <ShareButton startup={startup} />
+                            {isOwner && (
+                                <button
+                                    type="button"
+                                    className={styles.editTrigger}
+                                    onClick={() => setEditingStartup(o => !o)}
+                                    aria-expanded={editingStartup}
+                                >
+                                    {editingStartup ? (
+                                        <X size={13} aria-hidden="true" />
+                                    ) : (
+                                        <Pencil size={13} aria-hidden="true" />
+                                    )}
+                                    {editingStartup ? 'Close' : 'Edit details'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </header>
 

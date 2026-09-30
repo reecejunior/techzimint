@@ -724,7 +724,14 @@
   gap: var(--s-6);
 }
 
-.editTrigger {
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.editTrigger,
+.shareTrigger {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -739,13 +746,15 @@
     background var(--fast) var(--ease);
 }
 
-.editTrigger:hover {
+.editTrigger:hover,
+.shareTrigger:hover {
   color: var(--ink-900);
   border-color: var(--ink-400);
   background: var(--surface);
 }
 
-.editTrigger[aria-expanded='true'] {
+.editTrigger[aria-expanded='true'],
+.shareTrigger[data-copied] {
   color: var(--brand-text);
   border-color: var(--orange-300);
   background: var(--orange-50);
