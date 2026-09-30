@@ -15,7 +15,13 @@
 .img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* Startups upload logos in every aspect ratio — a wide wordmark, a tall
+     mark, a plain square icon. `cover` crops whichever dimension is longer;
+     `contain` (plus a little breathing room) shows the whole logo instead,
+     letterboxed against the tile's own neutral background. */
+  object-fit: contain;
+  padding: 12%;
+  box-sizing: border-box;
 }
 
 .initials {
