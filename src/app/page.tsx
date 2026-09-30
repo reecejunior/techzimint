@@ -2,200 +2,212 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { ArrowRight, Loader2, Trophy } from 'lucide-react';
-import { useAdminAuth, useFeed, useMyLikes, useMyUid, useStartups, useTechzimChoice } from '@/lib/hooks';
+import { Heart, MessageCircle, Search, Star } from 'lucide-react';
+import { useStartups } from '@/lib/hooks';
 import { categories, type Startup } from '@/lib/types';
 import PageHeader from '@/components/PageHeader';
-import PostCard from '@/components/PostCard';
+import Badge from '@/components/ui/Badge';
 import Logo from '@/components/ui/Logo';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
 import styles from './page.module.css';
 
-export default function FeedPage() {
-  const { data: posts, loading, error, hasMore, loadingMore, loadMore } = useFeed();
-  const likes = useMyLikes();
-  const uid = useMyUid();
-  const { isAdmin } = useAdminAuth();
-  const { data: startups } = useStartups();
-  const { data: choicePicks } = useTechzimChoice();
+const SORTS = [
+  { key: 'name', label: 'Name (A–Z)' },
+  { key: 'newest', label: 'Newest' },
+  { key: 'likes', label: 'Most liked' },
+  { key: 'reviews', label: 'Most reviewed' },
+  { key: 'rating', label: 'Top rated' },
+] as const;
+type SortKey = (typeof SORTS)[number]['key'];
+
+/** A startup with no reviews has no rating to speak of, so it sorts behind
+    anything that does rather than tying with a genuine 0-star average. */
+function avgRating(s: Startup): number {
+  return s.reviewCount > 0 ? (s.avgUX + s.avgUsefulness + s.avgWouldPay) / 3 : -1;
+}
+
+function sortStartups(list: Startup[], sort: SortKey): Startup[] {
+  const sorted = [...list];
+  switch (sort) {
+    case 'newest':
+      return sorted.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+    case 'likes':
+      return sorted.sort((a, b) => b.likeCount - a.likeCount || a.name.localeCompare(b.name));
+    case 'reviews':
+      return sorted.sort((a, b) => b.reviewCount - a.reviewCount || a.name.localeCompare(b.name));
+    case 'rating':
+      return sorted.sort((a, b) => avgRating(b) - avgRating(a) || a.name.localeCompare(b.name));
+    default:
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
+  }
+}
+
+/**
+ * Home is the startup directory itself — search, filter and sort the whole
+ * approved set. It used to be a chronological post feed with a "Techzim's
+ * Choice" sidebar; both are gone in favour of one focused view, so a first-time
+ * visitor sees what's out there rather than whatever happened to post today.
+ */
+export default function HomePage() {
+  const { data: startups, loading, error } = useStartups();
+  const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [sort, setSort] = useState<SortKey>('name');
 
-  /* Category lives on the startup, not the post, so filter through the
-     startups we already have subscribed rather than denormalising it again.
-     Ownership is looked up the same way: posts don't carry the startup's
-     ownerId, and this list — already loaded for the sidebar — has it. */
-  const categoryById = useMemo(
-    () => new Map(startups.map(s => [s.id, s.category])),
-    [startups],
-  );
-  const ownerById = useMemo(
-    () => new Map(startups.map(s => [s.id, s.ownerId])),
-    [startups],
-  );
-
-  const visible = useMemo(
-    () =>
-      category === 'all'
-        ? posts
-        : posts.filter(p => categoryById.get(p.startupId) === category),
-    [posts, category, categoryById],
-  );
-
-  const startupById = useMemo(() => new Map(startups.map(s => [s.id, s])), [startups]);
-  const topThree = useMemo(
-    () =>
-      choicePicks
-        .slice(0, 3)
-        .map(pick => startupById.get(pick.startupId))
-        .filter((s): s is Startup => Boolean(s)),
-    [choicePicks, startupById],
-  );
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = startups
+      .filter(s => category === 'all' || s.category === category)
+      .filter(
+        s =>
+          !q ||
+          s.name.toLowerCase().includes(q) ||
+          s.tagline.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q),
+      );
+    return sortStartups(filtered, sort);
+  }, [startups, category, query, sort]);
 
   return (
     <div className={styles.page}>
-      <PageHeader eyebrow="What's shipping" title="The feed">
-        What Zimbabwean and African founders are building right now. Like what works, ask
-        questions in the comments, and leave a review once you&apos;ve tried it.
+      <PageHeader
+        eyebrow="Directory"
+        title="Startups"
+        aside={
+          !loading && (
+            <span className={styles.count}>
+              <strong className="tnum">{startups.length}</strong> listed
+            </span>
+          )
+        }
+      >
+        Every Zimbabwean and African product on the platform. Search, filter, or sort by what
+        matters to you, and open one to see what its founders have been shipping.
       </PageHeader>
 
-      <div className={styles.layout}>
-        <main className={styles.feedColumn}>
-          <div className={styles.filterBar}>
-            <div className={styles.chipScroller}>
-              <div className={styles.chips} role="group" aria-label="Filter by category">
-                <button
-                  className={styles.chip}
-                  data-active={category === 'all' || undefined}
-                  aria-pressed={category === 'all'}
-                  onClick={() => setCategory('all')}
-                >
-                  Everything
-                </button>
-                {categories.map(c => (
-                  <button
-                    key={c}
-                    className={styles.chip}
-                    data-active={category === c || undefined}
-                    aria-pressed={category === c}
-                    onClick={() => setCategory(category === c ? 'all' : c)}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+      <div className={`wrap ${styles.controls}`}>
+        <div className={styles.searchWrap}>
+          <Search size={16} className={styles.searchIcon} aria-hidden="true" />
+          <input
+            className={styles.search}
+            type="search"
+            placeholder="Search by name or what it does…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            aria-label="Search startups"
+          />
+        </div>
 
-          {error ? (
-            <ErrorState message={error} />
-          ) : loading ? (
-            <div className={styles.feed}>
-              {Array.from({ length: 3 }, (_, i) => (
-                <PostSkeleton key={i} />
+        <div className={styles.sortWrap}>
+          <label htmlFor="home-sort" className="sr-only">
+            Sort by
+          </label>
+          <select
+            id="home-sort"
+            className={styles.sortSelect}
+            value={sort}
+            onChange={e => setSort(e.target.value as SortKey)}
+          >
+            {SORTS.map(s => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.chipScroller}>
+          <div className={styles.chips} role="group" aria-label="Filter by category">
+            <button
+              className={styles.chip}
+              data-active={category === 'all' || undefined}
+              aria-pressed={category === 'all'}
+              onClick={() => setCategory('all')}
+            >
+              All
+            </button>
+            {categories.map(c => (
+              <button
+                key={c}
+                className={styles.chip}
+                data-active={category === c || undefined}
+                aria-pressed={category === c}
+                onClick={() => setCategory(category === c ? 'all' : c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={`wrap ${styles.body}`}>
+        {error ? (
+          <ErrorState message={error} />
+        ) : loading ? (
+          <div className={styles.grid}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className={`skel ${styles.skelCard}`} />
+            ))}
+          </div>
+        ) : visible.length === 0 ? (
+          <EmptyState title="Nothing matches that">
+            Try a different search or category, or <Link href="/submit">post a startup</Link>.
+          </EmptyState>
+        ) : (
+          <>
+            <p className={styles.meta} aria-live="polite">
+              {visible.length} startup{visible.length === 1 ? '' : 's'}
+            </p>
+            <div className={styles.grid}>
+              {visible.map(s => (
+                <Card key={s.id} startup={s} />
               ))}
             </div>
-          ) : visible.length === 0 ? (
-            <EmptyState
-              title={category === 'all' ? 'Nothing posted yet' : 'Nothing in that category yet'}
-            >
-              {category === 'all' ? (
-                <>
-                  Be the first — <Link href="/submit">post your startup</Link>.
-                </>
-              ) : (
-                <>
-                  Try another category, or <Link href="/submit">post your startup</Link>.
-                </>
-              )}
-            </EmptyState>
-          ) : (
-            <>
-              <div className={styles.feed}>
-                {visible.map(post => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    liked={likes.has(post.id)}
-                    isOwner={Boolean(uid) && ownerById.get(post.startupId) === uid}
-                    isAdmin={isAdmin}
-                  />
-                ))}
-              </div>
-
-              {hasMore && category === 'all' && (
-                <button className={styles.more} onClick={loadMore} disabled={loadingMore}>
-                  {loadingMore ? (
-                    <>
-                      <Loader2 size={15} className={styles.spin} aria-hidden="true" />
-                      Loading
-                    </>
-                  ) : (
-                    'Show older posts'
-                  )}
-                </button>
-              )}
-            </>
-          )}
-        </main>
-
-        {/* Standings as a quiet aside, so the feed keeps the attention. */}
-        <aside className={styles.sidebar}>
-          <section className={styles.sideCard}>
-            <h2 className={styles.sideTitle}>
-              <Trophy size={14} aria-hidden="true" />
-              Techzim&apos;s Choice
-            </h2>
-
-            {topThree.length === 0 ? (
-              <p className={styles.sideEmpty}>Techzim hasn&apos;t published picks yet.</p>
-            ) : (
-              <ol className={styles.topList}>
-                {topThree.map((s, i) => (
-                  <li key={s.id} className={styles.topItem}>
-                    <span className={styles.topRank}>{i + 1}</span>
-                    <Logo name={s.name} url={s.logoUrl} initials={s.logoInitials} size="sm" />
-                    <Link href={`/startups/${s.slug}`} className={styles.topName}>
-                      {s.name}
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            )}
-
-            <Link href="/leaderboard" className={styles.sideLink}>
-              See all picks
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
-          </section>
-
-          <section className={styles.sideCard}>
-            <h2 className={styles.sideTitle}>Building something?</h2>
-            <p className={styles.sideText}>
-              Post your startup with screenshots and a demo video. The community tries it and
-              tells you what they think.
-            </p>
-            <Link href="/submit" className={styles.sideCta}>
-              Post your startup
-            </Link>
-          </section>
-        </aside>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function PostSkeleton() {
+function Card({ startup }: { startup: Startup }) {
   return (
-    <div className={styles.skelCard} aria-hidden="true">
-      <div className={styles.skelHead}>
-        <div className={`skel ${styles.skelLogo}`} />
-        <div>
-          <div className={`skel ${styles.skelName}`} />
-          <div className={`skel ${styles.skelMeta}`} />
+    <article className={styles.card}>
+      <div className={styles.cardTop}>
+        <Logo name={startup.name} url={startup.logoUrl} initials={startup.logoInitials} size="lg" />
+        <div className={styles.cardHead}>
+          <h2 className={styles.cardName}>
+            <Link href={`/startups/${startup.slug}`} className={`${styles.cardLink} stretch-link`}>
+              {startup.name}
+            </Link>
+          </h2>
+          <p className={styles.cardTagline}>{startup.tagline}</p>
         </div>
       </div>
-      <div className={`skel ${styles.skelBody}`} />
-      <div className={`skel ${styles.skelMedia}`} />
-    </div>
+
+      <div className={styles.cardMeta}>
+        <Badge variant="category">{startup.category}</Badge>
+        <Badge variant="region">{startup.region}</Badge>
+      </div>
+
+      <dl className={styles.stats}>
+        <div className={styles.stat}>
+          <dt><Heart size={12} aria-hidden="true" /><span className="sr-only">Likes</span></dt>
+          <dd className="tnum">{startup.likeCount}</dd>
+        </div>
+        <div className={styles.stat}>
+          <dt><MessageCircle size={12} aria-hidden="true" /><span className="sr-only">Comments</span></dt>
+          <dd className="tnum">{startup.commentCount}</dd>
+        </div>
+        <div className={styles.stat}>
+          <dt><Star size={12} aria-hidden="true" /><span className="sr-only">Reviews</span></dt>
+          <dd className="tnum">{startup.reviewCount}</dd>
+        </div>
+        <span className={styles.posts}>
+          {startup.postCount} update{startup.postCount === 1 ? '' : 's'}
+        </span>
+      </dl>
+    </article>
   );
 }
