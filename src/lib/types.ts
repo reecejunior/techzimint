@@ -230,16 +230,6 @@ export interface ReviewWithStartup extends Review {
   startupSlug: string;
 }
 
-/* ─── Techzim's Choice ────────────────────────────────────── */
-
-/** One editorial pick. Order in the array is the rank shown (1st = index 0). */
-export interface TechzimChoicePick {
-  startupId: string;
-  /** A short editorial line on why it's picked. Optional — an empty string
-   *  just shows the pick with no commentary. */
-  note: string;
-}
-
 /* ─── Notifications ───────────────────────────────────────── */
 
 /**

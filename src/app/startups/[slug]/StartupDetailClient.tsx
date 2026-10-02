@@ -564,22 +564,18 @@ function EditStartupForm({ startup, onDone }: { startup: Startup; onDone: () => 
 /* ─── Share ───
  * Native share sheet where it exists (mostly mobile); everywhere else, a
  * copy-to-clipboard fallback with its own confirmation rather than relying
- * on whatever toast the OS share sheet would have shown. */
+ * on whatever toast the OS share sheet would have shown. navigator.share
+ * rejects for reasons beyond "the visitor cancelled" — no share target
+ * configured, a permissions-policy block, a transient-activation quirk —
+ * and those used to be swallowed right alongside a cancellation, so the
+ * button silently did nothing. Only an actual cancel (AbortError) is
+ * treated as "nothing to report"; anything else falls through to the
+ * clipboard copy, so the visitor always ends up with either a native
+ * share, a deliberate no-op, or a copied link. */
 function ShareButton({ startup }: { startup: Startup }) {
     const [copied, setCopied] = useState(false);
 
-    async function share() {
-        const url = window.location.href;
-
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: startup.name, text: startup.tagline, url });
-            } catch {
-                // Cancelled by the visitor — nothing to report.
-            }
-            return;
-        }
-
+    async function copyLink(url: string) {
         try {
             await navigator.clipboard.writeText(url);
             setCopied(true);
@@ -587,6 +583,24 @@ function ShareButton({ startup }: { startup: Startup }) {
         } catch {
             // Clipboard permission denied — no fallback left to try.
         }
+    }
+
+    async function share() {
+        const url = window.location.href;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: startup.name, text: startup.tagline, url });
+            } catch (err) {
+                if (err instanceof Error && err.name === 'AbortError') return;
+                // Not a cancellation — the native sheet failed outright, so
+                // give the visitor the copy-link fallback instead of nothing.
+                await copyLink(url);
+            }
+            return;
+        }
+
+        await copyLink(url);
     }
 
     return (
@@ -628,7 +642,7 @@ export default function StartupDetailClient({ slug }: { slug: string }) {
             <div className={`wrap ${styles.stateWrap}`}>
                 <EmptyState title="We couldn't find that startup">
                     It may have been removed, or the link may be wrong.{' '}
-                    <Link href="/">Back to the feed</Link>.
+                    <Link href="/">Back to the directory</Link>.
                 </EmptyState>
             </div>
         );
@@ -656,7 +670,7 @@ function Loaded({ startup }: { startup: Startup }) {
             <div className="wrap">
                 <Link href="/" className={styles.back}>
                     <ArrowLeft size={14} aria-hidden="true" />
-                    Feed
+                    Startups
                 </Link>
 
                 {/* Posts go live on submit, so this only appears for something a
@@ -665,12 +679,12 @@ function Loaded({ startup }: { startup: Startup }) {
                 {startup.status !== 'approved' && (
                     <div className={styles.pendingNotice} role="status">
                         <strong>
-                            {startup.status === 'rejected' ? 'Removed from the feed' : 'Awaiting review'}
+                            {startup.status === 'rejected' ? 'Removed from the directory' : 'Awaiting review'}
                         </strong>
                         <p>
                             {startup.status === 'rejected'
-                                ? `${startup.name} has been taken down by a moderator. This page still works, but it won't appear in the feed or the leaderboard.`
-                                : `This page is live, but ${startup.name} won't appear in the feed or the leaderboard until it's approved.`}
+                                ? `${startup.name} has been taken down by a moderator. This page still works, but it won't appear in the directory.`
+                                : `This page is live, but ${startup.name} won't appear in the directory until it's approved.`}
                         </p>
                     </div>
                 )}

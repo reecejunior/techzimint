@@ -35,7 +35,7 @@ export default function ProfileClient({ username }: { username: string }) {
         return (
             <div className={`wrap ${styles.stateWrap}`}>
                 <EmptyState title="No reviewer by that name">
-                    The profile may have been removed. <Link href="/">Back to the leaderboard</Link>.
+                    The profile may have been removed. <Link href="/">Back to the directory</Link>.
                 </EmptyState>
             </div>
         );

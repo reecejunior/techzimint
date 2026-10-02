@@ -373,17 +373,6 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Techzim's Choice — an editorial top-5, replacing the algorithmic
-    // leaderboard on that page. Publicly readable like everything else; only
-    // the admin can write it, and — like the rest of the admin panel — that
-    // power stays off until adminActive() is flipped on.
-    match /techzimChoice/{docId} {
-      allow read: if true;
-      allow write: if isAdmin()
-                   && request.resource.data.picks is list
-                   && request.resource.data.picks.size() <= 5;
-    }
-
     // The weekly-digest mailing list. Deliberately unreadable by clients —
     // an email address is more sensitive than anything else this app stores,
     // and there is no legitimate reason a browser needs to list it. Only the
