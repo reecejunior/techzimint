@@ -3,26 +3,19 @@
 import { useState } from 'react';
 import {
   AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Loader2, LogOut, Mail,
-  MessageCircle, Pencil, PlaySquare, RotateCcw, ShieldCheck, Sparkles, Trash2, Trophy, X,
+  MessageCircle, Pencil, PlaySquare, RotateCcw, ShieldCheck, Trash2,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
-import {
-  approveStartup, deletePost, editPost, rejectStartup, saveTechzimChoice,
-} from '@/lib/firestore';
-import {
-  useAdminAuth, useAllStartupsForAdmin, useStartupPosts, useStartups, useTechzimChoice,
-} from '@/lib/hooks';
+import { approveStartup, deletePost, editPost, rejectStartup } from '@/lib/firestore';
+import { useAdminAuth, useAllStartupsForAdmin, useStartupPosts } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
-import type { Post, Startup, TechzimChoicePick } from '@/lib/types';
+import type { Post, Startup } from '@/lib/types';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
 
-type Tab = 'choice' | 'moderation';
-
 export default function AdminClient() {
   const { user, isAdmin, loading } = useAdminAuth();
-  const [tab, setTab] = useState<Tab>('choice');
 
   if (loading) {
     return (
@@ -53,33 +46,7 @@ export default function AdminClient() {
       <div className={`wrap ${styles.page}`}>
         <AdminHeader email={user?.email ?? null} />
         <StatsStrip />
-
-        <div className={styles.tabs} role="tablist" aria-label="Admin sections">
-          <button
-            type="button"
-            role="tab"
-            className={styles.tab}
-            data-active={tab === 'choice' || undefined}
-            aria-selected={tab === 'choice'}
-            onClick={() => setTab('choice')}
-          >
-            <Trophy size={14} aria-hidden="true" />
-            Techzim&apos;s Choice
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={styles.tab}
-            data-active={tab === 'moderation' || undefined}
-            aria-selected={tab === 'moderation'}
-            onClick={() => setTab('moderation')}
-          >
-            <ShieldCheck size={14} aria-hidden="true" />
-            Moderation
-          </button>
-        </div>
-
-        {tab === 'choice' ? <ChoiceEditor /> : <Queue />}
+        <Queue />
       </div>
     </div>
   );
@@ -110,7 +77,6 @@ function AdminHeader({ email }: { email: string | null }) {
 
 function StatsStrip() {
   const { data: startups, loading } = useAllStartupsForAdmin();
-  const { data: picks } = useTechzimChoice();
 
   const live = startups.filter(s => s.status === 'approved').length;
   const rejected = startups.filter(s => s.status === 'rejected').length;
@@ -125,178 +91,7 @@ function StatsStrip() {
         <span className={styles.statNum}>{loading ? '—' : rejected}</span>
         <span className={styles.statLabel}>rejected</span>
       </div>
-      <div className={styles.statItem}>
-        <span className={styles.statNum}>{picks.length}/5</span>
-        <span className={styles.statLabel}>Choice picks</span>
-      </div>
     </div>
-  );
-}
-
-function ChoiceEditor() {
-  const { data: startups } = useStartups();
-  const { data: picks, loading } = useTechzimChoice();
-  const [draft, setDraft] = useState<TechzimChoicePick[] | null>(null);
-  const [addId, setAddId] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Falls back to the live doc until the admin makes their first edit, at
-  // which point `draft` is non-null and wins — otherwise every snapshot
-  // update would clobber whatever they're mid-way through editing.
-  const current = draft ?? picks;
-  const startupById = new Map(startups.map(s => [s.id, s]));
-  const available = startups.filter(s => !current.some(p => p.startupId === s.id));
-
-  function change(next: TechzimChoicePick[]) {
-    setDraft(next);
-    setSaved(false);
-  }
-
-  function addPick() {
-    if (!addId || current.length >= 5) return;
-    change([...current, { startupId: addId, note: '' }]);
-    setAddId('');
-  }
-
-  function removePick(id: string) {
-    change(current.filter(p => p.startupId !== id));
-  }
-
-  function updateNote(id: string, note: string) {
-    change(current.map(p => (p.startupId === id ? { ...p, note } : p)));
-  }
-
-  function move(index: number, dir: -1 | 1) {
-    const target = index + dir;
-    if (target < 0 || target >= current.length) return;
-    const next = [...current];
-    [next[index], next[target]] = [next[target], next[index]];
-    change(next);
-  }
-
-  async function save() {
-    setSaving(true);
-    setError(null);
-    try {
-      await saveTechzimChoice(current);
-      setSaved(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <section className={styles.card}>
-      <div className={styles.cardHead}>
-        <span className={styles.cardIcon} data-tone="brand">
-          <Trophy size={16} aria-hidden="true" />
-        </span>
-        <div>
-          <h2 className={styles.cardTitle}>Techzim&apos;s Choice</h2>
-          <p className={styles.cardSubtitle}>
-            Up to 5, in order — this is what visitors see instead of a leaderboard. An empty note
-            is fine; add one when there&apos;s something worth saying about the pick.
-          </p>
-        </div>
-      </div>
-
-      {current.length > 0 && (
-        <ul className={styles.choiceList}>
-          {current.map((p, i) => {
-            const s = startupById.get(p.startupId);
-            return (
-              <li key={p.startupId} className={styles.choiceRow}>
-                <div className={styles.choiceMove}>
-                  <button
-                    type="button"
-                    className={styles.choiceMoveBtn}
-                    onClick={() => move(i, -1)}
-                    disabled={i === 0}
-                    aria-label="Move up"
-                  >
-                    <ChevronUp size={14} aria-hidden="true" />
-                  </button>
-                  <span className={styles.choiceRank}>{i + 1}</span>
-                  <button
-                    type="button"
-                    className={styles.choiceMoveBtn}
-                    onClick={() => move(i, 1)}
-                    disabled={i === current.length - 1}
-                    aria-label="Move down"
-                  >
-                    <ChevronDown size={14} aria-hidden="true" />
-                  </button>
-                </div>
-
-                <div className={styles.choiceBody}>
-                  <span className={styles.choiceName}>{s?.name ?? `(missing: ${p.startupId})`}</span>
-                  <input
-                    className={styles.choiceNote}
-                    placeholder="Why it's picked (optional)"
-                    maxLength={280}
-                    value={p.note}
-                    onChange={e => updateNote(p.startupId, e.target.value)}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.choiceRemove}
-                  onClick={() => removePick(p.startupId)}
-                  aria-label={`Remove ${s?.name ?? 'this pick'}`}
-                >
-                  <X size={14} aria-hidden="true" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {current.length < 5 && (
-        <div className={styles.choiceAdd}>
-          <select
-            className={styles.choiceSelect}
-            value={addId}
-            onChange={e => setAddId(e.target.value)}
-            aria-label="Add a product to Techzim's Choice"
-          >
-            <option value="">Add a product…</option>
-            {available.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <button type="button" className={styles.choiceAddBtn} onClick={addPick} disabled={!addId}>
-            Add
-          </button>
-        </div>
-      )}
-
-      <div className={styles.choiceActions}>
-        <button type="button" className={styles.submitBtn} onClick={save} disabled={saving || loading}>
-          {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
-          {saving ? 'Saving…' : loading ? 'Loading current picks…' : 'Save picks'}
-        </button>
-        {saved && (
-          <span className={styles.choiceSaved}>
-            <Sparkles size={13} aria-hidden="true" />
-            Saved
-          </span>
-        )}
-      </div>
-
-      {error && (
-        <p className={styles.formError} role="alert">
-          {error}
-        </p>
-      )}
-    </section>
   );
 }
 
@@ -344,7 +139,7 @@ function LoginForm() {
         <ShieldCheck size={22} strokeWidth={1.75} aria-hidden="true" />
       </span>
       <h1 className={styles.gateTitle}>Admin sign-in</h1>
-      <p className={styles.gateLede}>Techzim Startups moderation &amp; Techzim&apos;s Choice</p>
+      <p className={styles.gateLede}>Techzim Startups moderation</p>
 
       <form className={styles.loginForm} onSubmit={submit}>
         <label className={styles.field}>
@@ -429,9 +224,8 @@ function Queue() {
           <h2 className={styles.cardTitle}>Moderation</h2>
           <p className={styles.cardSubtitle}>
             Every startup, newest submission first. Expand one to read, edit or remove its
-            updates. Rejecting a startup pulls it out of the feed immediately (and off
-            Techzim&apos;s Choice, if it&apos;s currently picked) — its own page still loads,
-            marked as removed.
+            updates. Rejecting a startup pulls it out of the directory immediately — its own
+            page still loads, marked as removed.
           </p>
         </div>
       </div>

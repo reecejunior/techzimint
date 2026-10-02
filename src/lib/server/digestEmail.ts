@@ -79,7 +79,7 @@ export function renderDigestEmail(params: {
           }
 
           <tr><td style="padding:26px 32px 28px;">
-            <a href="${siteUrl}/leaderboard" style="display:inline-block;background:${BRAND};color:#FFFFFF;font:600 14px ${FONT};text-decoration:none;padding:10px 22px;border-radius:999px;">See the full leaderboard</a>
+            <a href="${siteUrl}" style="display:inline-block;background:${BRAND};color:#FFFFFF;font:600 14px ${FONT};text-decoration:none;padding:10px 22px;border-radius:999px;">See the full directory</a>
           </td></tr>
 
           <tr><td style="padding:16px 32px 26px;border-top:1px solid ${HAIRLINE};">

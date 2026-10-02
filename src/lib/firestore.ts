@@ -51,7 +51,6 @@ import type {
   StartupEditInput,
   StartupSubmission,
   PostImage,
-  TechzimChoicePick,
 } from './types';
 
 export { periodKeys, slugify, withRanks } from './ranking';
@@ -281,53 +280,12 @@ function mapReviewer(snap: QueryDocumentSnapshot<DocumentData>): Reviewer {
   };
 }
 
-/* ─── Feed ────────────────────────────────────────────────── */
-
-/**
- * Live feed of the newest posts across every approved startup.
- *
- * `approved` is denormalised onto each post so this is a single collection-group
- * query — joining to the parent startup to check its status would mean a read
- * per post, which the feed cannot afford.
- */
-export function subscribeToFeed(
-  onData: (posts: Post[]) => void,
-  onError: (err: Error) => void,
-  pageSize = FEED_PAGE_SIZE,
-): () => void {
-  const q = query(
-    collectionGroup(getDb(), 'posts'),
-    where('approved', '==', true),
-    orderBy('createdAt', 'desc'),
-    limit(pageSize),
-  );
-  return onSnapshot(
-    q,
-    snap => onData(snap.docs.map(mapPost)),
-    err => onError(err as Error),
-  );
-}
-
-/** Next page of the feed. Cursor is the createdAt of the last post shown. */
-export async function fetchFeedPage(
-  afterIso: string,
-  pageSize = FEED_PAGE_SIZE,
-): Promise<Post[]> {
-  const q = query(
-    collectionGroup(getDb(), 'posts'),
-    where('approved', '==', true),
-    orderBy('createdAt', 'desc'),
-    startAfter(Timestamp.fromDate(new Date(afterIso))),
-    limit(pageSize),
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(mapPost);
-}
-
 /* ─── Video feed ──────────────────────────────────────────────
- * Same shape as the main feed, narrowed to posts that carry a video.
- * `hasVideo` exists precisely because Firestore can't ask for "video is not
- * null" — see the Post type. */
+ * Live feed of posts that carry a video, across every approved startup.
+ * `approved` is denormalised onto each post so this is a single
+ * collection-group query — joining to the parent startup to check its status
+ * would mean a read per post. `hasVideo` exists precisely because Firestore
+ * can't ask for "video is not null" — see the Post type. */
 
 export function subscribeToVideoFeed(
   onData: (posts: Post[]) => void,
@@ -1346,38 +1304,3 @@ export async function subscribeEmail(email: string): Promise<void> {
   });
 }
 
-/* ─── Techzim's Choice ────────────────────────────────────────
- * A single document holding an ordered list of picks, rather than the
- * derived, everyone-can-move-it ranking the rest of the site uses — this one
- * only ever changes when an admin writes it. Gated by the same isAdmin() +
- * adminActive() kill switch as the rest of the admin panel; see
- * firestore.rules. */
-
-const TECHZIM_CHOICE_REF_PATH = ['techzimChoice', 'current'] as const;
-
-export function subscribeToTechzimChoice(
-  onData: (picks: TechzimChoicePick[]) => void,
-  onError: (err: Error) => void,
-): () => void {
-  return onSnapshot(
-    doc(getDb(), ...TECHZIM_CHOICE_REF_PATH),
-    snap => {
-      const raw = snap.data()?.picks;
-      const picks: TechzimChoicePick[] = Array.isArray(raw)
-        ? raw
-            .filter(p => p && typeof p.startupId === 'string')
-            .map(p => ({ startupId: String(p.startupId), note: String(p.note ?? '') }))
-        : [];
-      onData(picks);
-    },
-    err => onError(err as Error),
-  );
-}
-
-export async function saveTechzimChoice(picks: TechzimChoicePick[]): Promise<void> {
-  const trimmed = picks.slice(0, 5).map(p => ({ startupId: p.startupId, note: p.note.trim().slice(0, 280) }));
-  await setDoc(doc(getDb(), ...TECHZIM_CHOICE_REF_PATH), {
-    picks: trimmed,
-    updatedAt: serverTimestamp(),
-  });
-}

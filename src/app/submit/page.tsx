@@ -145,9 +145,9 @@ export default function SubmitPage() {
                         <CheckCircle2 size={50} className={styles.successIcon} strokeWidth={1.5} />
                         <h1>You&apos;re live</h1>
                         <p>
-                            <strong>{form.name}</strong> is in the feed now. Share the link and
+                            <strong>{form.name}</strong> is in the directory now. Share the link and
                             the community can start liking, commenting and reviewing — that&apos;s
-                            what sets your place on the leaderboard.
+                            what sets your ranking.
                         </p>
                         {slug && (
                             <Link href={`/startups/${slug}`} className={styles.successCta}>
@@ -155,7 +155,7 @@ export default function SubmitPage() {
                             </Link>
                         )}
                         <Link href="/" className={styles.successSecondary}>
-                            Back to the feed
+                            Back to the directory
                         </Link>
                     </div>
                 </div>
@@ -170,7 +170,7 @@ export default function SubmitPage() {
                     <p className={styles.eyebrow}>Founders</p>
                     <h1 className={styles.title}>Post your startup</h1>
                     <p className={styles.subtitle}>
-                        Share what you&apos;re building. The community tries it, and their likes, comments and reviews set your place on the leaderboard.
+                        Share what you&apos;re building. The community tries it, and their likes, comments and reviews set your ranking.
                     </p>
                 </header>
 
@@ -357,7 +357,7 @@ export default function SubmitPage() {
                             <>
                                 <h2 className={styles.stepTitle}>Logo, screenshots &amp; video</h2>
                                 <p className={styles.stepHint}>
-                                    This is what people see in the feed. A logo and one good
+                                    This is what people see in the directory. A logo and one good
                                     screenshot make far more difference than a long description.
                                     Paste links to images you already host — there are free
                                     hosts linked below.
@@ -564,7 +564,7 @@ export default function SubmitPage() {
 
                         <div className={styles.sideCallout}>
                             <strong>What happens next?</strong>
-                            After approval your startup goes live on the leaderboard — the community
+                            After approval your startup goes live in the directory — the community
                             can start voting and reviewing immediately.
                         </div>
                     </aside>

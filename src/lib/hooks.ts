@@ -5,13 +5,11 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { ensureSignedIn, getFirebaseAuth, isAdminUser, isFirebaseConfigured } from './firebase';
 import {
   FEED_PAGE_SIZE,
-  fetchFeedPage,
   fetchStartupBySlug,
   fetchVideoFeedPage,
   getReviewerByUsername,
   getReviewsByAuthor,
   subscribeToComments,
-  subscribeToFeed,
   subscribeToMyHelpfulMarks,
   subscribeToMyLikes,
   subscribeToMyNotificationPref,
@@ -21,7 +19,6 @@ import {
   subscribeToStartupPosts,
   subscribeToStartups,
   subscribeToStartupsForAdmin,
-  subscribeToTechzimChoice,
   subscribeToVideoFeed,
 } from './firestore';
 import type {
@@ -33,7 +30,6 @@ import type {
   Reviewer,
   ReviewWithStartup,
   Startup,
-  TechzimChoicePick,
 } from './types';
 
 const NOT_CONFIGURED =
@@ -134,11 +130,6 @@ function useFeedQuery(subscribe: FeedSubscribe, fetchPage: (afterIso: string) =>
     loadingMore,
     loadMore,
   };
-}
-
-/** Everything, newest first. */
-export function useFeed(): FeedState {
-  return useFeedQuery(subscribeToFeed, fetchFeedPage);
 }
 
 /** Only posts carrying a video, newest first. */
@@ -465,23 +456,3 @@ export function useReviewerProfile(username: string): AsyncState<Profile> {
   return state;
 }
 
-/* ─── Techzim's Choice ────────────────────────────────────── */
-
-export function useTechzimChoice(): AsyncState<TechzimChoicePick[]> {
-  const [state, setState] = useState<AsyncState<TechzimChoicePick[]>>({
-    data: [],
-    loading: true,
-    error: null,
-  });
-
-  useEffect(() => {
-    if (!isFirebaseConfigured) return;
-    return subscribeToTechzimChoice(
-      picks => setState({ data: picks, loading: false, error: null }),
-      err => setState({ data: [], loading: false, error: err.message }),
-    );
-  }, []);
-
-  if (!isFirebaseConfigured) return { data: [], loading: false, error: null };
-  return state;
-}
