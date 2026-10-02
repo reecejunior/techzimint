@@ -65,3 +65,23 @@ Dated log of growth/product thinking from the daily-improve run. Newest entries 
 - An optional "Open roles" field on a startup's own listing so job seekers can see who's hiring directly from the directory, without leaving the site.
 - A Shona/Ndebele toggle for the site's chrome and page copy, broadening reach beyond English-only visitors.
 - A startup "perks marketplace" — listed companies can offer each other (or the community) discounts/credits, giving founders a reason to check the directory even when not promoting their own listing.
+
+## 2026-10-02
+
+**Target audience**
+- Zimbabwean/African founders — come to launch, get feedback, and track how their product ranks against peers.
+- Angel investors/VCs and corporate innovation teams — come to scout what's gaining traction before it's on their radar elsewhere.
+- Job seekers and students — come to find startups that are actually hiring or worth interning at, and to see what's being built locally.
+- Diaspora and media (incl. Techzim itself) — come for a quick pulse on the local tech scene to write about or point family/contacts toward.
+
+**Growth ideas**
+- Add a one-tap "Share to WhatsApp" action with a prefilled message (name, tagline, link) distinct from the existing generic Share2 button/native share sheet — WhatsApp is the dominant sharing channel locally, and a generic `navigator.share` sheet buries it a tap deeper than it deserves.
+- Build a white-label cohort sub-page for accelerator/hub partners (e.g. `/startups?cohort=hit-2026`) listing just their batch, that the hub can link from their own site — a concrete asset to hand partners instead of only the outreach ask already logged.
+- Auto-draft a monthly "movers" recap post from `rankDeltaMonth` (who climbed, who's new, who's trending) pitched to local tech press as linkable narrative content — distinct from the raw JSON-LD/mini-leaderboard/CSV-export ideas already logged, which are data, not a story.
+- Add a lightweight listing-completeness nudge ("Add a demo link to stand out — 3 of 5 details filled in") shown only to the founder on their own startup page, to lift thin listings without gating submission on it up front.
+
+**Feature backlog**
+- A "Most improved this month" badge computed from the existing `rankDeltaMonth` field — reuses data already tracked for the rank chart, distinct from the existing Trending/Startup-of-the-Week/anniversary badge ideas.
+- Bulk admin actions (approve/reject several pending submissions in one pass) in `AdminClient` — internal moderation tooling, not a founder-facing feature.
+- Per-category email digest preference (opt into just Fintech updates, say) rather than today's single all-or-nothing instant/daily toggle.
+- A cross-startup public changelog/activity timeline (every update, every startup, filterable by category) — a directory-wide view of the Updates thread that today only exists per-startup.
