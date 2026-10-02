@@ -45,3 +45,23 @@ Dated log of growth/product thinking from the daily-improve run. Newest entries 
 - Search-as-you-type autocomplete for startup names from the main nav, rather than only the in-page search on `/startups`.
 - A launch-anniversary badge (30/90/365 days live) as a light, time-based recognition distinct from the existing Trending/Startup of the Week badges.
 - A one-off CSV/JSON export of the full directory for researchers and journalists, distinct from a live RSS/API feed.
+
+## 2026-10-01
+
+**Target audience**
+- Zimbabwean/African founders — come to launch, get feedback, and track how their product ranks against peers.
+- Angel investors/VCs and corporate innovation teams — come to scout what's gaining traction before it's on their radar elsewhere.
+- Job seekers and students — come to find startups that are actually hiring or worth interning at, and to see what's being built locally.
+- Diaspora and media (incl. Techzim itself) — come for a quick pulse on the local tech scene to write about or point family/contacts toward.
+
+**Growth ideas**
+- Give each founder a personal, UTM-tagged share link for their own listing (distinct from the generic share button that exists today) with a simple visit count shown only to them — turns "share your startup" from a one-off ask into something they keep coming back to check.
+- Pitch a recurring "founder spotlight" slot to external Zimbabwean tech newsletters/podcasts (not Techzim's own channels, which are already covered in the 2026-09-30 entry) — syndicated distribution the site doesn't own but can feed with almost no extra work.
+- Auto-generate a shareable "milestone" card (100 likes, 50 reviews, etc.) the moment a startup crosses a round-number threshold, prompting the founder to post it — engagement-triggered, unlike the time-based launch-anniversary badge already logged.
+- Build simple region-specific landing pages (e.g. "Startups in Bulawayo") with real SEO copy, distinct from the category-specific leaderboard pages already logged — region is a second, separate axis locals and diaspora actually search on.
+
+**Feature backlog**
+- A "Compare startups" tool: pick 2-3 listings and see their ratings and stats side by side — useful for an investor or job seeker choosing between similar products, distinct from the investor shortlist/bookmark idea already logged.
+- An optional "Open roles" field on a startup's own listing so job seekers can see who's hiring directly from the directory, without leaving the site.
+- A Shona/Ndebele toggle for the site's chrome and page copy, broadening reach beyond English-only visitors.
+- A startup "perks marketplace" — listed companies can offer each other (or the community) discounts/credits, giving founders a reason to check the directory even when not promoting their own listing.
