@@ -128,7 +128,7 @@ export default function ProfileClient({ username }: { username: string }) {
                                             </Link>
                                             <StarRating value={avg} size={13} showNumber />
                                             <time className={styles.reviewDate} dateTime={r.createdAt}>
-                                                {r.createdAt}
+                                                {r.createdAt.slice(0, 10)}
                                             </time>
                                         </div>
 
