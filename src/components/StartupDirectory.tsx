@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Heart, MessageCircle, Search, Star } from 'lucide-react';
 import { useStartups } from '@/lib/hooks';
-import { categories, type Startup } from '@/lib/types';
+import { categories, regions, type Startup } from '@/lib/types';
 import PageHeader from '@/components/PageHeader';
 import Badge from '@/components/ui/Badge';
 import Logo from '@/components/ui/Logo';
@@ -60,12 +60,15 @@ export default function StartupDirectory({
   const { data: startups, loading, error } = useStartups();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [region, setRegion] = useState('all');
   const [sort, setSort] = useState<SortKey>('name');
+  const regionSelectId = useId();
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = startups
       .filter(s => category === 'all' || s.category === category)
+      .filter(s => region === 'all' || s.region === region)
       .filter(
         s =>
           !q ||
@@ -74,7 +77,7 @@ export default function StartupDirectory({
           s.description.toLowerCase().includes(q),
       );
     return sortStartups(filtered, sort);
-  }, [startups, category, query, sort]);
+  }, [startups, category, region, query, sort]);
 
   return (
     <div className={styles.page}>
@@ -103,6 +106,25 @@ export default function StartupDirectory({
             onChange={e => setQuery(e.target.value)}
             aria-label="Search startups"
           />
+        </div>
+
+        <div className={styles.sortWrap}>
+          <label htmlFor={regionSelectId} className="sr-only">
+            Filter by region
+          </label>
+          <select
+            id={regionSelectId}
+            className={styles.sortSelect}
+            value={region}
+            onChange={e => setRegion(e.target.value)}
+          >
+            <option value="all">All regions</option>
+            {regions.map(r => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.sortWrap}>
