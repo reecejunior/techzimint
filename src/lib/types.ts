@@ -257,6 +257,75 @@ export interface Notification {
 
 export type NotificationEmailMode = 'instant' | 'daily' | 'off';
 
+/* ─── Community ───────────────────────────────────────────── */
+
+export type CommunityKind = 'question' | 'showcase';
+
+/**
+ * One post in the developer community — a question/help thread or a
+ * show-and-tell/build-in-public post. Lives at `communityPosts/{id}`, a
+ * top-level collection independent of `startups`: a community post never
+ * belongs to a startup and never touches anything the ranking system reads
+ * (no `score`, `rank`, `rankHistory`, `scoreWeek`, etc).
+ *
+ * Open to any signed-in visitor, not just startup owners or founders — the
+ * same anonymous-auth session the rest of the site already uses
+ * (ensureSignedIn()), never a separate account system.
+ */
+export interface CommunityPost {
+  id: string;
+  kind: CommunityKind;
+  title: string;
+  body: string;
+  tags: string[];
+
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+
+  likeCount: number;
+  commentCount: number;
+
+  /** Questions only — a showcase is never "answered". */
+  isAnswered: boolean;
+  /** The comment marked as the accepted answer, or null. Only the asker may
+   *  set this, and only on a `kind: 'question'` post — see markCommunityAnswer. */
+  acceptedCommentId: string | null;
+
+  /** Mirrors the moderation parity startup posts already have: posts go live
+   *  immediately, and an admin can pull one out of the feed after the fact
+   *  by flipping this rather than deleting it outright. */
+  approved: boolean;
+  createdAt: string;
+}
+
+/** Mirrors Comment's shape (see above) — same denormalised author fields,
+ *  same one-level-of-nesting `parentId` convention. */
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  body: string;
+  createdAt: string;
+  /** The top-level comment this replies to, or null. One level of nesting,
+   *  same rule as Comment: replying to a reply attaches to that reply's own
+   *  parent, not to it. */
+  parentId: string | null;
+  /** True once the post's own author has marked this as the accepted answer
+   *  to their question. Always false on a showcase post's comments. */
+  isAccepted: boolean;
+}
+
+/** What the composer collects to create a CommunityPost. */
+export interface CommunityPostDraft {
+  kind: CommunityKind;
+  title: string;
+  body: string;
+  tags: string[];
+}
+
 /**
  * One visitor's opt-in for getting notifications by email too, not just in
  * the bell. Doc id is their own anonymous uid — same one-per-visitor trick

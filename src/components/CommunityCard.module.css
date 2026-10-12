@@ -1,0 +1,190 @@
+/* A feed card for the community section. Position relative so the stretch-link
+   on the title can cover the whole card while the footer's own controls stay
+   clickable above it (see globals.css' .stretch-link). */
+.card {
+  position: relative;
+  padding: var(--s-5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--white);
+  transition: border-color var(--fast) var(--ease);
+}
+
+.card:hover {
+  border-color: var(--hairline-strong);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.kindBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--track-caption);
+}
+
+/* Questions lean neutral — they're a request, not an announcement. */
+.kindQuestion {
+  background: #F2EFEC;
+  color: var(--ink-700);
+}
+
+/* Showcases get the one warm tint on the card — they're the "look what I
+   made" moment, which earns the brand colour the rest of this card avoids. */
+.kindShowcase {
+  background: var(--surface-2);
+  color: var(--orange-700);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-400);
+  background: #F2EFEC;
+}
+
+.statusAnswered {
+  color: var(--orange-700);
+  background: var(--surface-2);
+}
+
+.title {
+  margin-bottom: var(--s-2);
+}
+
+.titleLink {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-900);
+  letter-spacing: var(--track-body);
+  line-height: 1.35;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.excerpt {
+  font-size: 15px;
+  color: var(--ink-500);
+  line-height: 1.5;
+  /* Three lines max — this is a teaser, the thread page holds the whole post. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+.tag {
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--hairline);
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.authorName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time {
+  font-size: 12px;
+  color: var(--ink-400);
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  flex-shrink: 0;
+}
+
+/* Sits above the card's stretch-link overlay (z-index: 1) so the like
+   button stays its own target instead of triggering navigation. */
+.action {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--ink-500);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+button.action:hover:not(:disabled) {
+  color: var(--ink-900);
+  background: #F7F4F1;
+}
+
+button.action:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.actionCount {
+  font-variant-numeric: tabular-nums;
+  min-width: 1ch;
+}
+
+.liked {
+  color: var(--brand);
+}
+
+.liked:hover {
+  color: var(--brand-hover);
+}
+
+.failed {
+  position: relative;
+  z-index: 2;
+  margin-top: var(--s-2);
+  font-size: 13px;
+  color: var(--orange-800);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 7px 11px;
+}

@@ -366,6 +366,123 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ═══ Community ═══════════════════════════════════════════════
+    // Developer Q&A and show-and-tell. Independent of /startups entirely —
+    // nothing in this section reads or writes a startup, and no rule below
+    // ever mentions score/rank/rankHistory/scoreWeek or any other ranking
+    // field, because this feature does not touch the ranking system at all.
+    // Open to any signed-in visitor (anonymous auth, same as the rest of the
+    // site) — there is no ownership check tying posting here to the startup
+    // directory.
+    match /communityPosts/{postId} {
+      allow read: if true;
+
+      // Anyone signed in may start a thread. A new post can never arrive
+      // pre-loaded with engagement, already "answered", or hidden —
+      // moderation here is reactive (same as startups/posts), not a queue.
+      allow create: if signedIn()
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.kind in ['question', 'showcase']
+                    && request.resource.data.title is string
+                    && request.resource.data.title.size() > 0
+                    && request.resource.data.title.size() <= 140
+                    && request.resource.data.body is string
+                    && request.resource.data.body.size() > 0
+                    && request.resource.data.body.size() <= 4000
+                    && request.resource.data.tags is list
+                    && request.resource.data.tags.size() <= 5
+                    && request.resource.data.likeCount == 0
+                    && request.resource.data.commentCount == 0
+                    && request.resource.data.isAnswered == false
+                    && request.resource.data.acceptedCommentId == null
+                    && request.resource.data.approved == true;
+
+      // Anyone signed in may nudge the like counter — nothing else about the
+      // post moves this way, not even by its own author.
+      allow update: if signedIn()
+                    && movedByOne('likeCount')
+                    && touched().hasOnly(['likeCount']);
+
+      // A new comment bumps this post's own counter — nothing else moves
+      // this way either.
+      allow update: if signedIn()
+                    && movedByOne('commentCount')
+                    && touched().hasOnly(['commentCount']);
+
+      // The question's own author accepting (or un-accepting) one reply as
+      // the answer. Gated three ways: only the author (resource.data.authorId,
+      // i.e. who *already* owns this doc — not the incoming write, so this
+      // can't be forged by also rewriting authorId, which touched() already
+      // forbids by not listing it), only on a `kind: 'question'` post (a
+      // showcase can never become "answered"), and — rather than trust
+      // whatever id the client sends — the target must be a real, top-level
+      // comment that actually lives under this same post, the same way a
+      // reply's own parentId is checked below.
+      allow update: if signedIn()
+                    && resource.data.authorId == request.auth.uid
+                    && resource.data.kind == 'question'
+                    && touched().hasOnly(['isAnswered', 'acceptedCommentId'])
+                    && ((request.resource.data.isAnswered == false
+                         && request.resource.data.acceptedCommentId == null)
+                        || (request.resource.data.isAnswered == true
+                            && request.resource.data.acceptedCommentId is string
+                            && get(/databases/$(database)/documents/communityPosts/$(postId)/comments/$(request.resource.data.acceptedCommentId)).data.parentId == null));
+
+      // Admin moderation: pulls a post out of the feed (or restores it)
+      // without touching anything else — mirrors startups' posts.
+      allow update: if isAdmin() && touched().hasOnly(['approved']);
+
+      // No delete in this first slice — an admin pulls a post from the feed
+      // via `approved` instead of removing it outright.
+      allow delete: if false;
+
+      match /comments/{commentId} {
+        allow read: if true;
+
+        allow create: if signedIn()
+                      && request.resource.data.authorId == request.auth.uid
+                      && request.resource.data.postId == postId
+                      && request.resource.data.body is string
+                      && request.resource.data.body.size() > 0
+                      && request.resource.data.body.size() <= 2000
+                      && request.resource.data.isAccepted == false
+                      // A reply's target must be a real, top-level comment —
+                      // keeps nesting at exactly one level, same rule as the
+                      // startup comments above: replying to a reply is
+                      // rejected here, and the client re-parents it to the
+                      // reply's own parent instead.
+                      && (request.resource.data.parentId == null
+                          || (request.resource.data.parentId is string
+                              && get(/databases/$(database)/documents/communityPosts/$(postId)/comments/$(request.resource.data.parentId)).data.parentId == null));
+
+        // Comments are not editable by their own author — the one exception
+        // is the parent post's author flipping `isAccepted`, and only on a
+        // top-level reply under a question of theirs. get() re-checks that
+        // ownership server-side rather than trusting the client's claim, the
+        // same way the parent post's own accept-answer branch does.
+        allow update: if signedIn()
+                      && touched().hasOnly(['isAccepted'])
+                      && resource.data.parentId == null
+                      && get(/databases/$(database)/documents/communityPosts/$(postId)).data.authorId == request.auth.uid
+                      && get(/databases/$(database)/documents/communityPosts/$(postId)).data.kind == 'question';
+
+        allow delete: if false;
+      }
+    }
+
+    // One like per (community post, visitor) — the same `postId__uid` id
+    // trick as /likes, but its own collection: a community post's id can
+    // never collide with a startup post's id in a like record, because the
+    // two never share a collection to collide in.
+    match /communityLikes/{likeId} {
+      allow read: if mineOrMissing();
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && likeId == request.resource.data.postId + '__' + request.auth.uid;
+      allow delete: if mine();
+      allow update: if false;
+    }
+
     // Reviewer profiles are editorial content — readable by all, writable only
     // from the seed script or the console.
     match /reviewers/{reviewerId} {
