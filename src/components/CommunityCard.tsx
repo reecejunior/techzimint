@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { CheckCircle2, Heart, MessageCircle } from 'lucide-react';
+import { BarChart3, CheckCircle2, Heart, MessageCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { toggleCommunityLike } from '@/lib/firestore';
 import { timeAgo } from '@/lib/ranking';
@@ -10,17 +10,25 @@ import type { CommunityPost } from '@/lib/types';
 import Avatar from '@/components/ui/Avatar';
 import styles from './CommunityCard.module.css';
 
+const KIND_LABEL: Record<CommunityPost['kind'], string> = {
+  question: 'Question',
+  showcase: 'Show & Tell',
+  poll: 'Poll',
+};
+
 interface CommunityCardProps {
   post: CommunityPost;
   liked: boolean;
 }
 
 /**
- * A feed item for the community section — a question/help thread or a
- * show-and-tell post, visually told apart by the kind label up top and, for
- * a question, an Answered/Open badge. The whole card links to the thread
- * (see stretch-link in globals.css); the like button sits above that overlay
- * so it stays its own target instead of triggering navigation.
+ * A feed item for the community section — a question/help thread, a
+ * show-and-tell post, or a poll — visually told apart by the kind label up
+ * top and, for a question, an Answered/Open badge. A poll also gets a
+ * compact preview of its first couple of options (see below). The whole
+ * card links to the thread (see stretch-link in globals.css); the like
+ * button sits above that overlay so it stays its own target instead of
+ * triggering navigation.
  */
 export default function CommunityCard({ post, liked }: CommunityCardProps) {
   const [pendingLike, setPendingLike] = useState(false);
@@ -57,13 +65,13 @@ export default function CommunityCard({ post, liked }: CommunityCardProps) {
         <span
           className={clsx(
             styles.kindBadge,
-            post.kind === 'question' ? styles.kindQuestion : styles.kindShowcase,
+            post.kind === 'showcase' ? styles.kindShowcase : styles.kindNeutral,
           )}
         >
-          {post.kind === 'question' ? 'Question' : 'Show & Tell'}
+          {KIND_LABEL[post.kind]}
         </span>
 
-        {/* Only a question can be "answered" — a showcase never carries this. */}
+        {/* Only a question can be "answered" — a showcase or poll never carries this. */}
         {post.kind === 'question' && (
           <span className={clsx(styles.statusBadge, post.isAnswered && styles.statusAnswered)}>
             {post.isAnswered && <CheckCircle2 size={12} aria-hidden="true" />}
@@ -79,6 +87,28 @@ export default function CommunityCard({ post, liked }: CommunityCardProps) {
       </h3>
 
       <p className={styles.excerpt}>{post.body}</p>
+
+      {/* A compact preview, not live results: the full voting/tally UI lives
+          on the thread page. Showing the first couple of options (no counts,
+          no subscription) keeps a feed of many cards from opening one vote
+          listener per poll just to render a teaser. */}
+      {post.kind === 'poll' && post.pollOptions.length > 0 && (
+        <div className={styles.pollPreview}>
+          <ul className={styles.pollPreviewOptions}>
+            {post.pollOptions.slice(0, 2).map(opt => (
+              <li key={opt.id} className={styles.pollPreviewOption}>
+                {opt.label}
+              </li>
+            ))}
+          </ul>
+          <span className={styles.pollPreviewCta}>
+            <BarChart3 size={13} aria-hidden="true" />
+            {post.pollOptions.length > 2
+              ? `+${post.pollOptions.length - 2} more · Vote`
+              : 'Vote'}
+          </span>
+        </div>
+      )}
 
       {post.tags.length > 0 && (
         <ul className={styles.tags}>

@@ -12,7 +12,9 @@ import {
   subscribeToComments,
   subscribeToCommunityComments,
   subscribeToCommunityFeed,
+  subscribeToCommunityPollVotes,
   subscribeToCommunityPost,
+  subscribeToMyCommunityCommentLikes,
   subscribeToMyCommunityLikes,
   subscribeToMyHelpfulMarks,
   subscribeToMyLikes,
@@ -29,6 +31,7 @@ import type {
   Comment,
   CommunityComment,
   CommunityKind,
+  CommunityPollVote,
   CommunityPost,
   Notification,
   NotificationPref,
@@ -402,6 +405,73 @@ export function useMyCommunityLikes(): Set<string> {
     return subscribeToMyCommunityLikes(setIds, () => setIds(new Set()));
   }, []);
   return ids;
+}
+
+/** Community *comment* ids this visitor has liked — a third like set,
+ *  independent of both useMyLikes and useMyCommunityLikes. */
+export function useMyCommunityCommentLikes(): Set<string> {
+  const [ids, setIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToMyCommunityCommentLikes(setIds, () => setIds(new Set()));
+  }, []);
+  return ids;
+}
+
+export interface PollTally {
+  /** optionId → vote count, for every option that has at least one vote. */
+  counts: Map<string, number>;
+  totalVotes: number;
+  /** The optionId this visitor voted for, or null if they haven't. */
+  myVote: string | null;
+  loading: boolean;
+  error: string | null;
+}
+
+/**
+ * Tallies for one poll. This is the "hook owns the derived shape, firestore.ts
+ * owns the raw subscription" split useFeedQuery already uses for pagination —
+ * subscribeToCommunityPollVotes hands back the raw vote docs, and counting
+ * them into per-option totals (plus picking out this visitor's own vote) is
+ * presentation logic that lives here rather than in firestore.ts. See the
+ * longer comment above subscribeToCommunityPollVotes for why these are
+ * tallied in memory at all, rather than from a stored counter.
+ */
+export function useCommunityPollVotes(postId: string | undefined): PollTally {
+  const uid = useMyUid();
+  const [state, setState] = useState<AsyncState<CommunityPollVote[]> & { forId?: string }>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!postId || !isFirebaseConfigured) return;
+    return subscribeToCommunityPollVotes(
+      postId,
+      votes => setState({ data: votes, loading: false, error: null, forId: postId }),
+      err => setState({ data: [], loading: false, error: err.message, forId: postId }),
+    );
+  }, [postId]);
+
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const v of state.data) m.set(v.optionId, (m.get(v.optionId) ?? 0) + 1);
+    return m;
+  }, [state.data]);
+
+  const myVote = useMemo(
+    () => (uid ? (state.data.find(v => v.uid === uid)?.optionId ?? null) : null),
+    [state.data, uid],
+  );
+
+  if (!isFirebaseConfigured) {
+    return { counts: new Map(), totalVotes: 0, myVote: null, loading: false, error: null };
+  }
+  if (!postId || state.forId !== postId) {
+    return { counts: new Map(), totalVotes: 0, myVote: null, loading: true, error: null };
+  }
+  return { counts, totalVotes: state.data.length, myVote, loading: state.loading, error: state.error };
 }
 
 /* ─── Admin ───────────────────────────────────────────────── */

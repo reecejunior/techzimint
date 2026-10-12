@@ -259,7 +259,17 @@ export type NotificationEmailMode = 'instant' | 'daily' | 'off';
 
 /* ─── Community ───────────────────────────────────────────── */
 
-export type CommunityKind = 'question' | 'showcase';
+export type CommunityKind = 'question' | 'showcase' | 'poll';
+
+/** One choice on a poll post. Set once at creation (2–6 of them) and never
+ *  edited after — there is deliberately no vote-count field here. See the
+ *  comment above subscribeToCommunityPollVotes in firestore.ts for why
+ *  tallies are computed live from the vote collection instead of being
+ *  denormalised onto this array. */
+export interface PollOption {
+  id: string;
+  label: string;
+}
 
 /**
  * One post in the developer community — a question/help thread or a
@@ -286,11 +296,16 @@ export interface CommunityPost {
   likeCount: number;
   commentCount: number;
 
-  /** Questions only — a showcase is never "answered". */
+  /** Questions only — a showcase or poll is never "answered". */
   isAnswered: boolean;
   /** The comment marked as the accepted answer, or null. Only the asker may
    *  set this, and only on a `kind: 'question'` post — see markCommunityAnswer. */
   acceptedCommentId: string | null;
+
+  /** `kind: 'poll'` only — empty for a question or showcase. Set once at
+   *  creation; votes live entirely in the separate `communityPollVotes`
+   *  collection (see castCommunityPollVote / subscribeToCommunityPollVotes). */
+  pollOptions: PollOption[];
 
   /** Mirrors the moderation parity startup posts already have: posts go live
    *  immediately, and an admin can pull one out of the feed after the fact
@@ -316,6 +331,9 @@ export interface CommunityComment {
   /** True once the post's own author has marked this as the accepted answer
    *  to their question. Always false on a showcase post's comments. */
   isAccepted: boolean;
+  /** Likes on this individual reply — a separate counter from the post's own
+   *  likeCount, so a good answer can surface without touching ranking. */
+  likeCount: number;
 }
 
 /** What the composer collects to create a CommunityPost. */
@@ -324,6 +342,25 @@ export interface CommunityPostDraft {
   title: string;
   body: string;
   tags: string[];
+  /** Required when `kind === 'poll'` (2–6 options); ignored otherwise. */
+  pollOptions?: PollOption[];
+}
+
+/**
+ * One visitor's vote on one poll. Lives at
+ * `communityPollVotes/{postId}__{uid}` — same deterministic-id trick as
+ * `likes`/`communityLikes`, so a second vote from the same visitor is
+ * naturally an update (or delete) of this same doc, never a duplicate.
+ * There is no per-post subcollection here: a flat top-level collection keeps
+ * the `where('postId', '==', …)` tally query a single-field equality filter,
+ * which Firestore indexes automatically.
+ */
+export interface CommunityPollVote {
+  id: string;
+  postId: string;
+  uid: string;
+  optionId: string;
+  createdAt: string;
 }
 
 /**

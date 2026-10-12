@@ -44,21 +44,37 @@
   background: var(--brand-hover);
 }
 
-.tabs {
+.controls {
   display: flex;
-  gap: var(--s-1);
-  margin-bottom: var(--s-6);
-  border-bottom: 1px solid var(--hairline);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+/* ── Segmented tabs ──
+   One neutral track, four equal segments, the active one lifted onto a
+   white chip with a barely-there shadow — a native-feeling exclusive choice
+   rather than four plain links with an underline, and the same shape the
+   composer's own kind toggle uses (see CommunityComposer.module.css) so the
+   two read as one idiom rather than two different controls. */
+.tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface);
+  border-radius: var(--r-pill);
 }
 
 .tab {
-  padding: var(--s-3) var(--s-2);
-  margin-bottom: -1px;
-  font-size: 15px;
+  padding: 7px 15px;
+  border-radius: var(--r-pill);
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-500);
-  border-bottom: 2px solid transparent;
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  white-space: nowrap;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
 }
 
 .tab:hover {
@@ -67,7 +83,87 @@
 
 .tabActive {
   color: var(--ink-900);
-  border-bottom-color: var(--brand);
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Search ── */
+.searchWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: min(260px, 40vw);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-400);
+  pointer-events: none;
+}
+
+.search {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  background: var(--white);
+  transition: border-color var(--fast) var(--ease);
+}
+
+.search::placeholder {
+  color: var(--ink-400);
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+/* ── Tag chips ──
+   Same chip idiom as /startups' category filter (StartupDirectory.module.css)
+   — a horizontally-scrolling, no-visible-scrollbar row so this reads as one
+   site rather than two filter patterns invented separately. */
+.chipScroller {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 0 var(--s-5) 0;
+  padding-bottom: 2px;
+}
+
+.chipScroller::-webkit-scrollbar {
+  display: none;
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+}
+
+.chip {
+  padding: 6px 13px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  color: var(--ink-500);
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.chip:hover:not([data-active]) {
+  background: #F0EDEA;
+  color: var(--ink-900);
+}
+
+.chip[data-active] {
+  background: var(--ink-900);
+  color: var(--white);
+  font-weight: 500;
 }
 
 .list {
@@ -76,6 +172,9 @@
   gap: var(--s-4);
 }
 
+/* Approximates a loaded card's height so the skeleton doesn't visibly jump
+   once the real feed arrives — a hand-tuned placeholder, not a layout value,
+   same precedent as /startups' own .skelCard. */
 .skelCard {
   height: 168px;
 }
@@ -89,5 +188,23 @@
   .cta {
     flex: 1;
     justify-content: center;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabs {
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+  }
+
+  .searchWrap {
+    width: 100%;
   }
 }

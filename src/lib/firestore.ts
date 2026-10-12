@@ -3,6 +3,7 @@ import {
   arrayUnion,
   collection,
   collectionGroup,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -37,8 +38,10 @@ import type {
   Comment,
   CommunityComment,
   CommunityKind,
+  CommunityPollVote,
   CommunityPost,
   CommunityPostDraft,
+  PollOption,
   Notification,
   NotificationEmailMode,
   NotificationPref,
@@ -1297,13 +1300,20 @@ function notifyPush(notificationId: string): void {
  * `score`, `rank*`, `rankHistory` or any other field the startup leaderboard
  * depends on: this feature does not plug into ranking at all. */
 
+function mapPollOptions(value: unknown): PollOption[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(o => o && typeof o.id === 'string' && typeof o.label === 'string')
+    .map(o => ({ id: String(o.id), label: String(o.label) }));
+}
+
 function mapCommunityPost(
   snap: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>,
 ): CommunityPost {
   const d = snap.data() ?? {};
   return {
     id: snap.id,
-    kind: d.kind === 'showcase' ? 'showcase' : 'question',
+    kind: d.kind === 'showcase' ? 'showcase' : d.kind === 'poll' ? 'poll' : 'question',
     title: String(d.title ?? ''),
     body: String(d.body ?? ''),
     tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
@@ -1314,6 +1324,7 @@ function mapCommunityPost(
     commentCount: num(d.commentCount),
     isAnswered: Boolean(d.isAnswered),
     acceptedCommentId: d.acceptedCommentId ? String(d.acceptedCommentId) : null,
+    pollOptions: mapPollOptions(d.pollOptions),
     approved: d.approved !== false,
     createdAt: toIso(d.createdAt),
   };
@@ -1330,6 +1341,18 @@ function mapCommunityComment(snap: QueryDocumentSnapshot<DocumentData>): Communi
     body: String(d.body ?? ''),
     parentId: d.parentId ? String(d.parentId) : null,
     isAccepted: Boolean(d.isAccepted),
+    likeCount: num(d.likeCount),
+    createdAt: toIso(d.createdAt),
+  };
+}
+
+function mapCommunityPollVote(snap: QueryDocumentSnapshot<DocumentData>): CommunityPollVote {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    postId: String(d.postId ?? ''),
+    uid: String(d.uid ?? ''),
+    optionId: String(d.optionId ?? ''),
     createdAt: toIso(d.createdAt),
   };
 }
@@ -1424,6 +1447,12 @@ export function subscribeToCommunityComments(
  * live immediately, same reactive-moderation philosophy as the startup feed:
  * `approved` still exists so an admin can pull one down after the fact.
  *
+ * `pollOptions` is only read when `draft.kind === 'poll'` — every other kind
+ * always writes an empty array, the same "kept inert outside the branch that
+ * uses it" convention `isAnswered`/`acceptedCommentId` already follow for a
+ * showcase. Options get a stable, position-based id (o1, o2, …) since they
+ * are set once at creation and never reordered or edited afterward.
+ *
  * @returns the new post's id, so the composer can route straight to its thread.
  */
 export async function createCommunityPost(
@@ -1434,6 +1463,16 @@ export async function createCommunityPost(
   const body = draft.body.trim();
   if (!title) throw new Error('Give your post a title.');
   if (!body) throw new Error('Write something first.');
+
+  let pollOptions: PollOption[] = [];
+  if (draft.kind === 'poll') {
+    const labels = (draft.pollOptions ?? [])
+      .map(o => o.label.trim().slice(0, 80))
+      .filter(Boolean)
+      .slice(0, 6);
+    if (labels.length < 2) throw new Error('A poll needs at least two options.');
+    pollOptions = labels.map((label, i) => ({ id: `o${i + 1}`, label }));
+  }
 
   const user = await ensureSignedIn();
   const db = getDb();
@@ -1453,9 +1492,10 @@ export async function createCommunityPost(
     authorAvatar: initialsOf(name),
     likeCount: 0,
     commentCount: 0,
-    // Showcases are never "answered" — only a question can be.
+    // Showcases and polls are never "answered" — only a question can be.
     isAnswered: false,
     acceptedCommentId: null,
+    pollOptions,
     approved: true,
     createdAt: serverTimestamp(),
   });
@@ -1499,6 +1539,7 @@ export async function addCommunityComment(
       body: text,
       parentId,
       isAccepted: false,
+      likeCount: 0,
       createdAt: serverTimestamp(),
     });
     tx.update(postRef, { commentCount: increment(1) });
@@ -1613,6 +1654,132 @@ export async function markCommunityAnswer(postId: string, commentId: string): Pr
     tx.update(postRef, { isAnswered: true, acceptedCommentId: commentId });
     tx.update(commentRef, { isAccepted: true });
   });
+}
+
+const communityCommentLikeId = (commentId: string, uid: string) => `${commentId}__${uid}`;
+
+/**
+ * Live set of community *comment* ids the current visitor has liked — a
+ * third like collection alongside `likes` and `communityLikes`, scoped to
+ * individual replies so a good answer can surface without touching the post
+ * itself (or anything ranking reads).
+ */
+export function subscribeToMyCommunityCommentLikes(
+  onData: (commentIds: Set<string>) => void,
+  onError: (err: Error) => void,
+): () => void {
+  let stop = () => {};
+  let cancelled = false;
+
+  ensureSignedIn()
+    .then(user => {
+      if (cancelled) return;
+      const q = query(collection(getDb(), 'communityCommentLikes'), where('uid', '==', user.uid));
+      stop = onSnapshot(
+        q,
+        snap => onData(new Set(snap.docs.map(d => String(d.data().commentId)))),
+        err => onError(err as Error),
+      );
+    })
+    .catch(err => onError(err as Error));
+
+  return () => {
+    cancelled = true;
+    stop();
+  };
+}
+
+/**
+ * Adds or removes a like on one reply. Mirrors toggleCommunityLike exactly,
+ * just rooted at the comment doc (under its post) instead of the post itself.
+ *
+ * @returns whether the comment is liked after the call
+ */
+export async function toggleCommunityCommentLike(postId: string, commentId: string): Promise<boolean> {
+  const user = await ensureSignedIn();
+  const db = getDb();
+  const commentRef = doc(db, 'communityPosts', postId, 'comments', commentId);
+  const likeRef = doc(db, 'communityCommentLikes', communityCommentLikeId(commentId, user.uid));
+
+  return runTransaction(db, async tx => {
+    const [likeSnap, commentSnap] = await Promise.all([tx.get(likeRef), tx.get(commentRef)]);
+    if (!commentSnap.exists()) throw new Error('That comment no longer exists.');
+
+    if (likeSnap.exists()) {
+      tx.delete(likeRef);
+      tx.update(commentRef, { likeCount: increment(-1) });
+      return false;
+    }
+
+    tx.set(likeRef, { uid: user.uid, postId, commentId, createdAt: serverTimestamp() });
+    tx.update(commentRef, { likeCount: increment(1) });
+    return true;
+  });
+}
+
+/* ─── Polls ───────────────────────────────────────────────────
+ * A poll post (kind: 'poll') carries its options on the post doc, set once
+ * at creation — but deliberately carries no vote-count anywhere on that doc.
+ * Votes live in their own flat collection, `communityPollVotes`, one doc per
+ * (post, visitor) via the same deterministic-id trick `likes` already uses.
+ *
+ * Why no denormalised tally: firestore.rules can cleanly validate a *scalar*
+ * counter moving by exactly one (movedByOne(), used all over this file's
+ * rules) — but "exactly one entry in a map of per-option counters moved by
+ * +1, or one +1 and another -1 on a vote switch, and nothing else in the
+ * structure changed" is not a rule you can write tractably in this file's
+ * style, and there is no Cloud Functions or Admin-SDK write path in this repo
+ * to do that aggregation server-side instead (src/lib/server/ exists only to
+ * back the email digest cron job). So tallies are computed live, client-side,
+ * by subscribing to every vote for a post and counting them in memory —
+ * exactly the collectionGroup-and-aggregate-in-JS approach getReviewsByAuthor
+ * already uses above, just scoped by a plain where() and kept live instead of
+ * one-shot. A developer-community poll runs to dozens or low thousands of
+ * votes, not millions, so a small live-subscribed set counted in memory is
+ * the right tradeoff here, not a shortcut taken under pressure. */
+
+const communityPollVoteId = (postId: string, uid: string) => `${postId}__${uid}`;
+
+/**
+ * Live, *untallied* votes for one poll — see the comment block above for why
+ * counting happens on the client (in useCommunityPollVotes, hooks.ts) rather
+ * than here or on the post document.
+ */
+export function subscribeToCommunityPollVotes(
+  postId: string,
+  onData: (votes: CommunityPollVote[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(collection(getDb(), 'communityPollVotes'), where('postId', '==', postId));
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapCommunityPollVote)),
+    err => onError(err as Error),
+  );
+}
+
+/**
+ * Casts (or changes) the current visitor's vote on a poll. The doc id is
+ * `postId__uid`, so a second call for the same post always overwrites the
+ * same document — a vote switch, never a second vote.
+ */
+export async function castCommunityPollVote(postId: string, optionId: string): Promise<void> {
+  if (!optionId) throw new Error('Pick an option first.');
+  const user = await ensureSignedIn();
+  const voteRef = doc(getDb(), 'communityPollVotes', communityPollVoteId(postId, user.uid));
+  await setDoc(voteRef, {
+    postId,
+    uid: user.uid,
+    optionId,
+    createdAt: serverTimestamp(),
+  });
+}
+
+/** Retracts the current visitor's vote entirely, leaving the poll unvoted
+ *  for them again. */
+export async function retractCommunityPollVote(postId: string): Promise<void> {
+  const user = await ensureSignedIn();
+  await deleteDoc(doc(getDb(), 'communityPollVotes', communityPollVoteId(postId, user.uid)));
 }
 
 /* ─── Weekly digest subscription ─────────────────────────────
