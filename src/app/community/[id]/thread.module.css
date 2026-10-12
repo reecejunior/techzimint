@@ -52,7 +52,11 @@
   letter-spacing: var(--track-caption);
 }
 
-.kindQuestion {
+/* Questions and polls lean neutral — both are a request (an answer, a vote),
+   not an announcement. gap only matters for the poll badge, which also
+   carries a small icon alongside its label. */
+.kindNeutral {
+  gap: 4px;
   background: #F2EFEC;
   color: var(--ink-700);
 }
@@ -79,8 +83,10 @@
   background: var(--surface-2);
 }
 
+/* No font-size here: this <h1> takes its size straight from the global h1
+   rule in globals.css (32px, --track-title) — a thread title is exactly
+   that scale's job, not a reason to invent a size next to it. */
 .title {
-  font-size: 26px;
   margin-bottom: var(--s-3);
 }
 
@@ -123,8 +129,16 @@
   color: var(--ink-400);
 }
 
+/* The row's own negative margin (not each button's) pulls the first
+   button's padding back flush with the body copy above it; .action no
+   longer carries that offset itself so a second button in the row doesn't
+   inherit it too. */
 .actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   margin-top: var(--s-5);
+  margin-left: -10px;
 }
 
 .action {
@@ -132,11 +146,14 @@
   align-items: center;
   gap: 6px;
   padding: 7px 10px;
-  margin-left: -10px;
   border-radius: var(--r-sm);
   font-size: 14px;
   color: var(--ink-500);
   transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.actionLabel {
+  font-size: 14px;
 }
 
 .action:hover:not(:disabled) {
@@ -169,6 +186,147 @@
   background: var(--surface-2);
   border-radius: var(--r-sm);
   padding: 7px 11px;
+}
+
+/* ── Poll ──
+   Before a vote: plain, equal-weight buttons — no results on display, so
+   choosing isn't biased by what's already winning. After a vote (or on
+   request via "View results"): each option becomes a single-hue meter, the
+   fill always --brand against a neutral track, with the percentage spelled
+   out as text rather than left for the eye to estimate from bar length
+   alone. */
+.poll {
+  margin-top: var(--s-5);
+}
+
+.pollOptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.pollOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-700);
+  text-align: left;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.pollOption:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: var(--surface);
+}
+
+.pollOption:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.pollResult {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sm);
+  background: var(--white);
+  text-align: left;
+  transition: border-color var(--fast) var(--ease);
+}
+
+.pollResult:hover:not(:disabled) {
+  border-color: var(--hairline-strong);
+}
+
+.pollResult:disabled {
+  cursor: progress;
+}
+
+/* The option this visitor picked — a hairline of brand colour, not a fill,
+   so "this is mine" and "this is winning" (the bar below) stay visually
+   distinct signals. */
+.pollResultMine {
+  border-color: var(--brand);
+}
+
+.pollResultTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: 14px;
+}
+
+.pollResultLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+
+.pollResultMine .pollResultLabel {
+  color: var(--brand-text);
+}
+
+.pollResultPct {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink-500);
+}
+
+/* A thin meter, not a shadow or a border — deliberately off the 4pt grid
+   (6px): this is a stroke weight for a progress indicator, the same kind of
+   one-off the hairline border widths already are, not a layout dimension. */
+.pollResultTrack {
+  position: relative;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.pollResultFill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--brand);
+  transition: width var(--normal) var(--ease);
+}
+
+.pollMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.pollToggle {
+  font-weight: 500;
+  color: var(--ink-500);
+  transition: color var(--fast) var(--ease);
+}
+
+.pollToggle:hover:not(:disabled) {
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pollToggle:disabled {
+  cursor: progress;
+  opacity: 0.6;
 }
 
 /* ── Comments ── */
@@ -260,6 +418,41 @@
   align-items: center;
   gap: var(--s-3);
   margin-top: 4px;
+}
+
+/* A like on an individual reply — smaller and quieter than the post-level
+   like button, since surfacing a good answer is a lighter action than
+   liking the whole thread. */
+.commentLike {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: -4px;
+  padding: 2px 4px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  color: var(--ink-400);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.commentLike:hover:not(:disabled) {
+  color: var(--ink-900);
+  background: #F7F4F1;
+}
+
+.commentLike:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* Out-specificities the generic .commentLike:hover rule above, so a liked
+   reply stays on-brand on hover instead of reverting to the unliked grey. */
+.commentLike.liked:hover:not(:disabled) {
+  color: var(--brand-hover);
+}
+
+.commentLikeCount {
+  font-variant-numeric: tabular-nums;
 }
 
 .replyBtn {
@@ -384,8 +577,12 @@
 }
 
 @media (max-width: 560px) {
+  /* Borrows h2's own size rather than inventing a new one for this
+     breakpoint — the title steps down a rung on the existing scale instead
+     of picking an arbitrary in-between number. */
   .title {
     font-size: 22px;
+    letter-spacing: var(--track-heading);
   }
 
   .body {

@@ -1,0 +1,13 @@
+.code {
+  margin: var(--s-2) 0;
+  padding: var(--s-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-900);
+  overflow-x: auto;
+  white-space: pre;
+}

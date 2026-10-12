@@ -7,11 +7,19 @@
   border: 1px solid var(--hairline);
   border-radius: var(--r-md);
   background: var(--white);
-  transition: border-color var(--fast) var(--ease);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
 }
 
-.card:hover {
+/* A hairline lift, not a scale or a bounce: the border firms up, a barely-
+   there shadow lifts the card a single pixel off the page, and that's the
+   whole gesture. focus-within covers keyboard focus on the title link, so
+   tabbing through the feed gets the same affordance as a mouse hover. */
+.card:hover,
+.card:focus-within {
   border-color: var(--hairline-strong);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
 }
 
 .head {
@@ -31,8 +39,9 @@
   letter-spacing: var(--track-caption);
 }
 
-/* Questions lean neutral — they're a request, not an announcement. */
-.kindQuestion {
+/* Questions and polls lean neutral — both are a request (an answer, a vote),
+   not an announcement. */
+.kindNeutral {
   background: #F2EFEC;
   color: var(--ink-700);
 }
@@ -87,6 +96,39 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ── Poll preview ── */
+.pollPreview {
+  margin-top: var(--s-3);
+}
+
+.pollPreviewOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pollPreviewOption {
+  padding: 7px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pollPreviewCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--brand-text);
 }
 
 .tags {

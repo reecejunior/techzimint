@@ -8,23 +8,32 @@
   background: var(--white);
 }
 
+/* ── Kind toggle ──
+   A segmented control, not three form buttons: one neutral track holding
+   three equal segments, the active one lifted onto a white chip with a
+   barely-there shadow — the same shape iOS uses for an exclusive choice
+   between a small, fixed set of options. Neutral rather than brand-filled
+   on purpose: the active segment reads as "selected", not as the one
+   saturated accent this system reserves for a single meaning elsewhere. */
 .kindToggle {
   display: flex;
-  gap: var(--s-2);
-  margin-bottom: var(--s-3);
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: var(--s-4);
+  background: var(--surface);
+  border-radius: var(--r-pill);
 }
 
 .kindBtn {
   flex: 1;
-  padding: 10px;
-  border: 1px solid var(--hairline-strong);
-  border-radius: var(--r-sm);
-  font-size: 15px;
+  padding: 8px 4px;
+  border-radius: var(--r-pill);
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-500);
   text-align: center;
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease),
-    background var(--fast) var(--ease);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
 }
 
 .kindBtn:hover {
@@ -32,13 +41,13 @@
 }
 
 .kindBtnActive {
-  color: var(--on-brand);
-  background: var(--brand);
-  border-color: var(--brand);
+  color: var(--ink-900);
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
 }
 
 .kindBtnActive:hover {
-  color: var(--on-brand);
+  color: var(--ink-900);
 }
 
 .label {
@@ -80,19 +89,126 @@
   box-shadow: var(--ring);
 }
 
-.tagPreview {
+/* ── Poll options ──
+   Plain rows rather than anything fancier — add/remove is the whole
+   interaction, so a list of inputs says that more plainly than a drag
+   handle or a stepper would. */
+.pollOptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.pollOptionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.pollOptionRow .input {
+  flex: 1;
+}
+
+.pollOptionRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  color: var(--ink-400);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.pollOptionRemove:hover {
+  color: var(--orange-800);
+  background: var(--surface-2);
+}
+
+.addOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 6px 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-500);
+  transition: color var(--fast) var(--ease);
+}
+
+.addOption:hover {
+  color: var(--brand-text);
+}
+
+/* ── Tag entry ──
+   A chip field, not a raw comma-separated input: each tag becomes its own
+   removable pill the moment it's committed (Enter, comma, or blurring the
+   field), so what will actually be saved is always visible as itself rather
+   than as a sentence the visitor has to parse. */
+.tagField {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-2);
-  margin-top: 2px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 8px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  background: var(--white);
+  transition: border-color var(--fast) var(--ease);
+}
+
+.tagField:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
 }
 
 .tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  border-radius: var(--r-pill);
   font-size: 13px;
-  color: var(--ink-500);
+  color: var(--ink-700);
   background: var(--surface);
-  border-radius: var(--r-xs);
-  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.tagChipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--ink-400);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.tagChipRemove:hover {
+  color: var(--orange-800);
+  background: var(--surface-2);
+}
+
+.tagInput {
+  flex: 1;
+  min-width: 90px;
+  padding: 4px 2px;
+  font-size: 14px;
+  background: none;
+}
+
+.tagInput::placeholder {
+  color: var(--ink-400);
+}
+
+.tagInput:disabled {
+  cursor: not-allowed;
 }
 
 .formError {

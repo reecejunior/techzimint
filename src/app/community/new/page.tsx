@@ -16,8 +16,8 @@ export default function NewCommunityPostPage() {
 
         <h1 className={styles.title}>New post</h1>
         <p className={styles.subtitle}>
-          Ask the community for help, or share what you&apos;re building. Anyone signed in can
-          post — you don&apos;t need a startup listed here.
+          Ask the community for help, share what you&apos;re building, or put a question to a
+          vote. Anyone signed in can post — you don&apos;t need a startup listed here.
         </p>
 
         <CommunityComposer />

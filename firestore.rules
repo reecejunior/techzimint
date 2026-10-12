@@ -367,13 +367,13 @@ service cloud.firestore {
     }
 
     // ═══ Community ═══════════════════════════════════════════════
-    // Developer Q&A and show-and-tell. Independent of /startups entirely —
-    // nothing in this section reads or writes a startup, and no rule below
-    // ever mentions score/rank/rankHistory/scoreWeek or any other ranking
-    // field, because this feature does not touch the ranking system at all.
-    // Open to any signed-in visitor (anonymous auth, same as the rest of the
-    // site) — there is no ownership check tying posting here to the startup
-    // directory.
+    // Developer Q&A, show-and-tell and polls. Independent of /startups
+    // entirely — nothing in this section reads or writes a startup, and no
+    // rule below ever mentions score/rank/rankHistory/scoreWeek or any other
+    // ranking field, because this feature does not touch the ranking system
+    // at all. Open to any signed-in visitor (anonymous auth, same as the rest
+    // of the site) — there is no ownership check tying posting here to the
+    // startup directory.
     match /communityPosts/{postId} {
       allow read: if true;
 
@@ -382,7 +382,7 @@ service cloud.firestore {
       // moderation here is reactive (same as startups/posts), not a queue.
       allow create: if signedIn()
                     && request.resource.data.authorId == request.auth.uid
-                    && request.resource.data.kind in ['question', 'showcase']
+                    && request.resource.data.kind in ['question', 'showcase', 'poll']
                     && request.resource.data.title is string
                     && request.resource.data.title.size() > 0
                     && request.resource.data.title.size() <= 140
@@ -395,6 +395,22 @@ service cloud.firestore {
                     && request.resource.data.commentCount == 0
                     && request.resource.data.isAnswered == false
                     && request.resource.data.acceptedCommentId == null
+                    // pollOptions is only meaningful on a poll — a question or
+                    // showcase must arrive with it empty, the same
+                    // kept-inert-outside-its-own-branch convention isAnswered/
+                    // acceptedCommentId already follow above. On a poll it's
+                    // 2–6 options, each a non-empty id and a non-empty,
+                    // length-capped label — checked per-element with .all()
+                    // rather than spelled out by index, since the count is
+                    // variable.
+                    && request.resource.data.pollOptions is list
+                    && (request.resource.data.kind == 'poll'
+                        ? (request.resource.data.pollOptions.size() >= 2
+                           && request.resource.data.pollOptions.size() <= 6
+                           && request.resource.data.pollOptions.all(o,
+                                o.id is string && o.id.size() > 0
+                                && o.label is string && o.label.size() > 0 && o.label.size() <= 80))
+                        : request.resource.data.pollOptions.size() == 0)
                     && request.resource.data.approved == true;
 
       // Anyone signed in may nudge the like counter — nothing else about the
@@ -446,6 +462,7 @@ service cloud.firestore {
                       && request.resource.data.body.size() > 0
                       && request.resource.data.body.size() <= 2000
                       && request.resource.data.isAccepted == false
+                      && request.resource.data.likeCount == 0
                       // A reply's target must be a real, top-level comment —
                       // keeps nesting at exactly one level, same rule as the
                       // startup comments above: replying to a reply is
@@ -466,6 +483,14 @@ service cloud.firestore {
                       && get(/databases/$(database)/documents/communityPosts/$(postId)).data.authorId == request.auth.uid
                       && get(/databases/$(database)/documents/communityPosts/$(postId)).data.kind == 'question';
 
+        // Anyone signed in may nudge a reply's own like counter — same shape
+        // as the post-level like rule above, scoped to this one comment so
+        // a good answer can surface without touching the post or anything
+        // ranking reads.
+        allow update: if signedIn()
+                      && movedByOne('likeCount')
+                      && touched().hasOnly(['likeCount']);
+
         allow delete: if false;
       }
     }
@@ -481,6 +506,47 @@ service cloud.firestore {
                     && likeId == request.resource.data.postId + '__' + request.auth.uid;
       allow delete: if mine();
       allow update: if false;
+    }
+
+    // One like per (community comment, visitor) — mirrors /communityLikes
+    // exactly, scoped to an individual reply instead of a whole post.
+    match /communityCommentLikes/{likeId} {
+      allow read: if mineOrMissing();
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && likeId == request.resource.data.commentId + '__' + request.auth.uid;
+      allow delete: if mine();
+      allow update: if false;
+    }
+
+    // One vote per (poll post, visitor) — same postId__uid id trick as
+    // /communityLikes, but its own collection and, unlike likes, publicly
+    // readable in full: a poll's tallies are computed by subscribing to
+    // every vote for a post and counting them in memory (see
+    // subscribeToCommunityPollVotes / useCommunityPollVotes), so any visitor
+    // reading a poll's results needs every vote doc, not only their own —
+    // intentionally wider than mineOrMissing().
+    match /communityPollVotes/{voteId} {
+      allow read: if true;
+
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && voteId == request.resource.data.postId + '__' + request.auth.uid
+                    && request.resource.data.optionId is string
+                    && request.resource.data.optionId.size() > 0
+                    && get(/databases/$(database)/documents/communityPosts/$(request.resource.data.postId)).data.kind == 'poll';
+
+      // Changing an existing vote: same visitor, same post — only the chosen
+      // option (and its timestamp) may actually move.
+      allow update: if mine()
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.postId == resource.data.postId
+                    && touched().hasOnly(['optionId', 'createdAt'])
+                    && request.resource.data.optionId is string
+                    && request.resource.data.optionId.size() > 0;
+
+      // Retracting a vote entirely.
+      allow delete: if mine();
     }
 
     // Reviewer profiles are editorial content — readable by all, writable only

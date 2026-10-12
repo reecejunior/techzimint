@@ -20,8 +20,9 @@
   color: var(--ink-900);
 }
 
+/* No font-size here: this <h1> takes its size straight from the global h1
+   rule in globals.css (32px, --track-title) rather than a bespoke number. */
 .title {
-  font-size: 28px;
   margin-bottom: var(--s-2);
 }
 
