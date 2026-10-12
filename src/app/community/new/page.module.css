@@ -1,0 +1,33 @@
+.page {
+  padding-block: var(--s-8) var(--s-20);
+}
+
+.wrap {
+  max-width: 640px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--s-5);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-500);
+}
+
+.back:hover {
+  color: var(--ink-900);
+}
+
+.title {
+  font-size: 28px;
+  margin-bottom: var(--s-2);
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--ink-500);
+  line-height: 1.5;
+  margin-bottom: var(--s-6);
+}

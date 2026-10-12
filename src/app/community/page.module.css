@@ -1,0 +1,93 @@
+.page {
+  padding-bottom: var(--s-20);
+}
+
+.body {
+  padding-top: var(--s-6);
+}
+
+.headerCtas {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.ctaSecondary,
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), opacity var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.ctaSecondary {
+  color: var(--ink-700);
+  border: 1px solid var(--hairline-strong);
+}
+
+.ctaSecondary:hover {
+  background: var(--surface);
+  border-color: var(--ink-400);
+}
+
+.cta {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.cta:hover {
+  background: var(--brand-hover);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--s-1);
+  margin-bottom: var(--s-6);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tab {
+  padding: var(--s-3) var(--s-2);
+  margin-bottom: -1px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-500);
+  border-bottom: 2px solid transparent;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.tab:hover {
+  color: var(--ink-900);
+}
+
+.tabActive {
+  color: var(--ink-900);
+  border-bottom-color: var(--brand);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.skelCard {
+  height: 168px;
+}
+
+@media (max-width: 640px) {
+  .headerCtas {
+    width: 100%;
+  }
+
+  .ctaSecondary,
+  .cta {
+    flex: 1;
+    justify-content: center;
+  }
+}

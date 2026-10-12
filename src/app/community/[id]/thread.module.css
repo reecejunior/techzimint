@@ -1,0 +1,394 @@
+.page {
+  padding-block: var(--s-8) var(--s-20);
+}
+
+.stateWrap {
+  padding-block: var(--s-10);
+}
+
+.skelHeader {
+  height: 120px;
+  margin-bottom: var(--s-5);
+}
+
+.skelBody {
+  height: 220px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--s-5);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-500);
+}
+
+.back:hover {
+  color: var(--ink-900);
+}
+
+/* ── Post ── */
+.post {
+  padding-bottom: var(--s-6);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.kindBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--track-caption);
+}
+
+.kindQuestion {
+  background: #F2EFEC;
+  color: var(--ink-700);
+}
+
+.kindShowcase {
+  background: var(--surface-2);
+  color: var(--orange-700);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-400);
+  background: #F2EFEC;
+}
+
+.statusAnswered {
+  color: var(--orange-700);
+  background: var(--surface-2);
+}
+
+.title {
+  font-size: 26px;
+  margin-bottom: var(--s-3);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+
+.authorName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-900);
+}
+
+.time {
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.body {
+  font-size: 17px;
+  color: var(--ink-700);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 68ch;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+
+.tag {
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.actions {
+  margin-top: var(--s-5);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  margin-left: -10px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  color: var(--ink-500);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.action:hover:not(:disabled) {
+  color: var(--ink-900);
+  background: #F7F4F1;
+}
+
+.action:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.actionCount {
+  font-variant-numeric: tabular-nums;
+  min-width: 1ch;
+}
+
+.liked {
+  color: var(--brand);
+}
+
+.liked:hover {
+  color: var(--brand-hover);
+}
+
+.failed {
+  margin-top: var(--s-2);
+  font-size: 13px;
+  color: var(--orange-800);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 7px 11px;
+}
+
+/* ── Comments ── */
+.thread {
+  margin-top: var(--s-6);
+}
+
+.threadHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  margin-bottom: var(--s-4);
+}
+
+.threadEmpty {
+  font-size: 14px;
+  color: var(--ink-400);
+  margin-bottom: var(--s-5);
+}
+
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  margin-bottom: var(--s-5);
+}
+
+.comment {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+}
+
+/* The accepted answer gets a quiet highlight — a tint, not a border, so it
+   reads as "settled" rather than flagged. */
+.commentAccepted {
+  background: var(--surface);
+}
+
+.commentBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.commentHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.commentAuthor {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-900);
+}
+
+.acceptedTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--orange-700);
+  background: var(--surface-2);
+}
+
+.commentTime {
+  font-size: 12px;
+  color: var(--ink-400);
+}
+
+.commentText {
+  font-size: 15px;
+  color: var(--ink-700);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  max-width: 62ch;
+  margin-top: 2px;
+}
+
+.commentActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: 4px;
+}
+
+.replyBtn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-400);
+}
+
+.replyBtn:hover {
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.acceptBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--orange-700);
+}
+
+.acceptBtn:hover:not(:disabled) {
+  color: var(--orange-800);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.acceptBtn:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+.replies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  margin-left: calc(28px + var(--s-3));
+}
+
+.replyingTo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 13px;
+  color: var(--ink-500);
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+}
+
+.replyCancel {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-400);
+}
+
+.replyCancel:hover {
+  color: var(--ink-900);
+}
+
+/* ── Reply form ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.nameInput,
+.commentInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  background: var(--white);
+}
+
+.nameInput {
+  max-width: 240px;
+  font-size: 14px;
+}
+
+.nameInput::placeholder,
+.commentInput::placeholder {
+  color: var(--ink-400);
+}
+
+.nameInput:focus,
+.commentInput:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.formRow {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  background: var(--ink-900);
+  color: var(--white);
+  transition: opacity var(--fast) var(--ease);
+}
+
+.send:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .title {
+    font-size: 22px;
+  }
+
+  .body {
+    font-size: 16px;
+  }
+}

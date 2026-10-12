@@ -35,6 +35,10 @@ import {
 import type {
   Category,
   Comment,
+  CommunityComment,
+  CommunityKind,
+  CommunityPost,
+  CommunityPostDraft,
   Notification,
   NotificationEmailMode,
   NotificationPref,
@@ -1281,6 +1285,333 @@ function notifyPush(notificationId: string): void {
   }).catch(() => {
     /* Best-effort — the in-app bell and email prefs still cover this
        notification either way. */
+  });
+}
+
+/* ─── Community ───────────────────────────────────────────────
+ * A new, independent section: developer Q&A and show-and-tell, open to any
+ * signed-in visitor (not gated to startup owners). Lives entirely in its own
+ * collections — `communityPosts`, its `comments` subcollection, and the
+ * top-level `communityLikes` — and deliberately never reads or writes
+ * anything under `startups/**`. In particular, nothing here ever touches
+ * `score`, `rank*`, `rankHistory` or any other field the startup leaderboard
+ * depends on: this feature does not plug into ranking at all. */
+
+function mapCommunityPost(
+  snap: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>,
+): CommunityPost {
+  const d = snap.data() ?? {};
+  return {
+    id: snap.id,
+    kind: d.kind === 'showcase' ? 'showcase' : 'question',
+    title: String(d.title ?? ''),
+    body: String(d.body ?? ''),
+    tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
+    authorId: String(d.authorId ?? ''),
+    authorName: String(d.authorName ?? 'Anonymous'),
+    authorAvatar: String(d.authorAvatar ?? '??'),
+    likeCount: num(d.likeCount),
+    commentCount: num(d.commentCount),
+    isAnswered: Boolean(d.isAnswered),
+    acceptedCommentId: d.acceptedCommentId ? String(d.acceptedCommentId) : null,
+    approved: d.approved !== false,
+    createdAt: toIso(d.createdAt),
+  };
+}
+
+function mapCommunityComment(snap: QueryDocumentSnapshot<DocumentData>): CommunityComment {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    postId: String(d.postId ?? ''),
+    authorId: String(d.authorId ?? ''),
+    authorName: String(d.authorName ?? 'Anonymous'),
+    authorAvatar: String(d.authorAvatar ?? '??'),
+    body: String(d.body ?? ''),
+    parentId: d.parentId ? String(d.parentId) : null,
+    isAccepted: Boolean(d.isAccepted),
+    createdAt: toIso(d.createdAt),
+  };
+}
+
+/**
+ * Live feed of community posts, newest first. `kind: 'all'` drops the kind
+ * filter entirely rather than passing an `in` clause, so the "All" tab needs
+ * only the simpler (approved, createdAt) index rather than also depending on
+ * the three-field one.
+ *
+ * Deliberately no pagination machinery here yet (contrast useFeedQuery's
+ * live-page-plus-older-pages split for the startup feed) — a single capped
+ * live query is the whole first slice. Worth revisiting once the section has
+ * enough volume that one page stops being everything there is.
+ */
+export function subscribeToCommunityFeed(
+  kind: CommunityKind | 'all',
+  onData: (posts: CommunityPost[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q =
+    kind === 'all'
+      ? query(
+          collection(getDb(), 'communityPosts'),
+          where('approved', '==', true),
+          orderBy('createdAt', 'desc'),
+          limit(100),
+        )
+      : query(
+          collection(getDb(), 'communityPosts'),
+          where('approved', '==', true),
+          where('kind', '==', kind),
+          orderBy('createdAt', 'desc'),
+          limit(100),
+        );
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapCommunityPost)),
+    err => onError(err as Error),
+  );
+}
+
+/**
+ * One-shot read by id, for server-rendered page metadata (generateMetadata
+ * has no live subscription to hang off of) — same role fetchStartupBySlug
+ * plays for /startups/[slug].
+ */
+export async function fetchCommunityPostById(postId: string): Promise<CommunityPost | null> {
+  const snap = await getDoc(doc(getDb(), 'communityPosts', postId));
+  return snap.exists() ? mapCommunityPost(snap) : null;
+}
+
+/**
+ * Live view of a single community post — its own thread page subscribes
+ * directly to the one doc it needs rather than filtering the whole feed
+ * client-side (which is how useStartup falls back for a startup not in the
+ * currently-ranked set). There's no ranked set here to fall back from, so a
+ * direct single-doc listener is the simpler and more direct choice.
+ */
+export function subscribeToCommunityPost(
+  postId: string,
+  onData: (post: CommunityPost | null) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    doc(getDb(), 'communityPosts', postId),
+    snap => onData(snap.exists() ? mapCommunityPost(snap) : null),
+    err => onError(err as Error),
+  );
+}
+
+export function subscribeToCommunityComments(
+  postId: string,
+  onData: (comments: CommunityComment[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(
+    collection(getDb(), 'communityPosts', postId, 'comments'),
+    orderBy('createdAt', 'asc'),
+    limit(200),
+  );
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapCommunityComment)),
+    err => onError(err as Error),
+  );
+}
+
+/**
+ * Creates a community post. Open to any signed-in visitor — there is no
+ * startup-ownership check anywhere in this path, unlike addPost(). Posts go
+ * live immediately, same reactive-moderation philosophy as the startup feed:
+ * `approved` still exists so an admin can pull one down after the fact.
+ *
+ * @returns the new post's id, so the composer can route straight to its thread.
+ */
+export async function createCommunityPost(
+  draft: CommunityPostDraft,
+  authorName: string,
+): Promise<string> {
+  const title = draft.title.trim();
+  const body = draft.body.trim();
+  if (!title) throw new Error('Give your post a title.');
+  if (!body) throw new Error('Write something first.');
+
+  const user = await ensureSignedIn();
+  const db = getDb();
+  const postRef = doc(collection(db, 'communityPosts'));
+  const name = authorName.trim() || 'Anonymous';
+  // Lowercased and capped so tags behave as a small, consistent set rather
+  // than free text that happens to render like one.
+  const tags = [...new Set(draft.tags.map(t => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5);
+
+  await setDoc(postRef, {
+    kind: draft.kind,
+    title: title.slice(0, 140),
+    body: body.slice(0, 4000),
+    tags,
+    authorId: user.uid,
+    authorName: name,
+    authorAvatar: initialsOf(name),
+    likeCount: 0,
+    commentCount: 0,
+    // Showcases are never "answered" — only a question can be.
+    isAnswered: false,
+    acceptedCommentId: null,
+    approved: true,
+    createdAt: serverTimestamp(),
+  });
+
+  return postRef.id;
+}
+
+/**
+ * @param parentId The top-level comment being replied to, or omitted for a
+ *   new top-level comment — same one-level-of-nesting convention as addComment().
+ */
+export async function addCommunityComment(
+  postId: string,
+  body: string,
+  authorName: string,
+  parentId: string | null = null,
+): Promise<void> {
+  const text = body.trim();
+  if (!text) throw new Error('Write something first.');
+
+  const user = await ensureSignedIn();
+  const db = getDb();
+  const postRef = doc(db, 'communityPosts', postId);
+  const commentRef = doc(collection(db, 'communityPosts', postId, 'comments'));
+  const parentRef = parentId ? doc(db, 'communityPosts', postId, 'comments', parentId) : null;
+  const name = authorName.trim() || 'Anonymous';
+
+  await runTransaction(db, async tx => {
+    const [postSnap, parentSnap] = await Promise.all([
+      tx.get(postRef),
+      parentRef ? tx.get(parentRef) : Promise.resolve(null),
+    ]);
+    if (!postSnap.exists()) throw new Error('That post no longer exists.');
+    if (parentId && !parentSnap?.exists()) throw new Error('That comment no longer exists.');
+
+    tx.set(commentRef, {
+      postId,
+      authorId: user.uid,
+      authorName: name,
+      authorAvatar: initialsOf(name),
+      body: text,
+      parentId,
+      isAccepted: false,
+      createdAt: serverTimestamp(),
+    });
+    tx.update(postRef, { commentCount: increment(1) });
+  });
+}
+
+const communityLikeId = (postId: string, uid: string) => `${postId}__${uid}`;
+
+/**
+ * Live set of community post ids the current visitor has liked. A separate
+ * collection from `likes` (the startup-post likes) — see communityLikeId:
+ * same `postId__uid` trick, but its own collection, so a community post's id
+ * can never collide with a startup post's id in the same like record.
+ */
+export function subscribeToMyCommunityLikes(
+  onData: (postIds: Set<string>) => void,
+  onError: (err: Error) => void,
+): () => void {
+  let stop = () => {};
+  let cancelled = false;
+
+  ensureSignedIn()
+    .then(user => {
+      if (cancelled) return;
+      const q = query(collection(getDb(), 'communityLikes'), where('uid', '==', user.uid));
+      stop = onSnapshot(
+        q,
+        snap => onData(new Set(snap.docs.map(d => String(d.data().postId)))),
+        err => onError(err as Error),
+      );
+    })
+    .catch(err => onError(err as Error));
+
+  return () => {
+    cancelled = true;
+    stop();
+  };
+}
+
+/**
+ * Adds or removes a like on a community post. No startup to roll the count up
+ * to — this counter lives and dies entirely on the post itself.
+ *
+ * @returns whether the post is liked after the call
+ */
+export async function toggleCommunityLike(postId: string): Promise<boolean> {
+  const user = await ensureSignedIn();
+  const db = getDb();
+  const postRef = doc(db, 'communityPosts', postId);
+  const likeRef = doc(db, 'communityLikes', communityLikeId(postId, user.uid));
+
+  return runTransaction(db, async tx => {
+    const [likeSnap, postSnap] = await Promise.all([tx.get(likeRef), tx.get(postRef)]);
+    if (!postSnap.exists()) throw new Error('That post no longer exists.');
+
+    if (likeSnap.exists()) {
+      tx.delete(likeRef);
+      tx.update(postRef, { likeCount: increment(-1) });
+      return false;
+    }
+
+    tx.set(likeRef, { uid: user.uid, postId, createdAt: serverTimestamp() });
+    tx.update(postRef, { likeCount: increment(1) });
+    return true;
+  });
+}
+
+/**
+ * The question's own author marks (or un-marks) one top-level reply as the
+ * accepted answer. Only firestore.rules actually enforces the "only the
+ * asker, only on a question" rule — this check is a client-side convenience
+ * that fails fast with a readable message instead of waiting on a rules
+ * rejection.
+ *
+ * Accepting a different reply than the one already accepted moves the flag
+ * rather than stacking it — `isAccepted` always lands on at most one comment.
+ * Accepting the same one again toggles it off.
+ */
+export async function markCommunityAnswer(postId: string, commentId: string): Promise<void> {
+  const user = await ensureSignedIn();
+  const db = getDb();
+  const postRef = doc(db, 'communityPosts', postId);
+  const commentRef = doc(db, 'communityPosts', postId, 'comments', commentId);
+
+  await runTransaction(db, async tx => {
+    const [postSnap, commentSnap] = await Promise.all([tx.get(postRef), tx.get(commentRef)]);
+    if (!postSnap.exists()) throw new Error('That post no longer exists.');
+    if (!commentSnap.exists()) throw new Error('That comment no longer exists.');
+
+    const post = postSnap.data();
+    if (post.authorId !== user.uid) {
+      throw new Error('Only the person who asked can accept an answer.');
+    }
+    if (post.kind !== 'question') {
+      throw new Error('Only a question can have an accepted answer.');
+    }
+    if (commentSnap.data().parentId) {
+      throw new Error('Only a top-level reply can be accepted — reply to that one directly.');
+    }
+
+    const previousId = post.acceptedCommentId ? String(post.acceptedCommentId) : null;
+
+    if (previousId === commentId) {
+      tx.update(postRef, { isAnswered: false, acceptedCommentId: null });
+      tx.update(commentRef, { isAccepted: false });
+      return;
+    }
+
+    if (previousId) {
+      tx.update(doc(db, 'communityPosts', postId, 'comments', previousId), { isAccepted: false });
+    }
+    tx.update(postRef, { isAnswered: true, acceptedCommentId: commentId });
+    tx.update(commentRef, { isAccepted: true });
   });
 }
 

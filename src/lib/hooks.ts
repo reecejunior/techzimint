@@ -10,6 +10,10 @@ import {
   getReviewerByUsername,
   getReviewsByAuthor,
   subscribeToComments,
+  subscribeToCommunityComments,
+  subscribeToCommunityFeed,
+  subscribeToCommunityPost,
+  subscribeToMyCommunityLikes,
   subscribeToMyHelpfulMarks,
   subscribeToMyLikes,
   subscribeToMyNotificationPref,
@@ -23,6 +27,9 @@ import {
 } from './firestore';
 import type {
   Comment,
+  CommunityComment,
+  CommunityKind,
+  CommunityPost,
   Notification,
   NotificationPref,
   Post,
@@ -310,6 +317,91 @@ export function useMyUid(): string | null {
     };
   }, []);
   return uid;
+}
+
+/* ─── Community ───────────────────────────────────────────────
+ * Deliberately simpler than useFeedQuery above: one live onSnapshot, no
+ * older-pages pagination split. That's a starting scope, not an oversight —
+ * the community section opens with a single capped recent-first list, and
+ * can grow the same live-page/fetched-older-pages pattern the main feed uses
+ * once there's enough volume that one page isn't everything there is. */
+
+export function useCommunityFeed(kind: CommunityKind | 'all'): AsyncState<CommunityPost[]> {
+  const [state, setState] = useState<AsyncState<CommunityPost[]> & { forKind?: string }>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToCommunityFeed(
+      kind,
+      posts => setState({ data: posts, loading: false, error: null, forKind: kind }),
+      err => setState({ data: [], loading: false, error: err.message, forKind: kind }),
+    );
+  }, [kind]);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  // Guards against a stale render for the previous tab while the new tab's
+  // subscription is still spinning up — same trick useStartupPosts uses.
+  if (state.forKind !== kind) return { data: [], loading: true, error: null };
+  return state;
+}
+
+/** A single community post, live — the thread page's own header and status
+ *  (likes, answered state) come from this rather than the feed list. */
+export function useCommunityPost(postId: string | undefined): AsyncState<CommunityPost | null> {
+  const [state, setState] = useState<AsyncState<CommunityPost | null> & { forId?: string }>({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!postId || !isFirebaseConfigured) return;
+    return subscribeToCommunityPost(
+      postId,
+      post => setState({ data: post, loading: false, error: null, forId: postId }),
+      err => setState({ data: null, loading: false, error: err.message, forId: postId }),
+    );
+  }, [postId]);
+
+  if (!isFirebaseConfigured) return { data: null, loading: false, error: null };
+  if (!postId || state.forId !== postId) return { data: null, loading: true, error: null };
+  return state;
+}
+
+export function useCommunityComments(postId: string | undefined): AsyncState<CommunityComment[]> {
+  const [state, setState] = useState<AsyncState<CommunityComment[]> & { forId?: string }>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!postId || !isFirebaseConfigured) return;
+    return subscribeToCommunityComments(
+      postId,
+      comments => setState({ data: comments, loading: false, error: null, forId: postId }),
+      err => setState({ data: [], loading: false, error: err.message, forId: postId }),
+    );
+  }, [postId]);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: null };
+  if (!postId || state.forId !== postId) return { data: [], loading: true, error: null };
+  return state;
+}
+
+/** Community post ids this visitor has liked — a separate set from
+ *  useMyLikes, since communityLikes is its own collection (see firestore.ts). */
+export function useMyCommunityLikes(): Set<string> {
+  const [ids, setIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToMyCommunityLikes(setIds, () => setIds(new Set()));
+  }, []);
+  return ids;
 }
 
 /* ─── Admin ───────────────────────────────────────────────── */
