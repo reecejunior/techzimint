@@ -498,6 +498,7 @@ function PostRow({ post }: { post: Post }) {
               className={styles.postDeleteBtn}
               data-confirming={confirmingDelete || undefined}
               onClick={remove}
+              onBlur={() => setConfirmingDelete(false)}
               disabled={deleting}
             >
               {deleting ? (
