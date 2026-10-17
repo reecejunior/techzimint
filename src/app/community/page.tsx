@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { MessageCircleQuestion, Search, Sparkles } from 'lucide-react';
+import { BarChart3, ChevronRight, MessageCircleQuestion, Search, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { useCommunityFeed, useMyCommunityLikes } from '@/lib/hooks';
 import type { CommunityKind } from '@/lib/types';
@@ -77,6 +77,15 @@ export default function CommunityPage() {
       </PageHeader>
 
       <div className={`wrap ${styles.body}`}>
+        <Link href="/community/hackathon-tracker" className={styles.promo}>
+          <BarChart3 size={16} aria-hidden="true" />
+          <span>
+            <strong>Where are Zim&apos;s hackathon winners now?</strong> A tracker of named POTRAZ, Old
+            Mutual VCC and Cimas Healthathon winners — and what happened to them after.
+          </span>
+          <ChevronRight size={16} aria-hidden="true" className={styles.promoArrow} />
+        </Link>
+
         <div className={styles.controls}>
           <div className={styles.tabs} role="tablist" aria-label="Filter posts">
             {TABS.map(t => (

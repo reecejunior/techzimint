@@ -44,6 +44,48 @@
   background: var(--brand-hover);
 }
 
+/* ── Featured tracker link ──
+   One pinned editorial piece above the live feed, styled as a quiet banner
+   rather than another CommunityCard so it doesn't read as a user post. */
+.promo {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+  color: var(--ink-700);
+  font-size: 14px;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.promo svg:first-child {
+  flex-shrink: 0;
+  color: var(--brand-text);
+}
+
+.promo strong {
+  color: var(--ink-900);
+}
+
+.promoArrow {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-400);
+  transition: transform var(--fast) var(--ease);
+}
+
+.promo:hover {
+  border-color: var(--hairline-strong);
+  background: var(--surface-2);
+}
+
+.promo:hover .promoArrow {
+  transform: translateX(2px);
+}
+
 .controls {
   display: flex;
   align-items: center;
