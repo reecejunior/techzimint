@@ -12,6 +12,8 @@
  * has shut down. An entry whose evidence cites a "community contact" came in
  * that way rather than from an independently re-verified public source.
  */
+import type { TrackerOverride } from '@/lib/types';
+
 export interface Winner {
   id: string;
   /** Which of the four programme families this falls under. */
@@ -1808,3 +1810,26 @@ export const WINNERS: Winner[] = [
     source: 'https://press.seedstars.com/myrunner-named-zimbabwes-best-startup-at-seedstars-harare-2017',
   },
 ];
+
+/**
+ * Merge an admin's live correction (from `trackerOverrides/{winnerId}`, see
+ * src/lib/types.ts) over this row's static research entry. Only fields the
+ * admin actually set are overridden; anything left out keeps the static
+ * value. Used by the tracker page to compute what to show, and by the admin
+ * editor to pre-fill a row's edit form.
+ */
+export function applyTrackerOverride(winner: Winner, override: TrackerOverride | undefined): Winner {
+  if (!override) return winner;
+  return {
+    ...winner,
+    ...(override.name !== undefined && { name: override.name }),
+    ...(override.people !== undefined && { people: override.people }),
+    ...(override.whatItDoes !== undefined && { whatItDoes: override.whatItDoes }),
+    ...(override.prize !== undefined && { prize: override.prize }),
+    ...(override.prizeUsd !== undefined && { prizeUsd: override.prizeUsd }),
+    ...(override.status !== undefined && { status: override.status }),
+    ...(override.alreadyOperating !== undefined && { alreadyOperating: override.alreadyOperating }),
+    ...(override.evidence !== undefined && { evidence: override.evidence }),
+    ...(override.source !== undefined && { source: override.source }),
+  };
+}

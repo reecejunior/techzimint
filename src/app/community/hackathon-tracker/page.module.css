@@ -453,6 +453,21 @@
   color: var(--ink-400);
 }
 
+.correctedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--brand-panel);
+  color: var(--brand-panel);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 .emptyRow {
   text-align: center;
   color: var(--ink-400);
@@ -516,6 +531,25 @@
 
 .suggestToggle:hover {
   color: var(--ink-700);
+}
+
+/* The appeal toggle is deliberately the opposite of the plain link above —
+   a founder disputing a status needs to actually notice this exists, so it
+   reads as a button, not a footnote. */
+.appealToggle {
+  margin-top: var(--s-3);
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--orange-700);
+  background: var(--surface-2);
+  color: var(--orange-700);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.appealToggle:hover {
+  background: var(--orange-700);
+  color: var(--white);
 }
 
 .suggestHint {

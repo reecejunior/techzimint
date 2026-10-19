@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Link2, Loader2, MessageCircle, Search, ShieldAlert, X } from 'lucide-react';
 import { postTrackerComment, submitTrackerSuggestion } from '@/lib/firestore';
-import { useTrackerComments } from '@/lib/hooks';
+import { useTrackerComments, useTrackerOverrides } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
 import {
   Bar,
@@ -16,7 +16,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { WINNERS, type Winner } from './data';
+import { applyTrackerOverride, WINNERS, type Winner } from './data';
+import type { TrackerOverride } from '@/lib/types';
 import styles from './page.module.css';
 
 /** Rarest-to-most-common ordering used everywhere a status appears — charts,
@@ -178,28 +179,46 @@ export default function HackathonTrackerPage() {
     });
   }
 
-  const groups = useMemo(() => [...new Set(WINNERS.map(r => r.group))], []);
-  const programmes = useMemo(() => [...new Set(WINNERS.map(r => r.programme))].sort(), []);
+  // Admin corrections saved at /admin, merged live over the static dataset
+  // below — see applyTrackerOverride in data.ts. overriddenIds drives the
+  // "corrected by our editors" marker on affected rows.
+  const overridesState = useTrackerOverrides();
+  const overrideMap = useMemo(() => {
+    const m = new Map<string, TrackerOverride>();
+    overridesState.data.forEach(o => m.set(o.winnerId, o));
+    return m;
+  }, [overridesState.data]);
+  const overriddenIds = useMemo(() => new Set(overrideMap.keys()), [overrideMap]);
+  const effectiveWinners = useMemo(
+    () => WINNERS.map(w => applyTrackerOverride(w, overrideMap.get(w.id))),
+    [overrideMap],
+  );
+
+  const groups = useMemo(() => [...new Set(effectiveWinners.map(r => r.group))], [effectiveWinners]);
+  const programmes = useMemo(
+    () => [...new Set(effectiveWinners.map(r => r.programme))].sort(),
+    [effectiveWinners],
+  );
 
   const summary = useMemo(() => {
-    const byStatus = (s: Status) => WINNERS.filter(r => r.status === s).length;
-    const active = WINNERS.filter(r => r.status === 'Active');
+    const byStatus = (s: Status) => effectiveWinners.filter(r => r.status === s).length;
+    const active = effectiveWinners.filter(r => r.status === 'Active');
     const preexisting = active.filter(r => r.alreadyOperating === 'Yes').length;
-    const prizeUsdTotal = WINNERS.reduce((sum, r) => sum + (r.prizeUsd ?? 0), 0);
-    const prizeUsdTeams = WINNERS.filter(r => Boolean(r.prizeUsd)).length;
+    const prizeUsdTotal = effectiveWinners.reduce((sum, r) => sum + (r.prizeUsd ?? 0), 0);
+    const prizeUsdTeams = effectiveWinners.filter(r => Boolean(r.prizeUsd)).length;
     const prizeUsdActive = active.reduce((sum, r) => sum + (r.prizeUsd ?? 0), 0);
     return {
-      total: WINNERS.length,
+      total: effectiveWinners.length,
       active: active.length,
       noTrace: byStatus('No trace'),
-      noTraceShare: byStatus('No trace') / WINNERS.length,
+      noTraceShare: byStatus('No trace') / effectiveWinners.length,
       preexisting,
       preexistingShare: active.length ? preexisting / active.length : 0,
       prizeUsdTotal,
       prizeUsdTeams,
       prizeUsdActive,
     };
-  }, []);
+  }, [effectiveWinners]);
 
   function countsByStatus(rows: Winner[], group: string): CategoryRow {
     const row = { group, total: 0 } as CategoryRow;
@@ -213,22 +232,22 @@ export default function HackathonTrackerPage() {
 
   const byProgramme = useMemo(() => {
     return groups
-      .map(group => countsByStatus(WINNERS.filter(r => r.group === group), group))
+      .map(group => countsByStatus(effectiveWinners.filter(r => r.group === group), group))
       .sort((a, b) => b.total - a.total);
-  }, [groups]);
+  }, [groups, effectiveWinners]);
 
   const byYear = useMemo(() => {
-    const years = [...new Set(WINNERS.map(r => r.year))].sort((a, b) => a - b);
+    const years = [...new Set(effectiveWinners.map(r => r.year))].sort((a, b) => a - b);
     return years.map(year => ({
-      ...countsByStatus(WINNERS.filter(r => r.year === year), String(year)),
+      ...countsByStatus(effectiveWinners.filter(r => r.year === year), String(year)),
       year,
     }));
-  }, []);
+  }, [effectiveWinners]);
 
   const filtered = useMemo(() => {
     const q = filters.q.trim().toLowerCase();
     const preset = PRESETS[filters.preset] ?? PRESETS.all;
-    return WINNERS.filter(
+    return effectiveWinners.filter(
       r =>
         (!preset.test || preset.test(r)) &&
         (!filters.group || r.group === filters.group) &&
@@ -242,7 +261,7 @@ export default function HackathonTrackerPage() {
             .toLowerCase()
             .includes(q)),
     );
-  }, [filters]);
+  }, [filters, effectiveWinners]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -394,6 +413,7 @@ export default function HackathonTrackerPage() {
             click to open its row. The largest cheques sit in &quot;No trace&quot; and &quot;Unclear&quot;.
           </p>
           <MoneyScatter
+            rows={effectiveWinners}
             openId={openId}
             visibleIds={new Set(filtered.map(r => r.id))}
             onDotClick={openRow}
@@ -513,7 +533,7 @@ export default function HackathonTrackerPage() {
               </button>
             )}
             <span className={styles.count}>
-              Showing {fmtNum(sorted.length)} of {fmtNum(WINNERS.length)}
+              Showing {fmtNum(sorted.length)} of {fmtNum(effectiveWinners.length)}
             </span>
           </div>
 
@@ -538,7 +558,13 @@ export default function HackathonTrackerPage() {
               </thead>
               <tbody>
                 {sorted.map(r => (
-                  <WinnerRow key={r.id} row={r} open={openId === r.id} onToggle={() => setOpenId(id => (id === r.id ? null : r.id))} />
+                  <WinnerRow
+                    key={r.id}
+                    row={r}
+                    open={openId === r.id}
+                    overridden={overriddenIds.has(r.id)}
+                    onToggle={() => setOpenId(id => (id === r.id ? null : r.id))}
+                  />
                 ))}
                 {sorted.length === 0 && (
                   <tr>
@@ -634,7 +660,17 @@ function SortHeader({
   );
 }
 
-function WinnerRow({ row, open, onToggle }: { row: Winner; open: boolean; onToggle: () => void }) {
+function WinnerRow({
+  row,
+  open,
+  overridden,
+  onToggle,
+}: {
+  row: Winner;
+  open: boolean;
+  overridden: boolean;
+  onToggle: () => void;
+}) {
   return (
     <>
       <tr
@@ -652,6 +688,12 @@ function WinnerRow({ row, open, onToggle }: { row: Winner; open: boolean; onTogg
       >
         <td className={styles.nameCell}>
           {row.name}
+          {overridden && (
+            <span className={styles.correctedBadge} title="An editor updated this row since it was first compiled.">
+              <CheckCircle2 size={11} aria-hidden="true" />
+              Corrected
+            </span>
+          )}
           {row.whatItDoes !== '—' && <div className={styles.what}>{row.whatItDoes}</div>}
         </td>
         <td>{row.programme}</td>
@@ -742,7 +784,11 @@ function SuggestCorrection({
           Something out of date here? Suggest a correction
         </button>
         {allowAppeal && (
-          <button type="button" className={styles.suggestToggle} onClick={() => setMode('appeal')}>
+          <button
+            type="button"
+            className={`${styles.suggestToggle} ${styles.appealToggle}`}
+            onClick={() => setMode('appeal')}
+          >
             <ShieldAlert size={13} aria-hidden="true" />
             Are you the founder? Appeal this status
           </button>
@@ -1058,11 +1104,13 @@ function useContainerWidth<T extends HTMLElement>() {
  *  jittered dodging, so this is hand-drawn SVG — the same approach the
  *  original dashboard this page is based on used. */
 function MoneyScatter({
+  rows,
   openId,
   visibleIds,
   onDotClick,
   onLabelClick,
 }: {
+  rows: Winner[];
   openId: string | null;
   visibleIds: Set<string>;
   onDotClick: (id: string) => void;
@@ -1070,7 +1118,7 @@ function MoneyScatter({
 }) {
   const [ref, width] = useContainerWidth<HTMLDivElement>();
   const [hover, setHover] = useState<{ row: Winner; x: number; y: number } | null>(null);
-  const points = useMemo(() => WINNERS.filter(r => Boolean(r.prizeUsd)), []);
+  const points = useMemo(() => rows.filter(r => Boolean(r.prizeUsd)), [rows]);
 
   const W = Math.max(300, width || 600);
   const margin = { l: 112, r: 18, t: 8, b: 26 };
