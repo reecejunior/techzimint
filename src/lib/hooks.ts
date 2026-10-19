@@ -25,6 +25,7 @@ import {
   subscribeToStartupPosts,
   subscribeToStartups,
   subscribeToStartupsForAdmin,
+  subscribeToTrackerSuggestions,
   subscribeToVideoFeed,
 } from './firestore';
 import type {
@@ -40,6 +41,7 @@ import type {
   Reviewer,
   ReviewWithStartup,
   Startup,
+  TrackerSuggestion,
 } from './types';
 
 const NOT_CONFIGURED =
@@ -494,6 +496,27 @@ export function useAdminAuth(): { user: User | null; isAdmin: boolean; loading: 
 
   if (!isFirebaseConfigured) return { user: null, isAdmin: false, loading: false };
   return { user: state.user, isAdmin: isAdminUser(state.user), loading: state.loading };
+}
+
+/** Every hackathon-tracker suggestion, newest first — the /admin review
+ *  queue (see submitTrackerSuggestion / reviewTrackerSuggestion). */
+export function useTrackerSuggestionsForAdmin(): AsyncState<TrackerSuggestion[]> {
+  const [state, setState] = useState<AsyncState<TrackerSuggestion[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToTrackerSuggestions(
+      items => setState({ data: items, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  return state;
 }
 
 /** Every startup regardless of status, for the moderation list. */

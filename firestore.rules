@@ -549,6 +549,42 @@ service cloud.firestore {
       allow delete: if mine();
     }
 
+    // The hackathon tracker's correction/addition intake queue (see the
+    // TrackerSuggestion doc comment in src/lib/types.ts). Unreadable by
+    // clients other than admins — same reasoning as the weekly-digest list
+    // just below: a raw, unreviewed submission is not meant to be public,
+    // and this keeps the queue from doubling as a free-for-all comment feed.
+    // The tracker's own data file only ever changes through a reviewed code
+    // update, never automatically from here.
+    match /trackerSuggestions/{suggestionId} {
+      allow read: if isAdmin();
+
+      allow create: if signedIn()
+                    && request.resource.data.submittedBy == request.auth.uid
+                    && request.resource.data.winnerId is string
+                    && request.resource.data.winnerId.size() <= 10
+                    && request.resource.data.winnerName is string
+                    && request.resource.data.winnerName.size() <= 140
+                    && request.resource.data.note is string
+                    && request.resource.data.note.size() > 0
+                    && request.resource.data.note.size() <= 1000
+                    && request.resource.data.evidenceUrl is string
+                    && request.resource.data.evidenceUrl.size() <= 300
+                    && request.resource.data.submitterName is string
+                    && request.resource.data.submitterName.size() <= 80
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.reviewedAt == null
+                    && request.resource.data.reviewNote == '';
+
+      // Only an admin marks one reviewed — status plus their own note on
+      // what they did about it, nothing else about the submission moves.
+      allow update: if isAdmin()
+                    && request.resource.data.status in ['applied', 'dismissed']
+                    && touched().hasOnly(['status', 'reviewedAt', 'reviewNote']);
+
+      allow delete: if false;
+    }
+
     // Reviewer profiles are editorial content — readable by all, writable only
     // from the seed script or the console.
     match /reviewers/{reviewerId} {

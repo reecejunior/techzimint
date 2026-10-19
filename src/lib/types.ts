@@ -375,3 +375,42 @@ export interface NotificationPref {
    *  eligible for the next email, so nobody gets the same one twice. */
   lastNotifiedAt: string;
 }
+
+/* ─── Hackathon tracker suggestions ───────────────────────────
+   The hackathon-winners tracker's own dataset
+   (src/app/community/hackathon-tracker/data.ts) is a static, built-in file,
+   not a database table — it started as a one-off research compilation. This
+   collection is the visible, auditable intake queue that replaces scattered
+   WhatsApp/email corrections: a visitor submits a correction from the
+   tracker page, an admin reviews it from /admin, and an approved one is then
+   folded into the data file in a follow-up update. Approving a suggestion
+   here does not, by itself, change what the tracker page shows. */
+
+export type TrackerSuggestionStatus = 'pending' | 'applied' | 'dismissed';
+
+/** One submitted correction or addition for the hackathon tracker. Lives at
+ *  `trackerSuggestions/{id}`. */
+export interface TrackerSuggestion {
+  id: string;
+  /** The tracker row this is about (a `Winner.id` from the static dataset),
+   *  or '' for a general note — a whole missing programme, say — that isn't
+   *  tied to one row. */
+  winnerId: string;
+  /** Denormalised at submission time so the admin queue reads without a
+   *  join back into the tracker's static dataset. */
+  winnerName: string;
+  note: string;
+  /** A link backing up the correction, or '' if none was given. */
+  evidenceUrl: string;
+  /** How the submitter wants to be known in the queue, or '' to stay
+   *  anonymous — never a real account name, since tracker visitors use the
+   *  same anonymous session as the rest of the site. */
+  submitterName: string;
+  submittedBy: string;
+  status: TrackerSuggestionStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  /** The admin's own note on what they did with it ("folded into the data
+   *  update on 2026-10-25", "couldn't confirm, left as is"). */
+  reviewNote: string;
+}

@@ -492,6 +492,132 @@
   text-decoration: underline;
 }
 
+/* ── Suggest a correction ──
+   Lives inside the expanded row (and once, generically, above the table).
+   Deliberately plain — a link, not a button — so it reads as a quiet
+   "report an issue" affordance rather than competing with the row's own
+   content for attention. */
+.suggestToggle {
+  margin-top: var(--s-3);
+  font-size: 12px;
+  color: var(--ink-400);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.suggestToggle:hover {
+  color: var(--ink-700);
+}
+
+.suggestDone {
+  margin-top: var(--s-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.suggestDone svg {
+  color: var(--brand-text);
+  flex-shrink: 0;
+}
+
+.suggestForm {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px dashed var(--hairline-strong);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  max-width: 34rem;
+}
+
+.suggestLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+
+.suggestTextarea,
+.suggestInput {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--ink-900);
+  resize: vertical;
+}
+
+.suggestTextarea:focus,
+.suggestInput:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.suggestRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.suggestRow .suggestInput {
+  flex: 1 1 12rem;
+}
+
+.suggestError {
+  font-size: 13px;
+  color: var(--orange-800);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+}
+
+.suggestActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+.suggestCancel {
+  font-size: 13px;
+  color: var(--ink-500);
+  padding: 7px 10px;
+}
+
+.suggestCancel:hover {
+  color: var(--ink-900);
+}
+
+.suggestSubmit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--on-brand);
+  background: var(--brand);
+  border-radius: var(--r-pill);
+  padding: 7px 16px;
+}
+
+.suggestSubmit:hover {
+  background: var(--brand-hover);
+}
+
+.suggestSubmit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
 @media (max-width: 640px) {
   .hideSm {
     display: none;

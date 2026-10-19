@@ -442,9 +442,14 @@
 
 .rowActions {
   flex-shrink: 0;
+  display: flex;
+  gap: var(--s-2);
 }
 
 .rejectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 7px 14px;
   border-radius: var(--r-sm);
   border: 1px solid var(--hairline-strong);
