@@ -58,6 +58,8 @@ import type {
   StartupEditInput,
   StartupSubmission,
   PostImage,
+  TrackerSuggestion,
+  TrackerSuggestionStatus,
 } from './types';
 
 export { periodKeys, slugify, withRanks } from './ranking';
@@ -1799,6 +1801,95 @@ export async function subscribeEmail(email: string): Promise<void> {
     email: trimmed,
     active: true,
     createdAt: serverTimestamp(),
+  });
+}
+
+/* ─── Hackathon tracker suggestions ───────────────────────────
+ * See the TrackerSuggestion doc comment in types.ts: this is the tracker's
+ * intake queue, reviewed from /admin, not a live edit path for the tracker's
+ * own (static) dataset. */
+
+function mapTrackerSuggestion(
+  snap: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>,
+): TrackerSuggestion {
+  const d = snap.data() ?? {};
+  const status: TrackerSuggestionStatus =
+    d.status === 'applied' ? 'applied' : d.status === 'dismissed' ? 'dismissed' : 'pending';
+  return {
+    id: snap.id,
+    winnerId: String(d.winnerId ?? ''),
+    winnerName: String(d.winnerName ?? ''),
+    note: String(d.note ?? ''),
+    evidenceUrl: String(d.evidenceUrl ?? ''),
+    submitterName: String(d.submitterName ?? ''),
+    submittedBy: String(d.submittedBy ?? ''),
+    status,
+    createdAt: toIso(d.createdAt),
+    reviewedAt: d.reviewedAt ? toIso(d.reviewedAt) : null,
+    reviewNote: String(d.reviewNote ?? ''),
+  };
+}
+
+/**
+ * Submit a correction or addition for one tracker row (or a general note,
+ * with `winnerId: ''`, for something like a whole missing programme). Open
+ * to any visitor — same anonymous session the rest of the site already
+ * uses — and goes straight into the admin queue; nothing on the public page
+ * changes until an admin reviews it.
+ */
+export async function submitTrackerSuggestion(input: {
+  winnerId: string;
+  winnerName: string;
+  note: string;
+  evidenceUrl?: string;
+  submitterName?: string;
+}): Promise<void> {
+  const note = input.note.trim();
+  if (!note) throw new Error('Add a note describing the correction.');
+  if (note.length > 1000) throw new Error('Keep it under 1,000 characters.');
+
+  const user = await ensureSignedIn();
+  await setDoc(doc(collection(getDb(), 'trackerSuggestions')), {
+    winnerId: input.winnerId,
+    winnerName: input.winnerName,
+    note,
+    evidenceUrl: (input.evidenceUrl ?? '').trim().slice(0, 300),
+    submitterName: (input.submitterName ?? '').trim().slice(0, 80),
+    submittedBy: user.uid,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+    reviewedAt: null,
+    reviewNote: '',
+  });
+}
+
+/** Every tracker suggestion, newest first — the /admin review queue. */
+export function subscribeToTrackerSuggestions(
+  onData: (items: TrackerSuggestion[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(collection(getDb(), 'trackerSuggestions'), orderBy('createdAt', 'desc'), limit(200));
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapTrackerSuggestion)),
+    err => onError(err as Error),
+  );
+}
+
+/**
+ * Marks a suggestion reviewed. `reviewNote` is the admin's own record of
+ * what happened ("folded into the 25 Oct data update") — approving here
+ * never touches the tracker's own data file by itself.
+ */
+export async function reviewTrackerSuggestion(
+  id: string,
+  status: Extract<TrackerSuggestionStatus, 'applied' | 'dismissed'>,
+  reviewNote = '',
+): Promise<void> {
+  await updateDoc(doc(getDb(), 'trackerSuggestions', id), {
+    status,
+    reviewedAt: serverTimestamp(),
+    reviewNote: reviewNote.trim().slice(0, 500),
   });
 }
 

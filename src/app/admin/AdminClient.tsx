@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import {
-  AlertTriangle, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Loader2, LogOut, Mail,
-  MessageCircle, Pencil, PlaySquare, RotateCcw, ShieldCheck, Trash2,
+  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Lightbulb,
+  Loader2, LogOut, Mail, MessageCircle, Pencil, PlaySquare, RotateCcw, ShieldCheck, Trash2, X,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
-import { approveStartup, deletePost, editPost, rejectStartup } from '@/lib/firestore';
-import { useAdminAuth, useAllStartupsForAdmin, useStartupPosts } from '@/lib/hooks';
+import { approveStartup, deletePost, editPost, rejectStartup, reviewTrackerSuggestion } from '@/lib/firestore';
+import {
+  useAdminAuth, useAllStartupsForAdmin, useStartupPosts, useTrackerSuggestionsForAdmin,
+} from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
-import type { Post, Startup } from '@/lib/types';
+import type { Post, Startup, TrackerSuggestion } from '@/lib/types';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
@@ -46,6 +48,7 @@ export default function AdminClient() {
       <div className={`wrap ${styles.page}`}>
         <AdminHeader email={user?.email ?? null} />
         <StatsStrip />
+        <TrackerQueue />
         <Queue />
       </div>
     </div>
@@ -208,6 +211,168 @@ function NotAuthorized({ email }: { email: string | null }) {
         Sign out
       </button>
     </div>
+  );
+}
+
+function TrackerQueue() {
+  const { data: suggestions, loading, error } = useTrackerSuggestionsForAdmin();
+  const pending = suggestions.filter(s => s.status === 'pending');
+  const decided = suggestions.filter(s => s.status !== 'pending');
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <span className={styles.cardIcon} data-tone="brand">
+          <Lightbulb size={16} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className={styles.cardTitle}>Hackathon tracker suggestions</h2>
+          <p className={styles.cardSubtitle}>
+            Corrections and additions submitted from the tracker page. Marking one &ldquo;applied&rdquo;
+            is just a note to yourself here — it doesn&apos;t change the tracker&apos;s data by
+            itself, so still fold the change into the data file.
+          </p>
+        </div>
+      </div>
+
+      {error ? (
+        <ErrorState message={error} />
+      ) : loading ? (
+        <div className={styles.list}>
+          {Array.from({ length: 2 }, (_, i) => (
+            <div key={i} className={`skel ${styles.skelRow}`} />
+          ))}
+        </div>
+      ) : suggestions.length === 0 ? (
+        <p className={styles.empty}>Nothing submitted yet.</p>
+      ) : (
+        <ul className={styles.list}>
+          {pending.map(s => (
+            <TrackerRow key={s.id} suggestion={s} />
+          ))}
+          {decided.map(s => (
+            <TrackerRow key={s.id} suggestion={s} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function TrackerRow({ suggestion }: { suggestion: TrackerSuggestion }) {
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<'applied' | 'dismissed' | null>(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function decide(status: 'applied' | 'dismissed', reviewNote: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await reviewTrackerSuggestion(suggestion.id, status, reviewNote);
+      setNoteOpen(false);
+      setNote('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save that.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const displayStatus = suggestion.status === 'applied' ? 'approved' : suggestion.status === 'dismissed' ? 'rejected' : undefined;
+
+  return (
+    <li className={styles.row}>
+      <div className={styles.rowGrid}>
+        <div className={styles.rowBody}>
+          <div className={styles.rowHead}>
+            <span className={styles.rowName}>{suggestion.winnerName || 'General note'}</span>
+            <span className={styles.status} data-status={displayStatus}>
+              {suggestion.status}
+            </span>
+          </div>
+          <p className={styles.rowTagline}>{suggestion.note}</p>
+          {suggestion.submitterName && (
+            <p className={styles.rowFounders}>from {suggestion.submitterName}</p>
+          )}
+          {suggestion.reviewNote && <p className={styles.rowReason}>Note: {suggestion.reviewNote}</p>}
+          {suggestion.evidenceUrl && (
+            <a
+              href={suggestion.evidenceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.rowLink}
+            >
+              {suggestion.evidenceUrl.replace(/^https?:\/\//, '')}
+              <ExternalLink size={11} aria-hidden="true" />
+            </a>
+          )}
+
+          {noteOpen && pendingStatus && (
+            <div className={styles.reasonBox}>
+              <input
+                className={styles.reasonInput}
+                placeholder="Note for yourself (optional)"
+                maxLength={500}
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                autoFocus
+              />
+              <div className={styles.reasonActions}>
+                <button type="button" className={styles.reasonCancel} onClick={() => setNoteOpen(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.reasonConfirm}
+                  onClick={() => decide(pendingStatus, note)}
+                  disabled={busy}
+                >
+                  {busy && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
+                  Confirm
+                </button>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <p className={styles.formError} role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+
+        {suggestion.status === 'pending' && !noteOpen && (
+          <div className={styles.rowActions}>
+            <button
+              type="button"
+              className={styles.restoreBtn}
+              onClick={() => {
+                setPendingStatus('applied');
+                setNoteOpen(true);
+              }}
+              disabled={busy}
+            >
+              <CheckCircle2 size={13} aria-hidden="true" />
+              Applied
+            </button>
+            <button
+              type="button"
+              className={styles.rejectBtn}
+              onClick={() => {
+                setPendingStatus('dismissed');
+                setNoteOpen(true);
+              }}
+              disabled={busy}
+            >
+              <X size={13} aria-hidden="true" />
+              Dismiss
+            </button>
+          </div>
+        )}
+      </div>
+    </li>
   );
 }
 

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Link2, Search, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Link2, Loader2, Search, X } from 'lucide-react';
+import { submitTrackerSuggestion } from '@/lib/firestore';
 import {
   Bar,
   BarChart,
@@ -287,9 +288,10 @@ export default function HackathonTrackerPage() {
             {fmtUsd(summary.prizeUsdActive)} of the {fmtUsd(summary.prizeUsdTotal)} in US$ prizes tracked.
           </p>
           <p className={styles.hint}>
-            Compiled from press and university reports, 15 Oct 2026 — a point-in-time check, not a live
-            feed. Tiles, chart segments, dots and findings all filter the list at the bottom; click any of
-            them.
+            Compiled from press and university reports, 15 Oct 2026; corrections and new finds from
+            readers and Techzim staff folded in 19 Oct 2026 — a point-in-time check, not a live feed. Spot
+            something wrong? Click into any row to send a correction — it goes straight to our editors.
+            Tiles, chart segments, dots and findings all filter the list at the bottom; click any of them.
           </p>
         </div>
       </header>
@@ -340,7 +342,8 @@ export default function HackathonTrackerPage() {
               Named winners and finalists by what a web search found about them today. Click a segment to
               list those entries. &quot;UN, bank &amp; other&quot; covers UNDP YouthConnektZim, the UNDP
               Multi-City Challenge, the Hult Prize accelerator, UNICEF imaGen, the ZITF hackathon, the MSU ×
-              NMB Bank hackathon and Econet E-NOVATE.
+              NMB Bank hackathon, Econet E-NOVATE, the Muzinda Hub Business Plan Competition and Seedstars
+              Harare.
             </p>
             <StatusLegend activeStatus={filters.status} onToggle={s => setFilters(f => ({ ...f, status: f.status === s ? '' : s }))} />
             <StackedBar
@@ -423,7 +426,11 @@ export default function HackathonTrackerPage() {
 
         <section className={styles.card} ref={tableRef} id="list">
           <h2>All winners and finalists</h2>
-          <p className={styles.note}>Search, filter or sort. Click a row for the full record and its evidence link.</p>
+          <p className={styles.note}>
+            Search, filter or sort. Click a row for the full record, its evidence link and a way to flag
+            anything wrong with it. Know of a whole challenge or programme that&apos;s missing?
+          </p>
+          <SuggestCorrection winnerId="" winnerName="General — a missing programme or challenge" />
 
           <div className={styles.controls}>
             <div className={styles.searchWrap}>
@@ -678,10 +685,104 @@ function WinnerRow({ row, open, onToggle }: { row: Winner; open: boolean; onTogg
                 />
               )}
             </div>
+            <SuggestCorrection winnerId={row.id} winnerName={row.name} />
           </td>
         </tr>
       )}
     </>
+  );
+}
+
+/**
+ * The tracker's "report an error" path: a collapsed link that opens into a
+ * short form, submitting to the trackerSuggestions queue (see firestore.ts)
+ * for an admin to review — this never changes the row in front of the
+ * person submitting it, so the copy below is careful not to imply it does.
+ */
+function SuggestCorrection({ winnerId, winnerName }: { winnerId: string; winnerName: string }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState('');
+  const [evidenceUrl, setEvidenceUrl] = useState('');
+  const [submitterName, setSubmitterName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  if (done) {
+    return (
+      <p className={styles.suggestDone}>
+        <CheckCircle2 size={14} aria-hidden="true" />
+        Thanks — that&apos;s gone to our editors to review.
+      </p>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button type="button" className={styles.suggestToggle} onClick={() => setOpen(true)}>
+        Something out of date here? Suggest a correction
+      </button>
+    );
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await submitTrackerSuggestion({ winnerId, winnerName, note, evidenceUrl, submitterName });
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send that. Please try again.');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form className={styles.suggestForm} onSubmit={submit} onClick={e => e.stopPropagation()}>
+      <label className={styles.suggestLabel} htmlFor={`suggest-note-${winnerId}`}>
+        What should change about this entry?
+      </label>
+      <textarea
+        id={`suggest-note-${winnerId}`}
+        className={styles.suggestTextarea}
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="e.g. They're still operating — I saw them selling at Avondale market last month."
+        rows={3}
+        maxLength={1000}
+        required
+      />
+      <div className={styles.suggestRow}>
+        <input
+          type="url"
+          className={styles.suggestInput}
+          value={evidenceUrl}
+          onChange={e => setEvidenceUrl(e.target.value)}
+          placeholder="Link backing this up (optional)"
+          maxLength={300}
+        />
+        <input
+          type="text"
+          className={styles.suggestInput}
+          value={submitterName}
+          onChange={e => setSubmitterName(e.target.value)}
+          placeholder="Your name (optional)"
+          maxLength={80}
+        />
+      </div>
+      {error && <p className={styles.suggestError}>{error}</p>}
+      <div className={styles.suggestActions}>
+        <button type="button" className={styles.suggestCancel} onClick={() => setOpen(false)} disabled={saving}>
+          Cancel
+        </button>
+        <button type="submit" className={styles.suggestSubmit} disabled={saving || !note.trim()}>
+          {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
+          Send to editors
+        </button>
+      </div>
+    </form>
   );
 }
 
