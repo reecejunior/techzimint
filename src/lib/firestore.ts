@@ -59,6 +59,7 @@ import type {
   StartupSubmission,
   PostImage,
   TrackerComment,
+  TrackerOverride,
   TrackerSuggestion,
   TrackerSuggestionKind,
   TrackerSuggestionStatus,
@@ -1992,5 +1993,71 @@ export function subscribeToAllTrackerComments(
     snap => onData(snap.docs.map(mapTrackerComment)),
     err => onError(err as Error),
   );
+}
+
+/* ─── Hackathon tracker: live admin corrections ───────────────────
+ * See the TrackerOverride doc comment in types.ts. Doc id is the Winner.id
+ * it corrects, so there is at most one override per row and a save always
+ * replaces the whole thing (no partial-merge semantics to reason about). */
+
+function mapTrackerOverride(snap: QueryDocumentSnapshot<DocumentData>): TrackerOverride {
+  const d = snap.data();
+  return {
+    winnerId: snap.id,
+    ...(typeof d.name === 'string' && { name: d.name }),
+    ...(typeof d.people === 'string' && { people: d.people }),
+    ...(typeof d.whatItDoes === 'string' && { whatItDoes: d.whatItDoes }),
+    ...(typeof d.prize === 'string' && { prize: d.prize }),
+    ...(typeof d.prizeUsd === 'number' && { prizeUsd: d.prizeUsd }),
+    ...(typeof d.status === 'string' && { status: d.status as TrackerOverride['status'] }),
+    ...(typeof d.alreadyOperating === 'string' && {
+      alreadyOperating: d.alreadyOperating as TrackerOverride['alreadyOperating'],
+    }),
+    ...(typeof d.evidence === 'string' && { evidence: d.evidence }),
+    ...(typeof d.source === 'string' && { source: d.source }),
+    updatedAt: toIso(d.updatedAt),
+    updatedByEmail: String(d.updatedByEmail ?? ''),
+  };
+}
+
+/** Every live correction, for merging over the static dataset — both on the
+ *  public tracker page and in the /admin editor. */
+export function subscribeToTrackerOverrides(
+  onData: (items: TrackerOverride[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = collection(getDb(), 'trackerOverrides');
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapTrackerOverride)),
+    err => onError(err as Error),
+  );
+}
+
+/** Admin-only. Saves a full set of corrected fields for one row — the editor
+ *  always submits everything it shows, so this overwrites rather than
+ *  merges; leaving a field out of `fields` means "no longer overridden",
+ *  not "leave whatever was there before." */
+export async function saveTrackerOverride(
+  winnerId: string,
+  fields: Omit<TrackerOverride, 'winnerId' | 'updatedAt' | 'updatedByEmail'>,
+  adminEmail: string,
+): Promise<void> {
+  if (!winnerId) throw new Error('Missing which entry this correction is for.');
+  await ensureSignedIn();
+  // Firestore rejects an explicit `undefined` field value (e.g. prizeUsd left
+  // blank) rather than treating it as "don't set this" — drop those first.
+  const cleanFields = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+  await setDoc(doc(getDb(), 'trackerOverrides', winnerId), {
+    winnerId,
+    ...cleanFields,
+    updatedAt: serverTimestamp(),
+    updatedByEmail: adminEmail,
+  });
+}
+
+/** Admin-only. Reverts one row back to the static dataset's own values. */
+export async function deleteTrackerOverride(winnerId: string): Promise<void> {
+  await deleteDoc(doc(getDb(), 'trackerOverrides', winnerId));
 }
 

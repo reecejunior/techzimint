@@ -1,24 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Lightbulb,
-  Loader2, LogOut, Mail, MessageCircle, Pencil, PlaySquare, RotateCcw, ShieldCheck, Trash2, X,
+  Loader2, LogOut, Mail, MessageCircle, Pencil, PlaySquare, RotateCcw, Search, ShieldCheck, Trash2, X,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
 import {
-  approveStartup, deletePost, deleteTrackerComment, editPost, rejectStartup, reviewTrackerSuggestion,
+  approveStartup, deletePost, deleteTrackerComment, deleteTrackerOverride, editPost, rejectStartup,
+  reviewTrackerSuggestion, saveTrackerOverride,
 } from '@/lib/firestore';
 import {
   useAdminAuth, useAllStartupsForAdmin, useStartupPosts, useTrackerCommentsForAdmin,
-  useTrackerSuggestionsForAdmin,
+  useTrackerOverrides, useTrackerSuggestionsForAdmin,
 } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
-import type { Post, Startup, TrackerComment, TrackerSuggestion } from '@/lib/types';
-import { WINNERS } from '@/app/community/hackathon-tracker/data';
+import type { Post, Startup, TrackerComment, TrackerOverride, TrackerSuggestion } from '@/lib/types';
+import { applyTrackerOverride, WINNERS, type Winner } from '@/app/community/hackathon-tracker/data';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
+
+/** Same ordering as the tracker page's own STATUSES — kept as a separate
+ *  local constant rather than importing from the (client) page module, since
+ *  admin.module.css styling here is otherwise independent of that page. */
+const STATUS_OPTIONS = ['Active', 'Some later activity', 'Unclear', 'Too recent', 'No trace'] as const;
 
 /** winnerId -> display name, for the comments-moderation list (TrackerComment
  *  only stores the id; the suggestions queue denormalises the name instead,
@@ -57,6 +63,7 @@ export default function AdminClient() {
       <div className={`wrap ${styles.page}`}>
         <AdminHeader email={user?.email ?? null} />
         <StatsStrip />
+        <TrackerEntryEditor adminEmail={user?.email ?? ''} />
         <TrackerQueue />
         <TrackerCommentsQueue />
         <Queue />
@@ -221,6 +228,295 @@ function NotAuthorized({ email }: { email: string | null }) {
         Sign out
       </button>
     </div>
+  );
+}
+
+/*
+ * Live corrections to the hackathon tracker's static dataset (see the
+ * TrackerOverride doc comment in types.ts). Unlike TrackerQueue below, which
+ * reviews what visitors submitted, this is a direct editing tool: pick a row,
+ * change its status or details, save — it shows up on the public page right
+ * away, no code change or deploy needed. "Revert to original" removes the
+ * correction and falls back to the static research entry.
+ */
+function TrackerEntryEditor({ adminEmail }: { adminEmail: string }) {
+  const { data: overrides } = useTrackerOverrides();
+  const overrideMap = useMemo(() => new Map(overrides.map(o => [o.winnerId, o] as const)), [overrides]);
+
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = selectedId ? WINNERS.find(w => w.id === selectedId) ?? null : null;
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return WINNERS.filter(w => `${w.name} ${w.programme} ${w.people}`.toLowerCase().includes(q)).slice(0, 12);
+  }, [query]);
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <span className={styles.cardIcon} data-tone="neutral">
+          <Pencil size={16} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className={styles.cardTitle}>Edit tracker entries</h2>
+          <p className={styles.cardSubtitle}>
+            Correct one row&apos;s status or details directly — it updates the public tracker page right
+            away, no code change needed. The original research stays on record underneath; this only
+            overlays what&apos;s shown.
+          </p>
+        </div>
+      </div>
+
+      {selected ? (
+        <TrackerEntryForm
+          key={selected.id}
+          winner={selected}
+          override={overrideMap.get(selected.id)}
+          adminEmail={adminEmail}
+          onChangeEntry={() => setSelectedId(null)}
+        />
+      ) : (
+        <>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Find an entry</span>
+            <div className={styles.searchBox}>
+              <Search size={15} className={styles.searchIcon} aria-hidden="true" />
+              <input
+                type="text"
+                className={`${styles.input} ${styles.searchInput}`}
+                placeholder="Search by name, programme or founder…"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+              />
+            </div>
+          </label>
+
+          {query.trim() &&
+            (results.length === 0 ? (
+              <p className={styles.empty}>No entries match &ldquo;{query.trim()}&rdquo;.</p>
+            ) : (
+              <ul className={styles.searchResults}>
+                {results.map(w => (
+                  <li key={w.id}>
+                    <button
+                      type="button"
+                      className={styles.searchResultBtn}
+                      onClick={() => {
+                        setSelectedId(w.id);
+                        setQuery('');
+                      }}
+                    >
+                      <span>
+                        <span className={styles.rowName}>{w.name}</span>
+                        <span className={styles.rowFounders}>
+                          {' '}
+                          · {w.programme} · {w.year}
+                        </span>
+                      </span>
+                      {overrideMap.has(w.id) && <span className={styles.kindBadge}>Edited</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ))}
+        </>
+      )}
+    </section>
+  );
+}
+
+function TrackerEntryForm({
+  winner,
+  override,
+  adminEmail,
+  onChangeEntry,
+}: {
+  winner: Winner;
+  override: TrackerOverride | undefined;
+  adminEmail: string;
+  onChangeEntry: () => void;
+}) {
+  const effective = useMemo(() => applyTrackerOverride(winner, override), [winner, override]);
+  const [name, setName] = useState(effective.name);
+  const [people, setPeople] = useState(effective.people);
+  const [whatItDoes, setWhatItDoes] = useState(effective.whatItDoes);
+  const [prize, setPrize] = useState(effective.prize);
+  const [prizeUsd, setPrizeUsd] = useState(effective.prizeUsd != null ? String(effective.prizeUsd) : '');
+  const [status, setStatus] = useState<Winner['status']>(effective.status);
+  const [alreadyOperating, setAlreadyOperating] = useState<Winner['alreadyOperating']>(effective.alreadyOperating);
+  const [evidence, setEvidence] = useState(effective.evidence);
+  const [source, setSource] = useState(effective.source);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const hasOverride = Boolean(override);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      let usd: number | undefined;
+      if (prizeUsd.trim()) {
+        usd = Number(prizeUsd);
+        if (!Number.isFinite(usd) || usd < 0) throw new Error('Prize in US$ must be a positive number, or left blank.');
+      }
+      await saveTrackerOverride(
+        winner.id,
+        {
+          name: name.trim(),
+          people: people.trim(),
+          whatItDoes: whatItDoes.trim(),
+          prize: prize.trim(),
+          prizeUsd: usd,
+          status,
+          alreadyOperating,
+          evidence: evidence.trim(),
+          source: source.trim(),
+        },
+        adminEmail,
+      );
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save that.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revert() {
+    if (!window.confirm(`Revert "${winner.name}" to the original research entry? This removes your correction.`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteTrackerOverride(winner.id);
+      onChangeEntry();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not revert that.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className={styles.editForm} onSubmit={save}>
+      <div className={styles.editFormHead}>
+        <div>
+          <span className={styles.rowName}>{winner.name}</span>
+          <span className={styles.rowFounders}>
+            {' '}
+            · {winner.programme} · {winner.year}
+          </span>
+          {hasOverride && <span className={styles.kindBadge}>Edited</span>}
+        </div>
+        <button type="button" className={styles.forgotLink} onClick={onChangeEntry}>
+          Choose a different entry
+        </button>
+      </div>
+
+      <div className={styles.editGrid}>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Name</span>
+          <input className={styles.input} value={name} onChange={e => setName(e.target.value)} maxLength={200} required />
+        </label>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>People</span>
+          <input className={styles.input} value={people} onChange={e => setPeople(e.target.value)} maxLength={300} required />
+        </label>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Status</span>
+          <select className={styles.input} value={status} onChange={e => setStatus(e.target.value as Winner['status'])}>
+            {STATUS_OPTIONS.map(s => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Already operating before the win?</span>
+          <select
+            className={styles.input}
+            value={alreadyOperating}
+            onChange={e => setAlreadyOperating(e.target.value as Winner['alreadyOperating'])}
+          >
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="Unknown">Unknown</option>
+          </select>
+        </label>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Prize (as described)</span>
+          <input className={styles.input} value={prize} onChange={e => setPrize(e.target.value)} maxLength={300} required />
+        </label>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>Prize in US$ (leave blank if not paid in US$)</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            className={styles.input}
+            value={prizeUsd}
+            onChange={e => setPrizeUsd(e.target.value)}
+          />
+        </label>
+        <label className={`${styles.field} ${styles.editGridWide}`}>
+          <span className={styles.fieldLabel}>What it does</span>
+          <textarea
+            className={styles.input}
+            value={whatItDoes}
+            onChange={e => setWhatItDoes(e.target.value)}
+            rows={2}
+            maxLength={400}
+            required
+          />
+        </label>
+        <label className={`${styles.field} ${styles.editGridWide}`}>
+          <span className={styles.fieldLabel}>What we found (evidence)</span>
+          <textarea
+            className={styles.input}
+            value={evidence}
+            onChange={e => setEvidence(e.target.value)}
+            rows={3}
+            maxLength={800}
+            required
+          />
+        </label>
+        <label className={`${styles.field} ${styles.editGridWide}`}>
+          <span className={styles.fieldLabel}>Evidence link</span>
+          <input type="url" className={styles.input} value={source} onChange={e => setSource(e.target.value)} maxLength={300} />
+        </label>
+      </div>
+
+      {error && (
+        <p className={styles.formError} role="alert">
+          {error}
+        </p>
+      )}
+      {saved && !error && (
+        <p className={styles.savedMsg}>
+          <CheckCircle2 size={14} aria-hidden="true" />
+          Saved — this is now what shows on the tracker page.
+        </p>
+      )}
+
+      <div className={styles.rowActions}>
+        <button type="submit" className={styles.submitBtn} disabled={busy}>
+          {busy && <Loader2 size={15} className={styles.spin} aria-hidden="true" />}
+          Save correction
+        </button>
+        {hasOverride && (
+          <button type="button" className={styles.rejectBtn} onClick={revert} disabled={busy}>
+            <RotateCcw size={13} aria-hidden="true" />
+            Revert to original
+          </button>
+        )}
+      </div>
+    </form>
   );
 }
 

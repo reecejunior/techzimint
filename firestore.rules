@@ -619,6 +619,28 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Live admin corrections to the hackathon tracker's static dataset.
+    // Doc id is the Winner.id it corrects. Anyone can read (the public
+    // tracker page merges these over the static data at render time); only
+    // an admin can write, and only a full, valid set of fields at once —
+    // the /admin editor always submits everything it shows, so there is no
+    // partial-update case to allow for.
+    match /trackerOverrides/{winnerId} {
+      allow read: if true;
+
+      allow create, update: if isAdmin()
+                    && request.resource.data.winnerId == winnerId
+                    && request.resource.data.updatedByEmail is string
+                    && request.resource.data.updatedByEmail.size() > 0
+                    && (!('status' in request.resource.data)
+                        || request.resource.data.status in
+                           ['Active', 'Some later activity', 'Unclear', 'Too recent', 'No trace'])
+                    && (!('alreadyOperating' in request.resource.data)
+                        || request.resource.data.alreadyOperating in ['Yes', 'No', 'Unknown']);
+
+      allow delete: if isAdmin();
+    }
+
     // Reviewer profiles are editorial content — readable by all, writable only
     // from the seed script or the console.
     match /reviewers/{reviewerId} {

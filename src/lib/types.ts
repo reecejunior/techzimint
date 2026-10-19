@@ -444,3 +444,37 @@ export interface TrackerComment {
   authorName: string;
   createdAt: string;
 }
+
+/* ─── Hackathon tracker: live admin corrections ───────────────────
+ * The tracker's own dataset (src/app/community/hackathon-tracker/data.ts)
+ * is a static file — editing it normally means a code change and a deploy.
+ * This collection lets an admin correct one row's live-shown details from
+ * /admin without that round-trip: the tracker page merges a row's override
+ * over its static entry (see applyTrackerOverride in data.ts) before
+ * rendering, so a save here shows up immediately for every visitor. The
+ * static file stays the record of what the original research found; this is
+ * only ever written by an admin, never by a visitor (compare
+ * TrackerSuggestion/TrackerComment above, which anyone can submit but only
+ * an admin reviews). */
+
+/** A live correction to one row of the tracker's static dataset. Doc id is
+ *  the `Winner.id` it corrects. Lives at `trackerOverrides/{winnerId}`.
+ *  Every field is optional: an admin only sets what they're changing, and an
+ *  unset field keeps showing the static dataset's own value — except the
+ *  admin form always submits every editable field together, so in practice
+ *  a saved override fully replaces them as a set (see the /admin editor). */
+export interface TrackerOverride {
+  winnerId: string;
+  name?: string;
+  people?: string;
+  whatItDoes?: string;
+  prize?: string;
+  prizeUsd?: number;
+  status?: 'Active' | 'Some later activity' | 'Unclear' | 'Too recent' | 'No trace';
+  alreadyOperating?: 'Yes' | 'No' | 'Unknown';
+  evidence?: string;
+  source?: string;
+  updatedAt: string;
+  /** Which admin last saved this, for an audit trail — not shown to visitors. */
+  updatedByEmail: string;
+}

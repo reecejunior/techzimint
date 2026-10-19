@@ -27,6 +27,7 @@ import {
   subscribeToAllTrackerComments,
   subscribeToStartupsForAdmin,
   subscribeToTrackerComments,
+  subscribeToTrackerOverrides,
   subscribeToTrackerSuggestions,
   subscribeToVideoFeed,
 } from './firestore';
@@ -44,6 +45,7 @@ import type {
   ReviewWithStartup,
   Startup,
   TrackerComment,
+  TrackerOverride,
   TrackerSuggestion,
 } from './types';
 
@@ -557,6 +559,28 @@ export function useTrackerCommentsForAdmin(): AsyncState<TrackerComment[]> {
   useEffect(() => {
     if (!isFirebaseConfigured) return;
     return subscribeToAllTrackerComments(
+      items => setState({ data: items, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  return state;
+}
+
+/** Every live admin correction to the hackathon tracker, keyed by winnerId —
+ *  used both to show corrected rows on the public page (merged over the
+ *  static dataset with applyTrackerOverride) and to drive the /admin editor. */
+export function useTrackerOverrides(): AsyncState<TrackerOverride[]> {
+  const [state, setState] = useState<AsyncState<TrackerOverride[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToTrackerOverrides(
       items => setState({ data: items, loading: false, error: null }),
       err => setState({ data: [], loading: false, error: err.message }),
     );

@@ -717,7 +717,93 @@
   cursor: progress;
 }
 
+/* ── Tracker entry editor ──────────────────────────────────── */
+.searchBox {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-400);
+  pointer-events: none;
+}
+
+.searchInput {
+  padding-left: 38px;
+}
+
+.searchResults {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+.searchResultBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--white);
+  text-align: left;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.searchResultBtn:hover {
+  border-color: var(--hairline-strong);
+  background: var(--surface);
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.editFormHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.editGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+}
+
+.editGridWide {
+  grid-column: 1 / -1;
+}
+
+.savedMsg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #2F6B3A;
+}
+
+.savedMsg svg {
+  flex-shrink: 0;
+}
+
 @media (max-width: 560px) {
+  .editGrid {
+    grid-template-columns: 1fr;
+  }
+
   .shellHeader {
     flex-direction: column;
     align-items: flex-start;
