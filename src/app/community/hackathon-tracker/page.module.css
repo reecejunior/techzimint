@@ -497,7 +497,16 @@
    Deliberately plain — a link, not a button — so it reads as a quiet
    "report an issue" affordance rather than competing with the row's own
    content for attention. */
+.suggestToggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+}
+
 .suggestToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-top: var(--s-3);
   font-size: 12px;
   color: var(--ink-400);
@@ -507,6 +516,14 @@
 
 .suggestToggle:hover {
   color: var(--ink-700);
+}
+
+.suggestHint {
+  font-size: 12px;
+  color: var(--ink-500);
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
 }
 
 .suggestDone {
@@ -612,6 +629,81 @@
 .suggestSubmit:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.commentsBlock {
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--hairline);
+  max-width: 34rem;
+}
+
+.commentsToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+
+.commentsToggle:hover {
+  color: var(--ink-900);
+}
+
+.commentsPanel {
+  margin-top: var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.commentsEmpty {
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.commentItem {
+  padding: 10px 12px;
+  background: var(--surface);
+  border-radius: var(--r-sm);
+}
+
+.commentHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: 2px;
+}
+
+.commentAuthor {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.commentTime {
+  font-size: 11px;
+  color: var(--ink-400);
+}
+
+.commentBody {
+  font-size: 13px;
+  color: var(--ink-700);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.commentForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
 }
 
 .spin {

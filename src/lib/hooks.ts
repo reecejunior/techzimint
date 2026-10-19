@@ -24,7 +24,9 @@ import {
   subscribeToReviews,
   subscribeToStartupPosts,
   subscribeToStartups,
+  subscribeToAllTrackerComments,
   subscribeToStartupsForAdmin,
+  subscribeToTrackerComments,
   subscribeToTrackerSuggestions,
   subscribeToVideoFeed,
 } from './firestore';
@@ -41,6 +43,7 @@ import type {
   Reviewer,
   ReviewWithStartup,
   Startup,
+  TrackerComment,
   TrackerSuggestion,
 } from './types';
 
@@ -510,6 +513,50 @@ export function useTrackerSuggestionsForAdmin(): AsyncState<TrackerSuggestion[]>
   useEffect(() => {
     if (!isFirebaseConfigured) return;
     return subscribeToTrackerSuggestions(
+      items => setState({ data: items, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  return state;
+}
+
+/** Every public comment on one hackathon-tracker row, oldest first. Pass ''
+ *  while the row is collapsed (or unknown) and no subscription starts. */
+export function useTrackerComments(winnerId: string): AsyncState<TrackerComment[]> {
+  const [state, setState] = useState<AsyncState<TrackerComment[]> & { forId?: string }>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !winnerId) return;
+    return subscribeToTrackerComments(
+      winnerId,
+      items => setState({ data: items, loading: false, error: null, forId: winnerId }),
+      err => setState({ data: [], loading: false, error: err.message, forId: winnerId }),
+    );
+  }, [winnerId]);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  if (!winnerId || state.forId !== winnerId) return { data: [], loading: Boolean(winnerId), error: null };
+  return state;
+}
+
+/** Every hackathon-tracker comment site-wide, newest first — the /admin
+ *  moderation list (see subscribeToAllTrackerComments / deleteTrackerComment). */
+export function useTrackerCommentsForAdmin(): AsyncState<TrackerComment[]> {
+  const [state, setState] = useState<AsyncState<TrackerComment[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToAllTrackerComments(
       items => setState({ data: items, loading: false, error: null }),
       err => setState({ data: [], loading: false, error: err.message }),
     );

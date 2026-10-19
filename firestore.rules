@@ -565,6 +565,7 @@ service cloud.firestore {
                     && request.resource.data.winnerId.size() <= 10
                     && request.resource.data.winnerName is string
                     && request.resource.data.winnerName.size() <= 140
+                    && request.resource.data.kind in ['suggestion', 'appeal']
                     && request.resource.data.note is string
                     && request.resource.data.note.size() > 0
                     && request.resource.data.note.size() <= 1000
@@ -572,6 +573,16 @@ service cloud.firestore {
                     && request.resource.data.evidenceUrl.size() <= 300
                     && request.resource.data.submitterName is string
                     && request.resource.data.submitterName.size() <= 80
+                    && request.resource.data.submitterEmail is string
+                    && request.resource.data.submitterEmail.size() <= 200
+                    // An appeal is a founder claiming their own venture, so it
+                    // must be tied to a real row and come with a name and a
+                    // contact email; an anonymous suggestion needs neither.
+                    && (request.resource.data.kind == 'appeal'
+                        ? (request.resource.data.winnerId.size() > 0
+                           && request.resource.data.submitterName.size() > 0
+                           && request.resource.data.submitterEmail.matches('^[^\\s@]+@[^\\s@]+[.][^\\s@]+$'))
+                        : request.resource.data.submitterEmail == '')
                     && request.resource.data.status == 'pending'
                     && request.resource.data.reviewedAt == null
                     && request.resource.data.reviewNote == '';
@@ -583,6 +594,29 @@ service cloud.firestore {
                     && touched().hasOnly(['status', 'reviewedAt', 'reviewNote']);
 
       allow delete: if false;
+    }
+
+    // Public, unreviewed discussion attached to one tracker row — distinct
+    // from trackerSuggestions above, which is a private queue for the
+    // editors. Anyone can read or post; only an admin can remove one
+    // afterwards (there is no edit path, same as startup/community
+    // comments elsewhere in this file).
+    match /trackerComments/{commentId} {
+      allow read: if true;
+
+      allow create: if signedIn()
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.winnerId is string
+                    && request.resource.data.winnerId.size() > 0
+                    && request.resource.data.winnerId.size() <= 10
+                    && request.resource.data.body is string
+                    && request.resource.data.body.size() > 0
+                    && request.resource.data.body.size() <= 1000
+                    && request.resource.data.authorName is string
+                    && request.resource.data.authorName.size() <= 80;
+
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     // Reviewer profiles are editorial content — readable by all, writable only

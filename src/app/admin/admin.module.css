@@ -408,6 +408,20 @@
   background: #EAF3EC;
 }
 
+/* A founder's own appeal, flagged separately from the status pill next to
+   it — same badge shape, its own (brand) tone so it doesn't read as another
+   review-outcome color. */
+.kindBadge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--brand-text);
+  background: var(--brand-panel);
+}
+
 .rowTagline {
   margin-top: 2px;
   font-size: 14px;
