@@ -6,15 +6,24 @@ import {
   Loader2, LogOut, Mail, MessageCircle, Pencil, PlaySquare, RotateCcw, ShieldCheck, Trash2, X,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
-import { approveStartup, deletePost, editPost, rejectStartup, reviewTrackerSuggestion } from '@/lib/firestore';
 import {
-  useAdminAuth, useAllStartupsForAdmin, useStartupPosts, useTrackerSuggestionsForAdmin,
+  approveStartup, deletePost, deleteTrackerComment, editPost, rejectStartup, reviewTrackerSuggestion,
+} from '@/lib/firestore';
+import {
+  useAdminAuth, useAllStartupsForAdmin, useStartupPosts, useTrackerCommentsForAdmin,
+  useTrackerSuggestionsForAdmin,
 } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
-import type { Post, Startup, TrackerSuggestion } from '@/lib/types';
+import type { Post, Startup, TrackerComment, TrackerSuggestion } from '@/lib/types';
+import { WINNERS } from '@/app/community/hackathon-tracker/data';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
+
+/** winnerId -> display name, for the comments-moderation list (TrackerComment
+ *  only stores the id; the suggestions queue denormalises the name instead,
+ *  since those are reviewed one at a time rather than browsed in bulk). */
+const WINNER_NAME_BY_ID: Record<string, string> = Object.fromEntries(WINNERS.map(w => [w.id, w.name]));
 
 export default function AdminClient() {
   const { user, isAdmin, loading } = useAdminAuth();
@@ -49,6 +58,7 @@ export default function AdminClient() {
         <AdminHeader email={user?.email ?? null} />
         <StatsStrip />
         <TrackerQueue />
+        <TrackerCommentsQueue />
         <Queue />
       </div>
     </div>
@@ -216,7 +226,12 @@ function NotAuthorized({ email }: { email: string | null }) {
 
 function TrackerQueue() {
   const { data: suggestions, loading, error } = useTrackerSuggestionsForAdmin();
-  const pending = suggestions.filter(s => s.status === 'pending');
+  // Appeals are a founder disputing their own listing, identified by name and
+  // email — worth an editor's attention before an anonymous tip, so they sort
+  // first within "pending" rather than just by recency.
+  const pending = suggestions
+    .filter(s => s.status === 'pending')
+    .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'appeal' ? -1 : 1));
   const decided = suggestions.filter(s => s.status !== 'pending');
 
   return (
@@ -287,6 +302,7 @@ function TrackerRow({ suggestion }: { suggestion: TrackerSuggestion }) {
       <div className={styles.rowGrid}>
         <div className={styles.rowBody}>
           <div className={styles.rowHead}>
+            {suggestion.kind === 'appeal' && <span className={styles.kindBadge}>Appeal</span>}
             <span className={styles.rowName}>{suggestion.winnerName || 'General note'}</span>
             <span className={styles.status} data-status={displayStatus}>
               {suggestion.status}
@@ -294,7 +310,17 @@ function TrackerRow({ suggestion }: { suggestion: TrackerSuggestion }) {
           </div>
           <p className={styles.rowTagline}>{suggestion.note}</p>
           {suggestion.submitterName && (
-            <p className={styles.rowFounders}>from {suggestion.submitterName}</p>
+            <p className={styles.rowFounders}>
+              from {suggestion.submitterName}
+              {suggestion.submitterEmail && (
+                <>
+                  {' · '}
+                  <a href={`mailto:${suggestion.submitterEmail}`} className={styles.rowLink}>
+                    {suggestion.submitterEmail}
+                  </a>
+                </>
+              )}
+            </p>
           )}
           {suggestion.reviewNote && <p className={styles.rowReason}>Note: {suggestion.reviewNote}</p>}
           {suggestion.evidenceUrl && (
@@ -371,6 +397,95 @@ function TrackerRow({ suggestion }: { suggestion: TrackerSuggestion }) {
             </button>
           </div>
         )}
+      </div>
+    </li>
+  );
+}
+
+function TrackerCommentsQueue() {
+  const { data: comments, loading, error } = useTrackerCommentsForAdmin();
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <span className={styles.cardIcon} data-tone="neutral">
+          <MessageCircle size={16} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className={styles.cardTitle}>Hackathon tracker discussion</h2>
+          <p className={styles.cardSubtitle}>
+            Public comments left on tracker rows — visible on the site the moment they&apos;re
+            posted, so this is moderation after the fact, not a review queue. Remove anything
+            that shouldn&apos;t be there.
+          </p>
+        </div>
+      </div>
+
+      {error ? (
+        <ErrorState message={error} />
+      ) : loading ? (
+        <div className={styles.list}>
+          {Array.from({ length: 2 }, (_, i) => (
+            <div key={i} className={`skel ${styles.skelRow}`} />
+          ))}
+        </div>
+      ) : comments.length === 0 ? (
+        <p className={styles.empty}>No comments yet.</p>
+      ) : (
+        <ul className={styles.list}>
+          {comments.map(c => (
+            <TrackerCommentRow key={c.id} comment={c} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function TrackerCommentRow({ comment }: { comment: TrackerComment }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+
+  async function remove() {
+    if (!window.confirm('Remove this comment? This cannot be undone.')) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteTrackerComment(comment.id);
+      setRemoved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove that.');
+      setBusy(false);
+    }
+  }
+
+  if (removed) return null;
+
+  return (
+    <li className={styles.row}>
+      <div className={styles.rowGrid}>
+        <div className={styles.rowBody}>
+          <div className={styles.rowHead}>
+            <span className={styles.rowName}>{WINNER_NAME_BY_ID[comment.winnerId] ?? comment.winnerId}</span>
+          </div>
+          <p className={styles.rowTagline}>{comment.body}</p>
+          <p className={styles.rowFounders}>
+            {comment.authorName || 'Anonymous'} · {timeAgo(comment.createdAt)}
+          </p>
+          {error && (
+            <p className={styles.formError} role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className={styles.rowActions}>
+          <button type="button" className={styles.rejectBtn} onClick={remove} disabled={busy}>
+            {busy ? <Loader2 size={13} className={styles.spin} aria-hidden="true" /> : <Trash2 size={13} aria-hidden="true" />}
+            Remove
+          </button>
+        </div>
       </div>
     </li>
   );

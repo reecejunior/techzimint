@@ -388,24 +388,36 @@ export interface NotificationPref {
 
 export type TrackerSuggestionStatus = 'pending' | 'applied' | 'dismissed';
 
-/** One submitted correction or addition for the hackathon tracker. Lives at
- *  `trackerSuggestions/{id}`. */
+/** A community tip (anonymous, optional name) vs a founder's own appeal of
+ *  their venture's listed status (name + email required — see
+ *  `submitTrackerSuggestion`). Appeals are shown first in the /admin queue. */
+export type TrackerSuggestionKind = 'suggestion' | 'appeal';
+
+/** One submitted correction, addition or appeal for the hackathon tracker.
+ *  Lives at `trackerSuggestions/{id}`. */
 export interface TrackerSuggestion {
   id: string;
   /** The tracker row this is about (a `Winner.id` from the static dataset),
    *  or '' for a general note — a whole missing programme, say — that isn't
-   *  tied to one row. */
+   *  tied to one row. Always a real row id for an 'appeal'. */
   winnerId: string;
   /** Denormalised at submission time so the admin queue reads without a
    *  join back into the tracker's static dataset. */
   winnerName: string;
+  /** Missing on suggestions submitted before this field existed — treat as
+   *  'suggestion' (see `mapTrackerSuggestion`). */
+  kind: TrackerSuggestionKind;
   note: string;
   /** A link backing up the correction, or '' if none was given. */
   evidenceUrl: string;
   /** How the submitter wants to be known in the queue, or '' to stay
    *  anonymous — never a real account name, since tracker visitors use the
-   *  same anonymous session as the rest of the site. */
+   *  same anonymous session as the rest of the site. Required (non-empty)
+   *  when `kind` is 'appeal'. */
   submitterName: string;
+  /** A contact email, required when `kind` is 'appeal' so an admin can
+   *  follow up with the founder; '' on an anonymous 'suggestion'. */
+  submitterEmail: string;
   submittedBy: string;
   status: TrackerSuggestionStatus;
   createdAt: string;
@@ -413,4 +425,22 @@ export interface TrackerSuggestion {
   /** The admin's own note on what they did with it ("folded into the data
    *  update on 2026-10-25", "couldn't confirm, left as is"). */
   reviewNote: string;
+}
+
+/* ─── Hackathon tracker: per-row discussion ───────────────────────
+ * Separate from TrackerSuggestion above: this is open, public discussion
+ * attached to one row (nothing here is reviewed before it's visible), while
+ * a suggestion/appeal is a private note to the editors. */
+
+/** One public comment on a tracker row. Lives at `trackerComments/{id}`. */
+export interface TrackerComment {
+  id: string;
+  /** The tracker row this is attached to (a `Winner.id`) — always set; there
+   *  is no "general" comment thread the way there is for suggestions. */
+  winnerId: string;
+  body: string;
+  authorId: string;
+  /** Display name chosen at post time, or '' to show as "Anonymous". */
+  authorName: string;
+  createdAt: string;
 }

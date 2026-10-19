@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Link2, Loader2, Search, X } from 'lucide-react';
-import { submitTrackerSuggestion } from '@/lib/firestore';
+import { ArrowLeft, CheckCircle2, Link2, Loader2, MessageCircle, Search, ShieldAlert, X } from 'lucide-react';
+import { postTrackerComment, submitTrackerSuggestion } from '@/lib/firestore';
+import { useTrackerComments } from '@/lib/hooks';
+import { timeAgo } from '@/lib/ranking';
 import {
   Bar,
   BarChart,
@@ -685,7 +687,8 @@ function WinnerRow({ row, open, onToggle }: { row: Winner; open: boolean; onTogg
                 />
               )}
             </div>
-            <SuggestCorrection winnerId={row.id} winnerName={row.name} />
+            <SuggestCorrection winnerId={row.id} winnerName={row.name} allowAppeal />
+            <RowComments winnerId={row.id} />
           </td>
         </tr>
       )}
@@ -694,36 +697,61 @@ function WinnerRow({ row, open, onToggle }: { row: Winner; open: boolean; onTogg
 }
 
 /**
- * The tracker's "report an error" path: a collapsed link that opens into a
- * short form, submitting to the trackerSuggestions queue (see firestore.ts)
- * for an admin to review — this never changes the row in front of the
- * person submitting it, so the copy below is careful not to imply it does.
+ * The tracker's "report an error" path: one or two collapsed links (a
+ * general correction, and — on a specific row — a founder's appeal) that
+ * open into a short form, submitting to the trackerSuggestions queue (see
+ * firestore.ts) for an admin to review. This never changes the row in front
+ * of the person submitting it, so the copy below is careful not to imply it
+ * does. `allowAppeal` is only meaningful when `winnerId` names a real row —
+ * the general "a whole programme is missing" note has no venture to appeal
+ * for.
  */
-function SuggestCorrection({ winnerId, winnerName }: { winnerId: string; winnerName: string }) {
-  const [open, setOpen] = useState(false);
+function SuggestCorrection({
+  winnerId,
+  winnerName,
+  allowAppeal = false,
+}: {
+  winnerId: string;
+  winnerName: string;
+  allowAppeal?: boolean;
+}) {
+  const [mode, setMode] = useState<'closed' | 'suggestion' | 'appeal'>('closed');
   const [note, setNote] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
   const [submitterName, setSubmitterName] = useState('');
+  const [submitterEmail, setSubmitterEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<'closed' | 'suggestion' | 'appeal'>('closed');
 
-  if (done) {
+  if (done !== 'closed') {
     return (
       <p className={styles.suggestDone}>
         <CheckCircle2 size={14} aria-hidden="true" />
-        Thanks — that&apos;s gone to our editors to review.
+        {done === 'appeal'
+          ? "Thanks — your appeal has gone to our editors, and we'll follow up at the email you gave."
+          : "Thanks — that's gone to our editors to review."}
       </p>
     );
   }
 
-  if (!open) {
+  if (mode === 'closed') {
     return (
-      <button type="button" className={styles.suggestToggle} onClick={() => setOpen(true)}>
-        Something out of date here? Suggest a correction
-      </button>
+      <div className={styles.suggestToggles}>
+        <button type="button" className={styles.suggestToggle} onClick={() => setMode('suggestion')}>
+          Something out of date here? Suggest a correction
+        </button>
+        {allowAppeal && (
+          <button type="button" className={styles.suggestToggle} onClick={() => setMode('appeal')}>
+            <ShieldAlert size={13} aria-hidden="true" />
+            Are you the founder? Appeal this status
+          </button>
+        )}
+      </div>
     );
   }
+
+  const isAppeal = mode === 'appeal';
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -731,25 +759,45 @@ function SuggestCorrection({ winnerId, winnerName }: { winnerId: string; winnerN
     setSaving(true);
     setError(null);
     try {
-      await submitTrackerSuggestion({ winnerId, winnerName, note, evidenceUrl, submitterName });
-      setDone(true);
+      await submitTrackerSuggestion({
+        winnerId,
+        winnerName,
+        note,
+        kind: mode === 'closed' ? 'suggestion' : mode,
+        evidenceUrl,
+        submitterName,
+        submitterEmail: isAppeal ? submitterEmail : '',
+      });
+      setDone(mode);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send that. Please try again.');
       setSaving(false);
     }
   }
 
+  const canSubmit = note.trim().length > 0 && (!isAppeal || (submitterName.trim() && submitterEmail.trim()));
+
   return (
     <form className={styles.suggestForm} onSubmit={submit} onClick={e => e.stopPropagation()}>
-      <label className={styles.suggestLabel} htmlFor={`suggest-note-${winnerId}`}>
-        What should change about this entry?
+      {isAppeal && (
+        <p className={styles.suggestHint}>
+          This goes straight to our editors along with your contact details, so we can verify it&apos;s
+          really you before anything changes.
+        </p>
+      )}
+      <label className={styles.suggestLabel} htmlFor={`suggest-note-${winnerId}-${mode}`}>
+        {isAppeal ? 'What should change, and why is the current status wrong?' : 'What should change about this entry?'}
       </label>
       <textarea
-        id={`suggest-note-${winnerId}`}
+        id={`suggest-note-${winnerId}-${mode}`}
         className={styles.suggestTextarea}
         value={note}
         onChange={e => setNote(e.target.value)}
-        placeholder="e.g. They're still operating — I saw them selling at Avondale market last month."
+        placeholder={
+          isAppeal
+            ? "e.g. We're still operating — this is our current website and here's what changed."
+            : "e.g. They're still operating — I saw them selling at Avondale market last month."
+        }
         rows={3}
         maxLength={1000}
         required
@@ -760,7 +808,7 @@ function SuggestCorrection({ winnerId, winnerName }: { winnerId: string; winnerN
           className={styles.suggestInput}
           value={evidenceUrl}
           onChange={e => setEvidenceUrl(e.target.value)}
-          placeholder="Link backing this up (optional)"
+          placeholder={isAppeal ? 'Link backing this up (recommended)' : 'Link backing this up (optional)'}
           maxLength={300}
         />
         <input
@@ -768,21 +816,123 @@ function SuggestCorrection({ winnerId, winnerName }: { winnerId: string; winnerN
           className={styles.suggestInput}
           value={submitterName}
           onChange={e => setSubmitterName(e.target.value)}
-          placeholder="Your name (optional)"
+          placeholder={isAppeal ? 'Your name' : 'Your name (optional)'}
           maxLength={80}
+          required={isAppeal}
         />
       </div>
+      {isAppeal && (
+        <input
+          type="email"
+          className={styles.suggestInput}
+          value={submitterEmail}
+          onChange={e => setSubmitterEmail(e.target.value)}
+          placeholder="Your email, so we can follow up"
+          maxLength={200}
+          required
+        />
+      )}
       {error && <p className={styles.suggestError}>{error}</p>}
       <div className={styles.suggestActions}>
-        <button type="button" className={styles.suggestCancel} onClick={() => setOpen(false)} disabled={saving}>
+        <button type="button" className={styles.suggestCancel} onClick={() => setMode('closed')} disabled={saving}>
           Cancel
         </button>
-        <button type="submit" className={styles.suggestSubmit} disabled={saving || !note.trim()}>
+        <button type="submit" className={styles.suggestSubmit} disabled={saving || !canSubmit}>
           {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
-          Send to editors
+          {isAppeal ? 'Send appeal to editors' : 'Send to editors'}
         </button>
       </div>
     </form>
+  );
+}
+
+/**
+ * Public discussion thread for one row — unlike SuggestCorrection above,
+ * nothing here goes through an editor: a comment is visible the moment it's
+ * posted. Only mounted while a row is expanded, so the subscription in
+ * useTrackerComments doesn't run for all ~100 rows at once.
+ */
+function RowComments({ winnerId }: { winnerId: string }) {
+  const { data: comments, loading, error } = useTrackerComments(winnerId);
+  const [open, setOpen] = useState(false);
+  const [body, setBody] = useState('');
+  const [authorName, setAuthorName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    setFormError(null);
+    try {
+      await postTrackerComment({ winnerId, body, authorName });
+      setBody('');
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Could not post that. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={styles.commentsBlock} onClick={e => e.stopPropagation()}>
+      <button type="button" className={styles.commentsToggle} onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <MessageCircle size={13} aria-hidden="true" />
+        {loading ? 'Discussion' : `Discussion (${comments.length})`}
+      </button>
+
+      {open && (
+        <div className={styles.commentsPanel}>
+          {error ? (
+            <p className={styles.suggestError}>{error}</p>
+          ) : loading ? (
+            <p className={styles.commentsEmpty}>Loading…</p>
+          ) : comments.length === 0 ? (
+            <p className={styles.commentsEmpty}>No comments yet — be the first to add one.</p>
+          ) : (
+            <ul className={styles.commentsList}>
+              {comments.map(c => (
+                <li key={c.id} className={styles.commentItem}>
+                  <div className={styles.commentHead}>
+                    <span className={styles.commentAuthor}>{c.authorName || 'Anonymous'}</span>
+                    <span className={styles.commentTime}>{timeAgo(c.createdAt)}</span>
+                  </div>
+                  <p className={styles.commentBody}>{c.body}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form className={styles.commentForm} onSubmit={submit}>
+            <textarea
+              className={styles.suggestTextarea}
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              placeholder="Add to the discussion…"
+              rows={2}
+              maxLength={1000}
+              required
+            />
+            <div className={styles.suggestRow}>
+              <input
+                type="text"
+                className={styles.suggestInput}
+                value={authorName}
+                onChange={e => setAuthorName(e.target.value)}
+                placeholder="Your name (optional)"
+                maxLength={80}
+              />
+              <button type="submit" className={styles.suggestSubmit} disabled={saving || !body.trim()}>
+                {saving && <Loader2 size={14} className={styles.spin} aria-hidden="true" />}
+                Post
+              </button>
+            </div>
+            {formError && <p className={styles.suggestError}>{formError}</p>}
+          </form>
+        </div>
+      )}
+    </div>
   );
 }
 

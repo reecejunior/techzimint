@@ -58,7 +58,9 @@ import type {
   StartupEditInput,
   StartupSubmission,
   PostImage,
+  TrackerComment,
   TrackerSuggestion,
+  TrackerSuggestionKind,
   TrackerSuggestionStatus,
 } from './types';
 
@@ -1815,13 +1817,18 @@ function mapTrackerSuggestion(
   const d = snap.data() ?? {};
   const status: TrackerSuggestionStatus =
     d.status === 'applied' ? 'applied' : d.status === 'dismissed' ? 'dismissed' : 'pending';
+  // Suggestions submitted before 'kind' existed have no such field — treat
+  // those as ordinary (anonymous) suggestions, never as an appeal.
+  const kind: TrackerSuggestionKind = d.kind === 'appeal' ? 'appeal' : 'suggestion';
   return {
     id: snap.id,
     winnerId: String(d.winnerId ?? ''),
     winnerName: String(d.winnerName ?? ''),
+    kind,
     note: String(d.note ?? ''),
     evidenceUrl: String(d.evidenceUrl ?? ''),
     submitterName: String(d.submitterName ?? ''),
+    submitterEmail: String(d.submitterEmail ?? ''),
     submittedBy: String(d.submittedBy ?? ''),
     status,
     createdAt: toIso(d.createdAt),
@@ -1832,29 +1839,45 @@ function mapTrackerSuggestion(
 
 /**
  * Submit a correction or addition for one tracker row (or a general note,
- * with `winnerId: ''`, for something like a whole missing programme). Open
- * to any visitor — same anonymous session the rest of the site already
- * uses — and goes straight into the admin queue; nothing on the public page
- * changes until an admin reviews it.
+ * with `winnerId: ''`, for something like a whole missing programme), or —
+ * with `kind: 'appeal'` — a founder's own dispute of their venture's listed
+ * status, which requires a name and a contact email so an admin can follow
+ * up. Open to any visitor — same anonymous session the rest of the site
+ * already uses — and goes straight into the admin queue; nothing on the
+ * public page changes until an admin reviews it.
  */
 export async function submitTrackerSuggestion(input: {
   winnerId: string;
   winnerName: string;
   note: string;
+  kind?: TrackerSuggestionKind;
   evidenceUrl?: string;
   submitterName?: string;
+  submitterEmail?: string;
 }): Promise<void> {
   const note = input.note.trim();
   if (!note) throw new Error('Add a note describing the correction.');
   if (note.length > 1000) throw new Error('Keep it under 1,000 characters.');
 
+  const kind: TrackerSuggestionKind = input.kind === 'appeal' ? 'appeal' : 'suggestion';
+  const submitterName = (input.submitterName ?? '').trim().slice(0, 80);
+  const submitterEmail = (input.submitterEmail ?? '').trim().slice(0, 200);
+
+  if (kind === 'appeal') {
+    if (!input.winnerId) throw new Error('An appeal has to be about one specific entry.');
+    if (!submitterName) throw new Error('Add your name so our editors know who this is from.');
+    if (!EMAIL_RE.test(submitterEmail)) throw new Error('Add a valid email so we can follow up with you.');
+  }
+
   const user = await ensureSignedIn();
   await setDoc(doc(collection(getDb(), 'trackerSuggestions')), {
     winnerId: input.winnerId,
     winnerName: input.winnerName,
+    kind,
     note,
     evidenceUrl: (input.evidenceUrl ?? '').trim().slice(0, 300),
-    submitterName: (input.submitterName ?? '').trim().slice(0, 80),
+    submitterName,
+    submitterEmail: kind === 'appeal' ? submitterEmail : '',
     submittedBy: user.uid,
     status: 'pending',
     createdAt: serverTimestamp(),
@@ -1891,5 +1914,83 @@ export async function reviewTrackerSuggestion(
     reviewedAt: serverTimestamp(),
     reviewNote: reviewNote.trim().slice(0, 500),
   });
+}
+
+/* ─── Hackathon tracker: per-row discussion ───────────────────────
+ * Public, unreviewed comments attached to one row — see the TrackerComment
+ * doc comment in types.ts. Unlike trackerSuggestions this is visible the
+ * moment it's posted; an admin can only remove one afterwards. */
+
+function mapTrackerComment(snap: QueryDocumentSnapshot<DocumentData>): TrackerComment {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    winnerId: String(d.winnerId ?? ''),
+    body: String(d.body ?? ''),
+    authorId: String(d.authorId ?? ''),
+    authorName: String(d.authorName ?? ''),
+    createdAt: toIso(d.createdAt),
+  };
+}
+
+/** Post a public comment on one tracker row. Open to any signed-in visitor —
+ *  same anonymous session as the rest of the site. */
+export async function postTrackerComment(input: {
+  winnerId: string;
+  body: string;
+  authorName?: string;
+}): Promise<void> {
+  const body = input.body.trim();
+  if (!input.winnerId) throw new Error('Missing which entry this comment is about.');
+  if (!body) throw new Error('Write a comment first.');
+  if (body.length > 1000) throw new Error('Keep it under 1,000 characters.');
+
+  const user = await ensureSignedIn();
+  await setDoc(doc(collection(getDb(), 'trackerComments')), {
+    winnerId: input.winnerId,
+    body,
+    authorId: user.uid,
+    authorName: (input.authorName ?? '').trim().slice(0, 80),
+    createdAt: serverTimestamp(),
+  });
+}
+
+/** Every public comment on one tracker row, oldest first. */
+export function subscribeToTrackerComments(
+  winnerId: string,
+  onData: (items: TrackerComment[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(
+    collection(getDb(), 'trackerComments'),
+    where('winnerId', '==', winnerId),
+    orderBy('createdAt', 'asc'),
+    limit(200),
+  );
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapTrackerComment)),
+    err => onError(err as Error),
+  );
+}
+
+/** Admin moderation: remove one comment outright (there is no edit path). */
+export async function deleteTrackerComment(id: string): Promise<void> {
+  await deleteDoc(doc(getDb(), 'trackerComments', id));
+}
+
+/** Every tracker comment site-wide, newest first — the /admin moderation
+ *  list. A single-field orderBy, so it needs no composite index (unlike
+ *  subscribeToTrackerComments, which filters by winnerId too). */
+export function subscribeToAllTrackerComments(
+  onData: (items: TrackerComment[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(collection(getDb(), 'trackerComments'), orderBy('createdAt', 'desc'), limit(200));
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapTrackerComment)),
+    err => onError(err as Error),
+  );
 }
 
