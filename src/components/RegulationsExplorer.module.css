@@ -1,0 +1,354 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  padding-top: var(--s-8);
+  padding-bottom: var(--s-20);
+}
+
+/* ── The question ── */
+.ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.label {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink-900);
+  letter-spacing: var(--track-title);
+}
+
+.input {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  padding: var(--s-4);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: var(--white);
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ink-900);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+
+.input::placeholder {
+  color: var(--ink-400);
+}
+
+.input:focus-visible {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.chip {
+  padding: 6px 12px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  color: var(--ink-700);
+  text-align: left;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.chip:hover {
+  background: var(--surface);
+  border-color: var(--ink-400);
+}
+
+.clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--brand-text);
+}
+
+.clear:hover {
+  text-decoration: underline;
+}
+
+/* ── Labels ── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  font-size: 13px;
+  color: var(--ink-500);
+  align-items: center;
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.status {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: var(--track-micro);
+}
+
+.status[data-status='official'] {
+  background: var(--ink-900);
+  color: var(--white);
+}
+
+.status[data-status='reported'] {
+  border: 1px solid var(--ink-700);
+  color: var(--ink-900);
+}
+
+.status[data-status='verify'] {
+  background: var(--orange-100);
+  color: var(--orange-800);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.recognised {
+  font-size: 14px;
+}
+
+.tag {
+  display: inline-block;
+  margin-right: var(--s-1);
+  padding: 1px 9px;
+  border-radius: var(--r-xs);
+  background: var(--orange-100);
+  color: var(--orange-800);
+  font-size: 13px;
+}
+
+.empty {
+  padding: var(--s-5);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--r-md);
+  font-size: 15px;
+  color: var(--ink-700);
+}
+
+.empty p + p {
+  margin-top: var(--s-1);
+}
+
+/* ── Groups and rows ── */
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.group h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+  margin-bottom: var(--s-1);
+}
+
+.group h2 small {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-500);
+  letter-spacing: 0.02em;
+}
+
+.groupNote {
+  margin-bottom: var(--s-2);
+  max-width: 70ch;
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.rule {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: var(--s-1) var(--s-6);
+  padding-block: var(--s-5);
+  border-top: 1px solid var(--hairline);
+}
+
+.group h2 + .rule,
+.groupNote + .rule {
+  border-top: 2px solid var(--ink-900);
+}
+
+.reg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.regCode {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-900);
+}
+
+.regName {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.ruleMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.ruleHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-3);
+}
+
+.ruleHead h3 {
+  flex: 1 1 18rem;
+  font-size: 19px;
+  letter-spacing: var(--track-heading);
+}
+
+.why {
+  font-size: 13px;
+}
+
+.headline {
+  font-weight: 500;
+  color: var(--ink-900);
+}
+
+.summary {
+  max-width: 68ch;
+  color: var(--ink-500);
+}
+
+.details > summary {
+  width: fit-content;
+  padding: 2px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand-text);
+  cursor: pointer;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  font-size: 14px;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: var(--s-4);
+}
+
+.fact dt {
+  padding-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.fact dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  margin-top: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  background: var(--orange-50);
+  border: 1px solid var(--orange-200);
+  font-size: 14px;
+  color: var(--orange-800);
+}
+
+.sources {
+  font-size: 12.5px;
+  color: var(--ink-500);
+  overflow-wrap: anywhere;
+}
+
+.sources a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--brand-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Footer of the page ── */
+.gaps {
+  padding-top: var(--s-5);
+  border-top: 2px solid var(--ink-900);
+}
+
+.gaps h2 {
+  margin-bottom: var(--s-3);
+}
+
+.gaps ul {
+  display: grid;
+  gap: var(--s-2);
+  max-width: 72ch;
+  padding-left: var(--s-5);
+  list-style: disc;
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.disclaimer {
+  max-width: 72ch;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+@media (max-width: 640px) {
+  .rule {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reg {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-2);
+  }
+
+  .fact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}

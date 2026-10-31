@@ -4,6 +4,8 @@ import {
   computeScore, parseVideoUrl, periodKeys, slugify, timeAgo, withRanks,
 } from '../src/lib/ranking.ts';
 import type { Startup } from '../src/lib/types.ts';
+import { matchIdea } from '../src/lib/regulations.ts';
+import { RULES } from '../src/lib/regulationsData.ts';
 
 const make = (over: Partial<Startup>): Startup =>
   ({
@@ -123,5 +125,42 @@ assert.equal(ago('2026-08-11T11:58:00Z'), '2 minutes ago');
 assert.equal(ago('2026-08-11T11:00:00Z'), '1 hour ago');
 assert.equal(ago('2026-08-09T12:00:00Z'), '2 days ago');
 assert.equal(ago('not a date'), '', 'a bad timestamp renders nothing, not NaN');
+
+/* ── Regulations directory ── */
+const ids = (xs: { rule: { id: string } }[]) => xs.map(x => x.rule.id);
+
+const wallet = matchIdea('A mobile wallet for diaspora remittances with SMS receipts');
+assert.ok(ids(wallet.potraz).includes('potraz-codes'), 'SMS ideas surface the short-code rule');
+assert.ok(ids(wallet.others).includes('rbz-mm'), 'wallets surface the mobile money rules');
+assert.ok(!ids(wallet.others).includes('ehailing'), 'unrelated sector rules stay out');
+
+/* POTRAZ rules always come back as their own group, ahead of other regulators. */
+assert.ok(wallet.potraz.every(m => m.rule.reg === 'POTRAZ'));
+assert.ok(wallet.others.every(m => m.rule.reg !== 'POTRAZ'));
+assert.ok(ids(wallet.general).includes('zimra-reg') && ids(wallet.general).includes('company-reg'),
+  'every company sees the tax and incorporation baseline');
+
+const isp = matchIdea('Rural Wi-Fi internet service provider');
+assert.ok(ids(isp.potraz).includes('potraz-isp'));
+assert.ok(isp.potraz.findIndex(m => m.rule.id === 'potraz-isp') <
+  isp.potraz.findIndex(m => m.rule.id === 'dp-licence'),
+  'sector-matched POTRAZ rules rank above the data-protection baseline');
+
+const bakery = matchIdea('a bakery');
+assert.equal(bakery.hasSector, false, 'no sector recognised for an unrelated idea');
+assert.deepEqual(ids(bakery.potraz), ['dp-licence', 'dp-dpo', 'dp-breach'],
+  'an unrecognised idea still gets the POTRAZ data-protection baseline');
+assert.equal(bakery.others.length, 0);
+
+assert.ok(ids(matchIdea('Ride-hailing app for Bulawayo').others).includes('ehailing'));
+assert.ok(ids(matchIdea('Drone delivery of medical supplies').others).includes('drones'));
+assert.ok(ids(matchIdea('Funeral cover app').others).includes('ipec'));
+assert.ok(ids(matchIdea('Crypto exchange').others).includes('fiu-vasp'));
+
+/* Every rule is sourced and every source link is an https URL. */
+for (const r of RULES) {
+  assert.ok(r.sources.length > 0, `${r.id} cites at least one source`);
+  assert.ok(r.sources.every(s => s.u.startsWith('https://')), `${r.id} sources are https`);
+}
 
 console.log('All logic checks passed.');
