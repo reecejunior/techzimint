@@ -1,11 +1,15 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
-import { ExternalLink, X } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { CheckCircle2, ExternalLink, Loader2, Search, X } from 'lucide-react';
 import clsx from 'clsx';
-import { matchIdea, type Match, type Rule, type RuleStatus } from '@/lib/regulations';
 import {
-  CHECKED, GAPS, REGULATOR_ORDER, REGULATORS, RULES, SECTORS,
+  GROUP_ORDER, browseAll, countShown, matchIdea,
+  type AiPlan, type GroupKey, type Match, type RuleStatus,
+} from '@/lib/regulations';
+import { MAX_IDEA_LENGTH } from '@/lib/regulationsAi';
+import {
+  CHECKED, GAPS, GROUP_INFO, PHASE_LABEL, REGULATORS, RULES, SECTORS,
 } from '@/lib/regulationsData';
 import styles from './RegulationsExplorer.module.css';
 
@@ -28,6 +32,15 @@ const STATUS_LABEL: Record<RuleStatus, string> = {
 
 const SECTOR_LABEL = Object.fromEntries(SECTORS.map(s => [s.id, s.label]));
 
+/** The AI step's state for the current search. */
+type AiState =
+  | 'idle'        // nothing searched yet
+  | 'pending'     // keyword results are showing, the model is still reading
+  | 'done'        // the model's plan has been applied
+  | 'no-opinion'  // the model answered with nothing usable
+  | 'unavailable' // the model host could not be reached
+  | 'disabled';   // no model is configured for this site
+
 function StatusPill({ status }: { status: RuleStatus }) {
   return (
     <span className={styles.status} data-status={status}>
@@ -36,29 +49,38 @@ function StatusPill({ status }: { status: RuleStatus }) {
   );
 }
 
-function RuleRow({ rule, hits, tag }: { rule: Rule; hits?: string[]; tag?: string }) {
+function RuleRow({ match, browsing }: { match: Match; browsing: boolean }) {
+  const { rule, hits, ai } = match;
   const reg = REGULATORS[rule.reg];
+  const addedByAi = ai && hits.length === 0 && rule.scope === 'specific';
   return (
     <article className={styles.rule} id={`rule-${rule.id}`}>
       <div className={styles.reg}>
         <span className={styles.regCode}>{reg.code}</span>
         <span className={styles.regName}>{reg.name}</span>
+        <span className={styles.phase} data-phase={rule.phase}>{PHASE_LABEL[rule.phase]}</span>
       </div>
       <div className={styles.ruleMain}>
         <div className={styles.ruleHead}>
           <h3>{rule.title}</h3>
           <StatusPill status={rule.status} />
         </div>
-        {hits && hits.length > 0 ? (
+        {!browsing && hits.length > 0 && (
           <p className={styles.why}>
             Matches your idea:{' '}
             {hits.map(h => (
               <span key={h} className={styles.tag}>{SECTOR_LABEL[h]}</span>
             ))}
           </p>
-        ) : tag ? (
-          <p className={styles.why}><span className={styles.tag}>{tag}</span></p>
-        ) : null}
+        )}
+        {!browsing && addedByAi && (
+          <p className={styles.why}><span className={styles.tag}>Suggested by AI</span></p>
+        )}
+        {ai?.reason && (
+          <p className={styles.aiWhy}>
+            <span className={styles.aiBadge}>AI</span> {ai.reason}
+          </p>
+        )}
         <p className={styles.headline}>{rule.headline}</p>
         <p className={styles.summary}>{rule.summary}</p>
         <details className={styles.details}>
@@ -95,42 +117,104 @@ function RuleRow({ rule, hits, tag }: { rule: Rule; hits?: string[]; tag?: strin
   );
 }
 
-function Group({
-  title, caption, note, items, tag,
-}: {
-  title: string;
-  caption: string;
-  note?: string;
-  items: Match[];
-  tag?: (m: Match) => string | undefined;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section className={styles.group} aria-labelledby={`g-${title}`}>
-      <h2 id={`g-${title}`}>
-        {title} <small>{caption}</small>
-      </h2>
-      {note && <p className={styles.groupNote}>{note}</p>}
-      {items.map(m => (
-        <RuleRow key={m.rule.id} rule={m.rule} hits={m.hits} tag={tag?.(m)} />
-      ))}
-    </section>
-  );
+function aiStatusText(ai: AiState): string {
+  switch (ai) {
+    case 'pending': return 'Refining with AI…';
+    case 'done': return 'Refined with AI';
+    case 'no-opinion': return 'Keyword matches (AI had no extra view)';
+    case 'unavailable': return 'Keyword matches (AI unavailable)';
+    case 'disabled': return 'Keyword matches';
+    default: return '';
+  }
 }
 
 export default function RegulationsExplorer() {
-  const [idea, setIdea] = useState('');
+  const [draft, setDraft] = useState('');
+  /** The idea the results on screen belong to. null = nothing searched yet. */
+  const [query, setQuery] = useState<string | null>(null);
+  const [plan, setPlan] = useState<AiPlan | null>(null);
+  const [ai, setAi] = useState<AiState>('idle');
   const inputId = useId();
-  const trimmed = idea.trim();
-  const result = useMemo(() => (trimmed ? matchIdea(trimmed) : null), [trimmed]);
+  const barRef = useRef<HTMLDivElement>(null);
+  /** Bumped per search so a slow reply for an old idea cannot overwrite a newer one. */
+  const requestId = useRef(0);
+  const [searchCount, setSearchCount] = useState(0);
 
-  const shown = result
-    ? result.potraz.length + result.others.length + result.general.length
-    : RULES.length;
+  const browsing = query === null;
+  const matched = useMemo(
+    () => (query === null ? browseAll() : matchIdea(query, plan)),
+    [query, plan],
+  );
+  const shown = countShown(matched);
+  const stale = draft.trim() !== (query ?? '');
+  const pending = ai === 'pending';
+
+  async function search(text: string) {
+    const idea = text.trim().slice(0, MAX_IDEA_LENGTH);
+    const id = ++requestId.current;
+
+    if (!idea) {
+      setQuery(null);
+      setPlan(null);
+      setAi('idle');
+      return;
+    }
+
+    setDraft(idea);
+    setQuery(idea);
+    setPlan(null);
+    setAi('pending');
+    setSearchCount(n => n + 1);
+
+    try {
+      const res = await fetch('/api/regulations/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea }),
+        signal: AbortSignal.timeout(25_000),
+      });
+      if (id !== requestId.current) return;
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as { configured?: boolean; plan?: AiPlan | null };
+      if (id !== requestId.current) return;
+      if (data.configured === false) setAi('disabled');
+      else if (data.plan) {
+        setPlan(data.plan);
+        setAi('done');
+      } else setAi('no-opinion');
+    } catch {
+      if (id === requestId.current) setAi('unavailable');
+    }
+  }
+
+  function clear() {
+    requestId.current += 1;
+    setDraft('');
+    setQuery(null);
+    setPlan(null);
+    setAi('idle');
+  }
+
+  // Bring the results into view after a search, so pressing the button visibly
+  // does something even when the list below the fold was already there.
+  useEffect(() => {
+    if (searchCount === 0) return;
+    const el = barRef.current;
+    if (!el) return;
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+    el.focus({ preventScroll: true });
+  }, [searchCount]);
 
   return (
     <div className={clsx('wrap', styles.root)}>
-      <div className={styles.ask}>
+      <form
+        className={styles.ask}
+        onSubmit={e => {
+          e.preventDefault();
+          search(draft);
+        }}
+      >
         <label htmlFor={inputId} className={styles.label}>
           What are you building?
         </label>
@@ -138,24 +222,50 @@ export default function RegulationsExplorer() {
           id={inputId}
           className={styles.input}
           rows={3}
-          value={idea}
-          onChange={e => setIdea(e.target.value)}
+          maxLength={MAX_IDEA_LENGTH}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => {
+            // Enter searches; Shift+Enter adds a line. Leave IME composition alone.
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              search(draft);
+            }
+          }}
           placeholder="e.g. a mobile wallet for diaspora remittances with SMS receipts"
           spellCheck={false}
         />
-        <div className={styles.examples} role="group" aria-label="Example ideas">
-          {EXAMPLES.map(ex => (
-            <button key={ex} type="button" className={styles.chip} onClick={() => setIdea(ex)}>
-              {ex}
-            </button>
-          ))}
-          {idea && (
-            <button type="button" className={styles.clear} onClick={() => setIdea('')}>
+        <div className={styles.actions}>
+          <button type="submit" className={styles.search} disabled={pending || !draft.trim()}>
+            {pending ? (
+              <Loader2 size={16} className={styles.spin} aria-hidden="true" />
+            ) : (
+              <Search size={16} aria-hidden="true" />
+            )}
+            {pending ? 'Searching…' : 'Find my rules'}
+          </button>
+          {(draft || query !== null) && (
+            <button type="button" className={styles.clear} onClick={clear}>
               <X size={13} aria-hidden="true" /> Clear
             </button>
           )}
+          {stale && draft.trim() && (
+            <span className={styles.stale}>
+              {browsing
+                ? 'Press Find my rules to search.'
+                : 'You changed the idea. Press Find my rules to update the results.'}
+            </span>
+          )}
         </div>
-      </div>
+        <div className={styles.examples} role="group" aria-label="Example ideas">
+          <span className={styles.examplesLabel}>Try:</span>
+          {EXAMPLES.map(ex => (
+            <button key={ex} type="button" className={styles.chip} onClick={() => search(ex)}>
+              {ex}
+            </button>
+          ))}
+        </div>
+      </form>
 
       <div className={styles.legend} aria-label="What the labels mean">
         <span><StatusPill status="official" /> read in the regulation or on the regulator&apos;s page</span>
@@ -163,63 +273,115 @@ export default function RegulationsExplorer() {
         <span><StatusPill status="verify" /> unclear, dated or only partly confirmed</span>
       </div>
 
-      <p className={styles.count} role="status">
-        {result
-          ? `${shown} of ${RULES.length} rules apply or may apply to this idea.`
-          : `${RULES.length} rules in the directory. Describe your idea above to filter them.`}
-      </p>
+      <div className={styles.bar} ref={barRef} tabIndex={-1} role="status" aria-live="polite">
+        <div className={styles.barMain}>
+          <h2 className={styles.barTitle}>
+            {browsing ? `All ${RULES.length} rules` : <>Results for &ldquo;{query}&rdquo;</>}
+          </h2>
+          <p className={styles.barSub}>
+            {browsing
+              ? 'Describe your idea above and press Find my rules to narrow these down.'
+              : `${shown} of ${RULES.length} rules apply or may apply.`}
+          </p>
+        </div>
+        {!browsing && (
+          <span className={styles.done} data-state={ai}>
+            {pending ? (
+              <Loader2 size={15} className={styles.spin} aria-hidden="true" />
+            ) : (
+              <CheckCircle2 size={15} aria-hidden="true" />
+            )}
+            <span>
+              <strong>{pending ? 'Searching' : 'Search done'}</strong>
+              <span className={styles.doneSub}>{aiStatusText(ai)}</span>
+            </span>
+          </span>
+        )}
+      </div>
 
-      {result && result.recognised.length > 0 && (
+      {!browsing && matched.recognised.length > 0 && (
         <p className={styles.recognised}>
           <strong>Recognised:</strong>{' '}
-          {result.recognised.map(id => (
+          {matched.recognised.map(id => (
             <span key={id} className={styles.tag}>{SECTOR_LABEL[id]}</span>
           ))}
         </p>
       )}
 
-      {result && !result.hasSector && (
+      {matched.clarify && (
+        <div className={styles.clarify}>
+          <p><strong>To narrow this down:</strong> {matched.clarify}</p>
+          <p>Add your answer to the description and press Find my rules again.</p>
+        </div>
+      )}
+
+      {!browsing && !matched.hasSector && (
         <div className={styles.empty}>
           <p><strong>No specific sector recognised in that description.</strong></p>
           <p>
-            Showing the POTRAZ data rules and the basics every company needs. Try words like
-            wallet, ISP, SMS, delivery, drone, insurance or marketplace.
+            Showing the general rules every business faces. Try words like wallet, ISP, SMS,
+            delivery, drone, insurance or marketplace.
           </p>
         </div>
       )}
 
-      {result ? (
-        <>
-          <Group
-            title="POTRAZ"
-            caption="Rules for your idea, first"
-            note="Telecoms licences, numbering and personal data law. Listed first because POTRAZ rules come up for most digital products."
-            items={result.potraz}
-            tag={m => (m.rule.baseline ? 'Applies to most products that hold personal data' : undefined)}
-          />
-          <Group
-            title="Other regulators"
-            caption="Matched to your idea"
-            note="Payments, securities, insurance, transport, tax and consumer rules that fit what you described."
-            items={result.others}
-          />
-          <Group
-            title="Every company"
-            caption="Baseline"
-            note="Needed whatever you build."
-            items={result.general}
-            tag={() => 'Applies to every company'}
-          />
-        </>
-      ) : (
-        REGULATOR_ORDER.map(code => (
-          <Group
-            key={code}
-            title={REGULATORS[code].code}
-            caption={REGULATORS[code].name}
-            items={RULES.filter(r => r.reg === code).map(rule => ({ rule, hits: [], score: 0 }))}
-          />
-        ))
+      <nav className={styles.jump} aria-label="Jump to a group">
+        {GROUP_ORDER.map(k => (
+          <a
+            key={k}
+            href={`#grp-${k}`}
+            className={styles.jumpLink}
+            data-empty={matched.groups[k].length === 0 || undefined}
+          >
+            <span className={styles.jumpCount}>{matched.groups[k].length}</span>
+            {GROUP_INFO[k].title}
+          </a>
+        ))}
+      </nav>
+
+      {GROUP_ORDER.map((k: GroupKey) => {
+        const items = matched.groups[k];
+        const info = GROUP_INFO[k];
+        // Only the idea-specific groups can be legitimately empty. When a search
+        // found nothing for one, say so rather than letting the group vanish.
+        if (items.length === 0 && (browsing || k === 'general')) return null;
+        return (
+          <section key={k} id={`grp-${k}`} className={styles.group} aria-labelledby={`h-${k}`}>
+            <h2 id={`h-${k}`}>
+              {info.title} <small>{info.caption}</small>
+            </h2>
+            <p className={styles.groupNote}>{info.note}</p>
+            {items.length === 0 ? (
+              <p className={styles.none}>
+                {matched.hasSector
+                  ? 'Nothing in the directory for this idea in this group.'
+                  : 'Nothing specific recognised for this group. The general rules below still apply.'}
+              </p>
+            ) : (
+              items.map(m => <RuleRow key={m.rule.id} match={m} browsing={browsing} />)
+            )}
+          </section>
+        );
+      })}
+
+      {matched.demoted.length > 0 && (
+        <details className={styles.demoted}>
+          <summary>
+            {matched.demoted.length} more matched your keywords, but the AI thinks they probably
+            don&apos;t apply
+          </summary>
+          {matched.demoted.map(m => (
+            <RuleRow key={m.rule.id} match={m} browsing={false} />
+          ))}
+        </details>
+      )}
+
+      {(ai === 'pending' || ai === 'done' || ai === 'no-opinion') && (
+        <p className={styles.aiNote}>
+          AI help is on. Your description is sent to an open-source model host to pick and order
+          the rules. The AI only chooses from this directory; every fee, deadline and source
+          above comes from the directory itself.
+        </p>
       )}
 
       <section className={styles.gaps} aria-labelledby="gaps-h">
