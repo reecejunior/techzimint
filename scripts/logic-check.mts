@@ -11,7 +11,7 @@ import {
 import {
   FAILURE_TEXT, MAX_IDEA_LENGTH, buildMessages, extractJson, failureFromStatus, isAiFailure,
 } from '../src/lib/regulationsAi.ts';
-import { RULES } from '../src/lib/regulationsData.ts';
+import { NO_RULE_CONTACTS, RULES } from '../src/lib/regulationsData.ts';
 
 const make = (over: Partial<Startup>): Startup =>
   ({
@@ -297,6 +297,15 @@ for (const r of RULES) {
 for (const id of ['potraz-courier', 'subscriber-reg', 'cpa']) {
   const r = RULES.find(x => x.id === id)!;
   assert.ok(/ask potraz|repealed|disagree/i.test(r.stepsCheck ?? ''), `${id} flags its known conflict`);
+}
+
+/* An idea no specific rule covers leaves only the every-business rules,
+   which is what triggers the "no specific regulation" panel and its contacts. */
+{
+  const m = matchIdea('Handmade candles');
+  assert.equal(m.groups.before.length + m.groups.running.length + m.groups.watch.length, 0);
+  assert.ok(m.groups.general.length > 0, 'the basics still show');
+  assert.ok(NO_RULE_CONTACTS.length >= 3 && NO_RULE_CONTACTS.every(c => c.url.startsWith('https://')));
 }
 
 /* Saving the same idea twice must hit the same document. */

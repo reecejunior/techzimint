@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Loader2, Search, X } from 'lucide-react';
+import { ArrowRight, ExternalLink, Loader2, Search, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { SavedChecklist } from '@/lib/types';
 import {
@@ -10,8 +10,9 @@ import {
   type AiPlan, type GroupKey,
 } from '@/lib/regulations';
 import { FAILURE_TEXT, MAX_IDEA_LENGTH, isAiFailure, type AiFailure } from '@/lib/regulationsAi';
-import { CHECKED, GROUP_INFO, RULES } from '@/lib/regulationsData';
+import { CHECKED, GROUP_INFO, NO_RULE_CONTACTS, RULES } from '@/lib/regulationsData';
 import { useMember, useSavedChecklists } from '@/lib/hooks';
+import AskQuestion from './AskQuestion';
 import ChecklistDrawer from './ChecklistDrawer';
 import { type Restore } from './RegulationsChecklist';
 import RuleRow from './RuleRow';
@@ -65,6 +66,12 @@ export default function RegulationsExplorer() {
   const shown = matched ? countShown(matched) : 0;
   const stale = draft.trim() !== (query ?? '');
   const pending = ai === 'pending';
+  /** Nothing written for this kind of idea: only the every-business rules apply.
+   *  Waits for the AI, which can still add specific rules while it reads. */
+  const noSpecific =
+    matched !== null &&
+    !pending &&
+    matched.groups.before.length + matched.groups.running.length + matched.groups.watch.length === 0;
 
   async function search(text: string, keepRestore = false) {
     if (!keepRestore) setRestore(null);
@@ -230,7 +237,9 @@ export default function RegulationsExplorer() {
         <>
           <div className={styles.bar} ref={barRef} tabIndex={-1} role="status" aria-live="polite">
             <h2 className={styles.barTitle}>
-              {shown} {shown === 1 ? 'regulation applies' : 'regulations apply'} to your idea
+              {noSpecific
+                ? 'No specific regulation found for your idea'
+                : `${shown} ${shown === 1 ? 'regulation applies' : 'regulations apply'} to your idea`}
             </h2>
             <p className={styles.barSub}>
               {pending && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
@@ -245,11 +254,39 @@ export default function RegulationsExplorer() {
             </p>
           )}
 
-          {!matched.hasSector && (
-            <p className={styles.hint}>
-              We didn&apos;t recognise a specific sector, so these are the regulations every
-              business faces. Try words like wallet, ISP, SMS, delivery, drone or insurance.
-            </p>
+          {noSpecific && (
+            <section className={styles.noRule} aria-labelledby="norule-h">
+              <p>
+                We didn&apos;t find a Zimbabwean law, licence or regulator written specifically
+                for this kind of business. Usually that means there isn&apos;t one yet, or the
+                idea is new enough that our directory doesn&apos;t cover it. That doesn&apos;t
+                mean anything goes: the basics every business needs, listed below, still apply.
+              </p>
+              <h3 id="norule-h">Who to ask</h3>
+              <ul className={styles.contacts}>
+                {NO_RULE_CONTACTS.map(c => (
+                  <li key={c.url}>
+                    <a href={c.url} target="_blank" rel="noopener noreferrer">
+                      {c.name}
+                      <ExternalLink size={12} aria-hidden="true" />
+                    </a>
+                    <span>{c.what}</span>
+                  </li>
+                ))}
+                <li>
+                  <span className={styles.contactName}>The Techzim community</span>
+                  <span>
+                    Founders who have been through it. Your question also reaches the Techzim team,
+                    and helps us add the right rules for ideas like yours.
+                  </span>
+                  <AskQuestion idea={query} label="Ask about my idea" />
+                </li>
+              </ul>
+              <p className={styles.reword}>
+                Or describe it differently: words like wallet, ISP, SMS, delivery, drone or
+                insurance help us match it.
+              </p>
+            </section>
           )}
 
           <div className={styles.groups}>

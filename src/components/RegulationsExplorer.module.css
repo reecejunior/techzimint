@@ -194,6 +194,71 @@
   color: var(--ink-700);
 }
 
+.noRule {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.noRule > p:first-child {
+  max-width: 68ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-700);
+}
+
+.noRule h3 {
+  margin-top: var(--s-1);
+  font-size: 15px;
+}
+
+.contacts {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--hairline);
+}
+
+.contacts li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-500);
+}
+
+.contacts a,
+.contactName {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.contacts a {
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 3px;
+}
+
+.contacts a:hover {
+  text-decoration-color: currentColor;
+}
+
+.reword {
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
 .groups {
   display: flex;
   flex-direction: column;
