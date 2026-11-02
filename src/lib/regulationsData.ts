@@ -3971,6 +3971,28 @@ export const RULES: Rule[] = [
   }
 ];
 
+/**
+ * Who to ask when an idea matches no specific regulation. Kept to bodies whose
+ * own websites were checked; no phone numbers, since those go stale.
+ */
+export const NO_RULE_CONTACTS: { name: string; what: string; url: string }[] = [
+  {
+    name: 'ZIDA one-stop investment centre',
+    what: "Zimbabwe's investment agency. It can tell you which licences and permits a new kind of business needs.",
+    url: 'https://www.zida.co.zw',
+  },
+  {
+    name: 'POTRAZ',
+    what: 'If your idea is online, uses telecoms or handles personal data, POTRAZ is the regulator to ask.',
+    url: 'https://www.potraz.gov.zw',
+  },
+  {
+    name: 'Law Society of Zimbabwe',
+    what: 'To find a registered lawyer who can give you advice on your exact idea.',
+    url: 'https://www.lawsociety.org.zw',
+  },
+];
+
 export const GAPS: string[] = [
   "Payment aggregator or gateway minimum capital, and whether the RBZ fintech sandbox is open.",
   "Suspicious transaction reporting duties and thresholds (Money Laundering Act sections 26 to 30).",

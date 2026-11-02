@@ -187,7 +187,7 @@ export default function RegulationsChecklist({
           Turn these {count} regulations into a checklist you can tick off, see the steps for
           each one, and come back to later.
         </p>
-        <MemberAuth reason="Free, with just your email. You can still read every regulation without an account." />
+        <MemberAuth reason="Free. You can still read every regulation without one." />
         <button type="button" className={styles.later} onClick={onLater}>
           Maybe later
         </button>
