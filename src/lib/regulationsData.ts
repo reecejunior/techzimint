@@ -2294,12 +2294,12 @@ export const GROUP_INFO: Record<GroupKey, { title: string; caption: string; note
   before: {
     title: "Can't start without",
     caption: 'Licences and registrations for your idea',
-    note: 'Have these in place before you launch or take your first customer. POTRAZ rules are listed first.',
+    note: 'Get these in place before you launch or take your first customer. POTRAZ rules come first.',
   },
   general: {
     title: 'General',
     caption: 'Every business',
-    note: 'These apply to nearly every startup whatever you build. Each is marked as needed before you start or as an ongoing duty.',
+    note: 'These apply to almost every startup, whatever you build.',
   },
   running: {
     title: "Once you're running",
@@ -2309,7 +2309,7 @@ export const GROUP_INFO: Record<GroupKey, { title: string; caption: string; note
   watch: {
     title: 'Still changing or optional',
     caption: 'Moving targets and optional routes',
-    note: 'Rules still being written, and sandboxes you can choose to join. Check these before you commit.',
+    note: 'Rules still being written, and optional routes. Check these before you commit.',
   },
 };
 
