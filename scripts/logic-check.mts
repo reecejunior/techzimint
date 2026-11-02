@@ -152,7 +152,7 @@ assert.equal(beforeRegs[0], 'POTRAZ', 'POTRAZ leads the can\'t-start-without gro
 assert.ok(beforeRegs.lastIndexOf('POTRAZ') < beforeRegs.indexOf('RBZ'), 'all POTRAZ rows precede RBZ');
 
 /* General rules are always present, POTRAZ data rules first, whatever was typed. */
-const general = ['dp-licence', 'dp-dpo', 'dp-breach', 'zimra-reg', 'company-reg'];
+const general = ['dp-licence', 'dp-dpo', 'dp-breach', 'zimra-reg', 'company-reg', 'nssa', 'labour-act', 'tax-more'];
 assert.deepEqual([...ids(wallet.groups.general)].sort(), [...general].sort());
 assert.deepEqual(ids(wallet.groups.general).slice(0, 3), ['dp-licence', 'dp-dpo', 'dp-breach']);
 
@@ -169,8 +169,27 @@ assert.equal(bakery.groups.general.length, general.length);
 assert.ok(ids(matchIdea('Ride-hailing app for Bulawayo').groups.watch).includes('ehailing'),
   'e-hailing is in the still-changing group, not a hard gate');
 assert.ok(ids(matchIdea('Drone delivery of medical supplies').groups.before).includes('drones'));
-assert.ok(ids(matchIdea('Funeral cover app').groups.watch).includes('ipec'));
+assert.ok(ids(matchIdea('Funeral cover app').groups.before).includes('ipec'),
+  'IPEC registration is a gate now that the 2026 Amendment Act is in force');
 assert.ok(ids(matchIdea('Crypto exchange').groups.before).includes('fiu-vasp'));
+
+/* Rules added in the second research pass. */
+const covers = (idea: string, id: string, group: 'before' | 'running' | 'watch') =>
+  assert.ok(ids(matchIdea(idea).groups[group]).includes(id), `"${idea}" surfaces ${id} in ${group}`);
+covers('Microfinance loans app', 'microfinance', 'before');
+covers('Buy now pay later for students', 'microfinance', 'before');
+covers('Podcast and web radio network', 'broadcasting', 'before');
+covers('Telemedicine clinic booking', 'health', 'before');
+covers('Solar installation and battery leasing', 'energy', 'before');
+covers('Airbnb style booking for lodges', 'tourism', 'before');
+covers('Rental listings for landlords', 'proptech', 'before');
+covers('Farm inputs marketplace', 'agritech', 'before');
+covers('Online tutoring platform', 'edtech', 'before');
+covers('Foreign investor SaaS exporting services', 'exchange-control', 'running');
+covers('Brand and logo for my software', 'ip', 'watch');
+assert.ok(!all(matchIdea('Mobile app for my church')).includes('ip'), 'the word app alone does not pull IP rules');
+covers('Delivery on motorbikes', 'transport-ops', 'before');
+assert.ok(!all(matchIdea('Funeral cover app')).includes('microfinance'), 'insurance ideas do not pull lending rules');
 assert.ok(ids(matchIdea('Online clothes store with delivery').groups.running).includes('cpa'),
   'consumer-law duties are an ongoing duty');
 

@@ -14,20 +14,24 @@ import {
 import styles from './RegulationsExplorer.module.css';
 
 const EXAMPLES = [
-  'A mobile wallet for diaspora remittances with SMS receipts',
-  'Rural Wi-Fi internet service provider',
-  'Ride-hailing app for Bulawayo',
-  'Online clothes store with delivery',
-  'Drone delivery of medical supplies',
-  'Crowdfunding platform for farmers',
-  'Funeral cover app',
-  'Smart meter hardware with sensors',
+  'Mobile wallet with SMS receipts',
+  'Rural Wi-Fi internet provider',
+  'Ride-hailing app',
+  'Online store with delivery',
+  'Solar installation business',
+  'Telemedicine clinic booking',
 ];
 
 const STATUS_LABEL: Record<RuleStatus, string> = {
-  official: 'From official text',
+  official: 'Official source',
   reported: 'From reporting',
-  verify: 'Verify before relying',
+  verify: 'Verify first',
+};
+
+const STATUS_HELP: Record<RuleStatus, string> = {
+  official: 'Read in the law itself or on the regulator\u2019s own page.',
+  reported: 'Taken from news or a law-firm summary. Likely right, worth a second look.',
+  verify: 'Unclear, out of date or only partly confirmed. Treat it as a lead, not a fact.',
 };
 
 const SECTOR_LABEL = Object.fromEntries(SECTORS.map(s => [s.id, s.label]));
@@ -49,42 +53,45 @@ function StatusPill({ status }: { status: RuleStatus }) {
   );
 }
 
-function RuleRow({ match, browsing }: { match: Match; browsing: boolean }) {
+function RuleRow({ match, browsing, group }: { match: Match; browsing: boolean; group: GroupKey }) {
   const { rule, hits, ai } = match;
   const reg = REGULATORS[rule.reg];
   const addedByAi = ai && hits.length === 0 && rule.scope === 'specific';
   return (
     <article className={styles.rule} id={`rule-${rule.id}`}>
-      <div className={styles.reg}>
-        <span className={styles.regCode}>{reg.code}</span>
+      <div className={styles.ruleTop}>
+        <span className={styles.reg} data-potraz={rule.reg === 'POTRAZ' || undefined}>
+          {reg.code}
+        </span>
         <span className={styles.regName}>{reg.name}</span>
-        <span className={styles.phase} data-phase={rule.phase}>{PHASE_LABEL[rule.phase]}</span>
+        <StatusPill status={rule.status} />
+        {group === 'general' && (
+          <span className={styles.phase} data-phase={rule.phase}>{PHASE_LABEL[rule.phase]}</span>
+        )}
       </div>
-      <div className={styles.ruleMain}>
-        <div className={styles.ruleHead}>
-          <h3>{rule.title}</h3>
-          <StatusPill status={rule.status} />
-        </div>
-        {!browsing && hits.length > 0 && (
-          <p className={styles.why}>
-            Matches your idea:{' '}
-            {hits.map(h => (
-              <span key={h} className={styles.tag}>{SECTOR_LABEL[h]}</span>
-            ))}
-          </p>
-        )}
-        {!browsing && addedByAi && (
-          <p className={styles.why}><span className={styles.tag}>Suggested by AI</span></p>
-        )}
-        {ai?.reason && (
-          <p className={styles.aiWhy}>
-            <span className={styles.aiBadge}>AI</span> {ai.reason}
-          </p>
-        )}
-        <p className={styles.headline}>{rule.headline}</p>
-        <p className={styles.summary}>{rule.summary}</p>
-        <details className={styles.details}>
-          <summary>Fees, deadlines and detail</summary>
+      <h3 className={styles.ruleTitle}>{rule.title}</h3>
+      <p className={styles.headline}>{rule.headline}</p>
+      {!browsing && (hits.length > 0 || addedByAi) && (
+        <p className={styles.why}>
+          <span className={styles.whyLabel}>Why it showed up</span>
+          {hits.map(h => (
+            <span key={h} className={styles.tag}>{SECTOR_LABEL[h]}</span>
+          ))}
+          {addedByAi && <span className={styles.tag}>Suggested by AI</span>}
+        </p>
+      )}
+      {ai?.reason && (
+        <p className={styles.aiWhy}>
+          <span className={styles.aiBadge}>AI</span> {ai.reason}
+        </p>
+      )}
+      <details className={styles.details}>
+        <summary>
+          <span className={styles.more}>Show fees, deadlines and sources</span>
+          <span className={styles.less}>Hide details</span>
+        </summary>
+        <div className={styles.body}>
+          <p className={styles.summary}>{rule.summary}</p>
           <dl className={styles.facts}>
             {rule.facts.map(f => (
               <div key={f.label} className={styles.fact}>
@@ -95,24 +102,26 @@ function RuleRow({ match, browsing }: { match: Match; browsing: boolean }) {
           </dl>
           {rule.note && (
             <p className={styles.note}>
-              <strong>Check:</strong> {rule.note}
+              <strong>Check before relying on this</strong>
+              {rule.note}
             </p>
           )}
-        </details>
-        <p className={styles.sources}>
-          Sources:{' '}
-          {rule.sources.map((s, i) => (
-            <span key={s.u}>
-              {i > 0 && ' · '}
-              <a href={s.u} target="_blank" rel="noopener noreferrer">
-                {s.t}
-                <ExternalLink size={11} aria-hidden="true" />
-              </a>
-            </span>
-          ))}{' '}
-          · Checked {CHECKED}
-        </p>
-      </div>
+          <div className={styles.sources}>
+            <strong>Sources</strong>
+            <ul>
+              {rule.sources.map(src => (
+                <li key={src.u}>
+                  <a href={src.u} target="_blank" rel="noopener noreferrer">
+                    {src.t}
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <span className={styles.checked}>Checked {CHECKED}</span>
+          </div>
+        </div>
+      </details>
     </article>
   );
 }
@@ -218,6 +227,9 @@ export default function RegulationsExplorer() {
         <label htmlFor={inputId} className={styles.label}>
           What are you building?
         </label>
+        <p className={styles.hint}>
+          One or two sentences is enough. We show the rules that apply, POTRAZ first.
+        </p>
         <textarea
           id={inputId}
           className={styles.input}
@@ -238,27 +250,27 @@ export default function RegulationsExplorer() {
         <div className={styles.actions}>
           <button type="submit" className={styles.search} disabled={pending || !draft.trim()}>
             {pending ? (
-              <Loader2 size={16} className={styles.spin} aria-hidden="true" />
+              <Loader2 size={20} className={styles.spin} aria-hidden="true" />
             ) : (
-              <Search size={16} aria-hidden="true" />
+              <Search size={20} aria-hidden="true" />
             )}
             {pending ? 'Searching…' : 'Find my rules'}
           </button>
           {(draft || query !== null) && (
             <button type="button" className={styles.clear} onClick={clear}>
-              <X size={13} aria-hidden="true" /> Clear
+              <X size={16} aria-hidden="true" /> Start over
             </button>
           )}
-          {stale && draft.trim() && (
-            <span className={styles.stale}>
-              {browsing
-                ? 'Press Find my rules to search.'
-                : 'You changed the idea. Press Find my rules to update the results.'}
-            </span>
-          )}
         </div>
+        {stale && draft.trim() && (
+          <p className={styles.stale}>
+            {browsing
+              ? 'Press Find my rules to search.'
+              : 'You changed the idea. Press Find my rules to update the results.'}
+          </p>
+        )}
         <div className={styles.examples} role="group" aria-label="Example ideas">
-          <span className={styles.examplesLabel}>Try:</span>
+          <span className={styles.examplesLabel}>Or try one:</span>
           {EXAMPLES.map(ex => (
             <button key={ex} type="button" className={styles.chip} onClick={() => search(ex)}>
               {ex}
@@ -267,46 +279,31 @@ export default function RegulationsExplorer() {
         </div>
       </form>
 
-      <div className={styles.legend} aria-label="What the labels mean">
-        <span><StatusPill status="official" /> read in the regulation or on the regulator&apos;s page</span>
-        <span><StatusPill status="reported" /> news or a law-firm summary</span>
-        <span><StatusPill status="verify" /> unclear, dated or only partly confirmed</span>
-      </div>
-
       <div className={styles.bar} ref={barRef} tabIndex={-1} role="status" aria-live="polite">
         <div className={styles.barMain}>
           <h2 className={styles.barTitle}>
-            {browsing ? `All ${RULES.length} rules` : <>Results for &ldquo;{query}&rdquo;</>}
+            {browsing ? `All ${RULES.length} rules` : <>Rules for &ldquo;{query}&rdquo;</>}
           </h2>
           <p className={styles.barSub}>
             {browsing
-              ? 'Describe your idea above and press Find my rules to narrow these down.'
-              : `${shown} of ${RULES.length} rules apply or may apply.`}
+              ? 'Browse everything below, or describe your idea above to narrow it down.'
+              : `${shown} of ${RULES.length} rules apply or may apply to this idea.`}
           </p>
         </div>
         {!browsing && (
           <span className={styles.done} data-state={ai}>
             {pending ? (
-              <Loader2 size={15} className={styles.spin} aria-hidden="true" />
+              <Loader2 size={22} className={styles.spin} aria-hidden="true" />
             ) : (
-              <CheckCircle2 size={15} aria-hidden="true" />
+              <CheckCircle2 size={22} aria-hidden="true" />
             )}
             <span>
-              <strong>{pending ? 'Searching' : 'Search done'}</strong>
+              <strong>{pending ? 'Searching…' : 'Search done'}</strong>
               <span className={styles.doneSub}>{aiStatusText(ai)}</span>
             </span>
           </span>
         )}
       </div>
-
-      {!browsing && matched.recognised.length > 0 && (
-        <p className={styles.recognised}>
-          <strong>Recognised:</strong>{' '}
-          {matched.recognised.map(id => (
-            <span key={id} className={styles.tag}>{SECTOR_LABEL[id]}</span>
-          ))}
-        </p>
-      )}
 
       {matched.clarify && (
         <div className={styles.clarify}>
@@ -317,7 +314,7 @@ export default function RegulationsExplorer() {
 
       {!browsing && !matched.hasSector && (
         <div className={styles.empty}>
-          <p><strong>No specific sector recognised in that description.</strong></p>
+          <p><strong>We didn&apos;t recognise a specific sector.</strong></p>
           <p>
             Showing the general rules every business faces. Try words like wallet, ISP, SMS,
             delivery, drone, insurance or marketplace.
@@ -331,10 +328,11 @@ export default function RegulationsExplorer() {
             key={k}
             href={`#grp-${k}`}
             className={styles.jumpLink}
+            data-group={k}
             data-empty={matched.groups[k].length === 0 || undefined}
           >
             <span className={styles.jumpCount}>{matched.groups[k].length}</span>
-            {GROUP_INFO[k].title}
+            <span className={styles.jumpTitle}>{GROUP_INFO[k].title}</span>
           </a>
         ))}
       </nav>
@@ -346,10 +344,19 @@ export default function RegulationsExplorer() {
         // found nothing for one, say so rather than letting the group vanish.
         if (items.length === 0 && (browsing || k === 'general')) return null;
         return (
-          <section key={k} id={`grp-${k}`} className={styles.group} aria-labelledby={`h-${k}`}>
-            <h2 id={`h-${k}`}>
-              {info.title} <small>{info.caption}</small>
-            </h2>
+          <section
+            key={k}
+            id={`grp-${k}`}
+            className={styles.group}
+            data-group={k}
+            aria-labelledby={`h-${k}`}
+          >
+            <header className={styles.groupHead}>
+              <h2 id={`h-${k}`}>{info.title}</h2>
+              <span className={styles.groupCount}>
+                {items.length} {items.length === 1 ? 'rule' : 'rules'}
+              </span>
+            </header>
             <p className={styles.groupNote}>{info.note}</p>
             {items.length === 0 ? (
               <p className={styles.none}>
@@ -358,7 +365,11 @@ export default function RegulationsExplorer() {
                   : 'Nothing specific recognised for this group. The general rules below still apply.'}
               </p>
             ) : (
-              items.map(m => <RuleRow key={m.rule.id} match={m} browsing={browsing} />)
+              <div className={styles.list}>
+                {items.map(m => (
+                  <RuleRow key={m.rule.id} match={m} browsing={browsing} group={k} />
+                ))}
+              </div>
             )}
           </section>
         );
@@ -370,9 +381,11 @@ export default function RegulationsExplorer() {
             {matched.demoted.length} more matched your keywords, but the AI thinks they probably
             don&apos;t apply
           </summary>
-          {matched.demoted.map(m => (
-            <RuleRow key={m.rule.id} match={m} browsing={false} />
-          ))}
+          <div className={styles.list}>
+            {matched.demoted.map(m => (
+              <RuleRow key={m.rule.id} match={m} browsing={false} group="watch" />
+            ))}
+          </div>
         </details>
       )}
 
@@ -380,9 +393,21 @@ export default function RegulationsExplorer() {
         <p className={styles.aiNote}>
           AI help is on. Your description is sent to an open-source model host to pick and order
           the rules. The AI only chooses from this directory; every fee, deadline and source
-          above comes from the directory itself.
+          comes from the directory itself.
         </p>
       )}
+
+      <section className={styles.key} aria-labelledby="key-h">
+        <h2 id="key-h">How sure are we?</h2>
+        <ul>
+          {(['official', 'reported', 'verify'] as RuleStatus[]).map(st => (
+            <li key={st}>
+              <StatusPill status={st} />
+              <span>{STATUS_HELP[st]}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section className={styles.gaps} aria-labelledby="gaps-h">
         <h2 id="gaps-h">Not covered yet</h2>
@@ -393,8 +418,7 @@ export default function RegulationsExplorer() {
 
       <p className={styles.disclaimer}>
         This is a research directory, not legal advice. Fees and rules change; confirm with the
-        regulator or a Zimbabwean lawyer before you act. Anything marked &ldquo;Verify before
-        relying&rdquo; is a lead to confirm, not a fact.
+        regulator or a Zimbabwean lawyer before you act.
       </p>
     </div>
   );
