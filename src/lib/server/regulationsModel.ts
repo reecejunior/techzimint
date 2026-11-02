@@ -1,5 +1,5 @@
 import 'server-only';
-import { buildMessages, extractJson } from '@/lib/regulationsAi';
+import { buildMessages, extractJson, failureFromStatus, type AiFailure } from '@/lib/regulationsAi';
 import { parseAiPlan, type AiPlan } from '@/lib/regulations';
 
 /**
@@ -26,7 +26,24 @@ export function getModelConfig(): ModelConfig | null {
 
 const TIMEOUT_MS = 20_000;
 
+/** A failed call to the model host, with a reason the page can show. */
+export class ModelError extends Error {
+  constructor(readonly reason: AiFailure, detail: string) {
+    super(detail);
+  }
+}
+
 async function complete(cfg: ModelConfig, idea: string, jsonMode: boolean): Promise<Response> {
+  try {
+    return await send(cfg, idea, jsonMode);
+  } catch (e) {
+    const name = e instanceof Error ? e.name : '';
+    const timedOut = name === 'TimeoutError' || name === 'AbortError';
+    throw new ModelError(timedOut ? 'timeout' : 'network', `${name || 'fetch failed'}: ${String(e)}`);
+  }
+}
+
+function send(cfg: ModelConfig, idea: string, jsonMode: boolean): Promise<Response> {
   return fetch(`${cfg.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -55,7 +72,12 @@ export async function askModel(cfg: ModelConfig, idea: string): Promise<AiPlan |
   // without it and rely on extractJson() to find the object in the reply.
   let res = await complete(cfg, idea, true);
   if (res.status === 400) res = await complete(cfg, idea, false);
-  if (!res.ok) throw new Error(`Model host returned ${res.status}`);
+  if (!res.ok) {
+    // The provider's error text (never our prompt) is what tells an owner whether
+    // the key, the model name or a quota is wrong. It goes to the server log only.
+    const body = (await res.text().catch(() => '')).slice(0, 300);
+    throw new ModelError(failureFromStatus(res.status), `Model host returned ${res.status}: ${body}`);
+  }
 
   const data = (await res.json()) as {
     choices?: { message?: { content?: string } }[];
