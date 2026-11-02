@@ -7,7 +7,7 @@ import {
   GROUP_ORDER, browseAll, countShown, matchIdea,
   type AiPlan, type GroupKey, type Match, type RuleStatus,
 } from '@/lib/regulations';
-import { MAX_IDEA_LENGTH } from '@/lib/regulationsAi';
+import { FAILURE_TEXT, MAX_IDEA_LENGTH, isAiFailure, type AiFailure } from '@/lib/regulationsAi';
 import {
   CHECKED, GAPS, GROUP_INFO, PHASE_LABEL, REGULATORS, RULES, SECTORS,
 } from '@/lib/regulationsData';
@@ -123,12 +123,12 @@ function RuleRow({ match, browsing, group }: { match: Match; browsing: boolean; 
   );
 }
 
-function aiStatusText(ai: AiState): string {
+function aiStatusText(ai: AiState, failure: AiFailure): string {
   switch (ai) {
     case 'pending': return 'Refining with AI…';
     case 'done': return 'Refined with AI';
     case 'no-opinion': return 'Keyword matches (AI had no extra view)';
-    case 'unavailable': return 'Keyword matches (AI unavailable)';
+    case 'unavailable': return `Keyword matches (${FAILURE_TEXT[failure]})`;
     case 'disabled': return 'Keyword matches';
     default: return '';
   }
@@ -140,6 +140,7 @@ export default function RegulationsExplorer() {
   const [query, setQuery] = useState<string | null>(null);
   const [plan, setPlan] = useState<AiPlan | null>(null);
   const [ai, setAi] = useState<AiState>('idle');
+  const [failure, setFailure] = useState<AiFailure>('other');
   const inputId = useId();
   const barRef = useRef<HTMLDivElement>(null);
   const listsRef = useRef<HTMLDivElement>(null);
@@ -183,7 +184,19 @@ export default function RegulationsExplorer() {
         signal: AbortSignal.timeout(25_000),
       });
       if (id !== requestId.current) return;
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        // 429 here is our own per-IP limit; a 502 carries the model host's reason.
+        let reason: AiFailure = res.status === 429 ? 'limit' : 'other';
+        try {
+          const body = (await res.json()) as { reason?: unknown };
+          if (isAiFailure(body.reason)) reason = body.reason;
+        } catch { /* no JSON body: keep the default */ }
+        if (id === requestId.current) {
+          setFailure(reason);
+          setAi('unavailable');
+        }
+        return;
+      }
       const data = (await res.json()) as { configured?: boolean; plan?: AiPlan | null };
       if (id !== requestId.current) return;
       if (data.configured === false) setAi('disabled');
@@ -191,8 +204,11 @@ export default function RegulationsExplorer() {
         setPlan(data.plan);
         setAi('done');
       } else setAi('no-opinion');
-    } catch {
-      if (id === requestId.current) setAi('unavailable');
+    } catch (e) {
+      if (id === requestId.current) {
+        setFailure(e instanceof Error && e.name === 'TimeoutError' ? 'timeout' : 'network');
+        setAi('unavailable');
+      }
     }
   }
 
@@ -295,7 +311,7 @@ export default function RegulationsExplorer() {
               <CheckCircle2 size={16} aria-hidden="true" />
             )}
             <strong>{pending ? 'Searching…' : 'Search done'}</strong>
-            <span className={styles.doneSub}>{aiStatusText(ai)}</span>
+            <span className={styles.doneSub}>{aiStatusText(ai, failure)}</span>
           </span>
         )}
       </div>

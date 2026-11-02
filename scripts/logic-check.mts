@@ -7,7 +7,9 @@ import type { Startup } from '../src/lib/types.ts';
 import {
   GROUP_ORDER, browseAll, countShown, groupOf, matchIdea, parseAiPlan,
 } from '../src/lib/regulations.ts';
-import { MAX_IDEA_LENGTH, buildMessages, extractJson } from '../src/lib/regulationsAi.ts';
+import {
+  FAILURE_TEXT, MAX_IDEA_LENGTH, buildMessages, extractJson, failureFromStatus, isAiFailure,
+} from '../src/lib/regulationsAi.ts';
 import { RULES } from '../src/lib/regulationsData.ts';
 
 const make = (over: Partial<Startup>): Startup =>
@@ -255,5 +257,16 @@ assert.ok(buildMessages('x'.repeat(5000))[1].content.length < MAX_IDEA_LENGTH + 
 assert.deepEqual(extractJson('Sure! ```json\n{"picks":[]}\n``` done'), { picks: [] });
 assert.equal(extractJson('no json here'), undefined);
 assert.equal(extractJson('{broken'), undefined);
+
+/* A failed AI call says why, so a bad key, model name or quota is obvious. */
+assert.equal(failureFromStatus(401), 'auth');
+assert.equal(failureFromStatus(404), 'model');
+assert.equal(failureFromStatus(429), 'limit');
+assert.equal(failureFromStatus(503), 'host');
+assert.equal(failureFromStatus(400), 'other');
+assert.ok(isAiFailure('limit') && !isAiFailure('nope') && !isAiFailure(undefined));
+for (const k of ['auth', 'model', 'limit', 'timeout', 'host', 'network', 'other'] as const) {
+  assert.ok(FAILURE_TEXT[k].length > 0, `${k} has a message`);
+}
 
 console.log('All logic checks passed.');

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { MAX_IDEA_LENGTH } from '@/lib/regulationsAi';
-import { askModel, getModelConfig } from '@/lib/server/regulationsModel';
+import { ModelError, askModel, getModelConfig } from '@/lib/server/regulationsModel';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,9 +66,11 @@ export async function POST(request: NextRequest) {
   try {
     const plan = await askModel(cfg, idea);
     return NextResponse.json({ configured: true, plan }, { headers: NO_STORE });
-  } catch {
+  } catch (e) {
+    const reason = e instanceof ModelError ? e.reason : 'other';
+    console.error('[regulations-ai]', e instanceof Error ? e.message : e);
     return NextResponse.json(
-      { error: 'The AI step is unavailable right now.' },
+      { error: 'The AI step is unavailable right now.', reason },
       { status: 502, headers: NO_STORE },
     );
   }

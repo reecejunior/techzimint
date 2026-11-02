@@ -72,3 +72,32 @@ export function extractJson(text: string): unknown {
     return undefined;
   }
 }
+
+/** Why the AI step failed, in terms a site owner can act on. */
+export type AiFailure = 'auth' | 'model' | 'limit' | 'timeout' | 'host' | 'network' | 'other';
+
+const FAILURES: AiFailure[] = ['auth', 'model', 'limit', 'timeout', 'host', 'network', 'other'];
+
+export function isAiFailure(x: unknown): x is AiFailure {
+  return typeof x === 'string' && (FAILURES as string[]).includes(x);
+}
+
+/** Map the model host's HTTP status to a failure the owner can fix. */
+export function failureFromStatus(status: number): AiFailure {
+  if (status === 401 || status === 403) return 'auth';
+  if (status === 404) return 'model';
+  if (status === 413 || status === 429) return 'limit';
+  if (status >= 500) return 'host';
+  return 'other';
+}
+
+/** Shown after "Keyword matches" so a failed AI step says why, in plain words. */
+export const FAILURE_TEXT: Record<AiFailure, string> = {
+  auth: 'AI key was rejected',
+  model: 'AI model name not found',
+  limit: 'AI is at its usage limit, try again in a minute',
+  timeout: 'AI took too long',
+  host: 'AI host had an error',
+  network: 'AI host could not be reached',
+  other: 'AI request failed',
+};
