@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bookmark, BookmarkCheck, Check, Copy, Lock, Printer } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Check, Copy, Printer } from 'lucide-react';
 import clsx from 'clsx';
 import { checklistOf, checklistText, ideaKey, type Match, type Matched } from '@/lib/regulations';
 import { CHECKED, REGULATORS } from '@/lib/regulationsData';
@@ -12,12 +12,12 @@ import MemberAuth from './MemberAuth';
 import RuleSteps from './RuleSteps';
 import styles from './RegulationsChecklist.module.css';
 
+const STORE_KEY = 'techzim-regs-ticked';
+
 /** Ticks restored from a saved checklist. `n` changes on every restore. */
 export interface Restore { n: number; ticked: string[] }
 
 type View = 'checklist' | 'steps';
-
-const STORE_KEY = 'techzim-regs-ticked';
 
 function readTicked(): Set<string> {
   try {
@@ -35,41 +35,31 @@ function writeTicked(ticked: Set<string>) {
   } catch { /* private mode or blocked storage: ticks just last for this visit */ }
 }
 
-/** Open a rule's row and scroll to it, so a checklist item leads to its detail. */
-function showRule(id: string) {
-  const el = document.getElementById(`rule-${id}`);
-  if (!el) return;
-  if (el instanceof HTMLDetailsElement) el.open = true;
-  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'center' });
-}
-
 function Item({
-  match, done, onToggle, steps,
-}: { match: Match; done: boolean; onToggle: (id: string) => void; steps: boolean }) {
+  match, done, onToggle, steps, onShow,
+}: {
+  match: Match;
+  done: boolean;
+  onToggle: (id: string) => void;
+  steps: boolean;
+  onShow: (id: string) => void;
+}) {
   const { rule } = match;
   return (
     <li className={styles.item} data-done={done || undefined}>
-      <label className={styles.check}>
-        <input type="checkbox" checked={done} onChange={() => onToggle(rule.id)} />
-        <span className={styles.title}>{rule.title}</span>
-      </label>
-      <span className={styles.meta}>
-        <span className={styles.reg} data-potraz={rule.reg === 'POTRAZ' || undefined}>
-          {REGULATORS[rule.reg].code}
+      <div className={styles.itemRow}>
+        <label className={styles.check}>
+          <input type="checkbox" checked={done} onChange={() => onToggle(rule.id)} />
+          <span className={styles.title}>{rule.title}</span>
+        </label>
+        <span className={styles.meta}>
+          <span className={styles.reg}>{REGULATORS[rule.reg].code}</span>
+          {rule.status === 'verify' && <span className={styles.verify}>Verify</span>}
+          <button type="button" className={styles.more} onClick={() => onShow(rule.id)}>
+            Details
+          </button>
         </span>
-        {rule.status === 'verify' && <span className={styles.verify}>Verify</span>}
-        <a
-          href={`#rule-${rule.id}`}
-          className={styles.more}
-          onClick={e => {
-            e.preventDefault();
-            showRule(rule.id);
-          }}
-        >
-          Details
-        </a>
-      </span>
+      </div>
       {steps && (
         <div className={styles.steps}>
           <RuleSteps rule={rule} heading="Steps" sources={false} />
@@ -80,13 +70,21 @@ function Item({
 }
 
 /**
- * The result as a to-do list: tick things off, copy it as text, or print it
- * (save as PDF) to hand to a lawyer or cofounder. Ticks are remembered in this
- * browser only; the idea text never leaves the page.
+ * The search result as a to-do list, inside the checklist drawer. Visitors get
+ * a short, optional invitation to sign up; members can tick, save, copy and
+ * print, and switch to the steps for each item.
  */
 export default function RegulationsChecklist({
-  matched, idea, restore,
-}: { matched: Matched; idea: string | null; restore: Restore | null }) {
+  matched, idea, restore, onShow, onLater,
+}: {
+  matched: Matched;
+  idea: string | null;
+  restore: Restore | null;
+  /** Open a rule's row on the page (the drawer closes first). */
+  onShow: (id: string) => void;
+  /** "Maybe later" for visitors: closes the drawer. */
+  onLater: () => void;
+}) {
   const list = useMemo(() => checklistOf(matched), [matched]);
   const [ticked, setTicked] = useState<Set<string>>(() => new Set());
   const [copied, setCopied] = useState(false);
@@ -123,6 +121,7 @@ export default function RegulationsChecklist({
 
   const total = list.before.length;
   const done = list.before.filter(m => ticked.has(m.rule.id)).length;
+  const count = list.before.length + list.later.length;
   const key = ideaKey(idea);
   const savedId = user ? `${user.uid}__${key}` : '';
   const isSaved = saved.some(s => s.id === savedId);
@@ -181,103 +180,97 @@ export default function RegulationsChecklist({
     }
   }
 
+  if (!isMember) {
+    return (
+      <div className={styles.invite}>
+        <p className={styles.inviteLead}>
+          Turn these {count} regulations into a checklist you can tick off, see the steps for
+          each one, and come back to later.
+        </p>
+        <MemberAuth reason="Free, with just your email. You can still read every regulation without an account." />
+        <button type="button" className={styles.later} onClick={onLater}>
+          Maybe later
+        </button>
+      </div>
+    );
+  }
+
+  const pct = total === 0 ? 100 : Math.round((done / total) * 100);
+
   return (
-    <section className={clsx(styles.box, 'regs-print-area')} aria-labelledby="checklist-h">
-      <header className={styles.head}>
-        <div>
-          <h2 id="checklist-h">Your launch checklist</h2>
-          <p className={styles.progress}>
-            {total === 0
-              ? 'Nothing specific is needed before you launch.'
-              : `${done} of ${total} things to sort out before you launch`}
-          </p>
-        </div>
-        {isMember && (
-          <div className={styles.actions}>
-            <button type="button" onClick={save} disabled={saving} data-saved={isSaved || undefined}>
-              {isSaved ? <BookmarkCheck size={15} aria-hidden="true" /> : <Bookmark size={15} aria-hidden="true" />}
-              {isSaved ? 'Saved to your account' : 'Save checklist'}
-            </button>
-            <button type="button" onClick={copy}>
-              {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
-              {copied ? 'Copied' : 'Copy as text'}
-            </button>
-            <button type="button" onClick={() => window.print()}>
-              <Printer size={15} aria-hidden="true" /> Print or save as PDF
-            </button>
-          </div>
-        )}
-      </header>
-
-      {saveError && <p className={styles.saveError} role="alert">{saveError}</p>}
-
+    <section className={clsx(styles.box, 'regs-print-area')} aria-label="Launch checklist">
       <p className={styles.printOnly}>
-        {idea ? `Idea: ${idea}. ` : ''}Techzim Startups, rules checked {CHECKED}. Not legal advice:
-        confirm with the regulator or a Zimbabwean lawyer.
+        <strong>Launch checklist{idea ? `: ${idea}` : ''}</strong>
+        <br />
+        Techzim Startups, regulations checked {CHECKED}. Not legal advice: confirm with the
+        regulator or a Zimbabwean lawyer.
       </p>
 
-      {!isMember ? (
-        <div className={styles.locked}>
-          <p className={styles.lockNote}>
-            <Lock size={15} aria-hidden="true" /> Sign up with your email to tick things off, save
-            this checklist and come back to it, and see the steps for each item.
-          </p>
-          <MemberAuth reason="Free. Your checklist is saved to your account." />
-          <ul className={styles.preview} aria-hidden="true">
-            {[...list.before, ...list.later].slice(0, 4).map(m => (
-              <li key={m.rule.id}>{m.rule.title}</li>
+      <div className={styles.progress}>
+        <p>
+          {total === 0
+            ? 'Nothing specific is needed before you launch.'
+            : <><strong>{done} of {total}</strong> sorted before launch</>}
+        </p>
+        <div className={styles.meter} aria-hidden="true">
+          <span style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
+      <div className={styles.tabs} role="tablist" aria-label="Checklist view">
+        {(['checklist', 'steps'] as const).map(v => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            data-active={view === v || undefined}
+            onClick={() => setView(v)}
+          >
+            {v === 'checklist' ? 'Checklist' : 'Steps'}
+          </button>
+        ))}
+      </div>
+
+      {total > 0 && (
+        <>
+          <h3 className={styles.sub}>Before you launch</h3>
+          <ul className={styles.list}>
+            {list.before.map(m => (
+              <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
             ))}
           </ul>
-        </div>
-      ) : (
-        <>
-          <div className={styles.tabs} role="tablist" aria-label="Checklist view">
-            {(['checklist', 'steps'] as const).map(v => (
-              <button
-                key={v}
-                type="button"
-                role="tab"
-                aria-selected={view === v}
-                data-active={view === v || undefined}
-                onClick={() => setView(v)}
-              >
-                {v === 'checklist' ? 'Checklist' : 'Steps'}
-              </button>
-            ))}
-          </div>
-          {view === 'steps' && (
-            <p className={styles.stepsNote}>
-              The order to do each item in. Each set says where it came from. Fees and forms change,
-              so confirm with the regulator before you pay or file.
-            </p>
-          )}
-
-          {total > 0 && (
-            <>
-              <h3 className={styles.sub}>Before you launch</h3>
-              <ul className={styles.list}>
-                {list.before.map(m => (
-                  <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} />
-                ))}
-              </ul>
-            </>
-          )}
-          {list.later.length > 0 && (
-            <>
-              <h3 className={styles.sub}>After you launch</h3>
-              <ul className={styles.list}>
-                {list.later.map(m => (
-                  <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} />
-                ))}
-              </ul>
-            </>
-          )}
-
-          <div className={styles.ask}>
-            <AskQuestion idea={idea} label="Ask a question about this checklist" />
-          </div>
         </>
       )}
+      {list.later.length > 0 && (
+        <>
+          <h3 className={styles.sub}>After you launch</h3>
+          <ul className={styles.list}>
+            {list.later.map(m => (
+              <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
+            ))}
+          </ul>
+        </>
+      )}
+
+      {saveError && <p className={styles.saveError} role="alert">{saveError}</p>}
+      <div className={styles.actions}>
+        <button type="button" onClick={save} disabled={saving} data-saved={isSaved || undefined}>
+          {isSaved ? <BookmarkCheck size={15} aria-hidden="true" /> : <Bookmark size={15} aria-hidden="true" />}
+          {isSaved ? 'Saved' : 'Save'}
+        </button>
+        <button type="button" onClick={copy}>
+          {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+        <button type="button" onClick={() => window.print()}>
+          <Printer size={15} aria-hidden="true" /> Print
+        </button>
+      </div>
+
+      <div className={styles.ask}>
+        <AskQuestion idea={idea} label="Ask the community about this checklist" />
+      </div>
     </section>
   );
 }

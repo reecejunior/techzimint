@@ -3994,24 +3994,24 @@ export const GAPS: string[] = [
  */
 export const GROUP_INFO: Record<GroupKey, { title: string; caption: string; note: string }> = {
   before: {
-    title: "Can't start without",
+    title: 'Before you launch',
     caption: 'Licences and registrations for your idea',
-    note: 'Get these in place before you launch or take your first customer. POTRAZ rules come first.',
+    note: 'Get these in place before you launch or take your first customer.',
   },
   general: {
-    title: 'General',
+    title: 'Every business',
     caption: 'Every business',
     note: 'These apply to almost every startup, whatever you build.',
   },
   running: {
     title: "Once you're running",
     caption: 'Ongoing duties for your idea',
-    note: "You can launch first, but these apply as soon as you operate.",
+    note: 'You can launch first, but these apply as soon as you operate.',
   },
   watch: {
-    title: 'Still changing or optional',
+    title: 'Keep an eye on',
     caption: 'Moving targets and optional routes',
-    note: 'Rules still being written, and optional routes. Check these before you commit.',
+    note: 'Rules still being written, and optional routes.',
   },
 };
 
