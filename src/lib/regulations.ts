@@ -20,7 +20,9 @@ import { RULES, SECTORS } from './regulationsData.ts';
 
 export type Regulator =
   | 'POTRAZ' | 'RBZ' | 'FIU' | 'SECZ' | 'IPEC'
-  | 'TRANSPORT' | 'ZIMRA' | 'CAAZ' | 'CONSUMER' | 'REGISTRAR';
+  | 'TRANSPORT' | 'ZIMRA' | 'CAAZ' | 'CONSUMER' | 'REGISTRAR'
+  | 'NSSA' | 'LABOUR' | 'ZIDA' | 'BAZ' | 'ZMC' | 'IPO' | 'HEALTH'
+  | 'EDU' | 'EACZ' | 'AGRI' | 'ZTA' | 'ZERA' | 'ICT';
 
 /** How firmly a rule is sourced. See the header of regulationsData.ts. */
 export type RuleStatus = 'official' | 'reported' | 'verify';
