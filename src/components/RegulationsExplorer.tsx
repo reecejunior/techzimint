@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, ChevronDown, ExternalLink, Loader2, Search, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronDown, ExternalLink, Loader2, Search, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { SavedChecklist } from '@/lib/types';
 import {
@@ -158,6 +158,7 @@ export default function RegulationsExplorer() {
   const [ai, setAi] = useState<AiState>('idle');
   const [failure, setFailure] = useState<AiFailure>('other');
   const inputId = useId();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const listsRef = useRef<HTMLDivElement>(null);
   const setAllOpen = (open: boolean) =>
@@ -253,6 +254,14 @@ export default function RegulationsExplorer() {
     setAi('idle');
   }
 
+  // The box grows with what is typed, up to four lines, then scrolls.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 112)}px`;
+  }, [draft]);
+
   // Bring the results into view after a search, so pressing the button visibly
   // does something even when the list below the fold was already there.
   useEffect(() => {
@@ -279,10 +288,12 @@ export default function RegulationsExplorer() {
           What are you building?
         </label>
         <div className={styles.field}>
+          <Search size={20} className={styles.fieldIcon} aria-hidden="true" />
           <textarea
             id={inputId}
+            ref={inputRef}
             className={styles.input}
-            rows={2}
+            rows={1}
             maxLength={MAX_IDEA_LENGTH}
             value={draft}
             onChange={e => setDraft(e.target.value)}
@@ -296,13 +307,18 @@ export default function RegulationsExplorer() {
             placeholder="e.g. a mobile wallet for diaspora remittances with SMS receipts"
             spellCheck={false}
           />
-          <button type="submit" className={styles.search} disabled={pending || !draft.trim()}>
+          <button
+            type="submit"
+            className={styles.search}
+            disabled={pending || !draft.trim()}
+            aria-label={pending ? 'Searching' : 'Find my rules'}
+          >
             {pending ? (
               <Loader2 size={16} className={styles.spin} aria-hidden="true" />
             ) : (
-              <Search size={16} aria-hidden="true" />
+              <ArrowRight size={16} aria-hidden="true" />
             )}
-            {pending ? 'Searching…' : 'Find my rules'}
+            <span className={styles.searchText}>{pending ? 'Searching…' : 'Find my rules'}</span>
           </button>
         </div>
         <div className={styles.examples} role="group" aria-label="Example ideas">
