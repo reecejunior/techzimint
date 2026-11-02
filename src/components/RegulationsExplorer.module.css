@@ -16,48 +16,62 @@
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
-  padding: var(--s-5);
-  border: 1px solid var(--hairline-strong);
-  border-radius: var(--r-md);
-  background: var(--surface);
 }
 
 .label {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--ink-900);
   letter-spacing: var(--track-heading);
 }
 
+/* One rounded bar: icon, the idea, and the button sit inside a single outline. */
 .field {
   display: flex;
-  gap: var(--s-2);
-  align-items: stretch;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 60px;
+  padding: 6px 6px 6px var(--s-5);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 32px;
+  background: var(--white);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px rgb(0 0 0 / 0.05);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+
+.field:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--ring), 0 6px 20px rgb(0 0 0 / 0.06);
+}
+
+.fieldIcon {
+  flex-shrink: 0;
+  color: var(--ink-400);
 }
 
 .input {
   flex: 1;
   min-width: 0;
-  min-height: 48px;
-  resize: vertical;
-  padding: 11px var(--s-4);
-  border: 1px solid var(--hairline-strong);
-  border-radius: var(--r-sm);
-  background: var(--white);
-  font-size: 16px;
+  max-height: 112px;
+  resize: none;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  font-size: 17px;
   line-height: 1.4;
   color: var(--ink-900);
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  outline: none;
+}
+
+.input:focus,
+.input:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: none;
 }
 
 .input::placeholder {
   color: var(--ink-400);
-}
-
-.input:focus-visible {
-  border-color: var(--brand);
-  box-shadow: var(--ring);
-  outline: none;
 }
 
 .search {
@@ -66,9 +80,10 @@
   justify-content: center;
   gap: var(--s-2);
   flex-shrink: 0;
-  min-height: 48px;
+  align-self: flex-end;
+  height: 48px;
   padding: 0 var(--s-5);
-  border-radius: var(--r-sm);
+  border-radius: 26px;
   background: var(--brand-panel);
   color: var(--on-brand);
   font-size: 15px;
@@ -698,14 +713,6 @@
     gap: 2px;
   }
 
-  .field {
-    flex-direction: column;
-  }
-
-  .search {
-    width: 100%;
-  }
-
   .expandAll {
     display: none;
   }
@@ -716,4 +723,23 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--s-2);
+}
+
+@media (max-width: 480px) {
+  .field {
+    padding-left: var(--s-4);
+  }
+
+  .fieldIcon {
+    display: none;
+  }
+
+  .searchText {
+    display: none;
+  }
+
+  .search {
+    width: 48px;
+    padding: 0;
+  }
 }
