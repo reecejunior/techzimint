@@ -1,20 +1,19 @@
 import type { Metadata } from 'next';
 import PageHeader from '@/components/PageHeader';
 import RegulationsExplorer from '@/components/RegulationsExplorer';
-import { CHECKED } from '@/lib/regulationsData';
 
 export const metadata: Metadata = {
   title: 'Zimbabwe startup regulations',
   description:
-    'Say what you want to build and see the Zimbabwean rules that apply, POTRAZ first: licences, fees, data protection, payments, e-hailing, drones and more, each with its source.',
+    'Describe what you want to build and see the Zimbabwean regulations that apply: licences, registrations, fees and steps, each with its source.',
 };
 
 export default function RegulationsPage() {
   return (
     <>
-      <PageHeader eyebrow="Rules" title="Regulations for Zimbabwean startups">
-        Say what you want to build. POTRAZ rules come first, then other regulators, then the
-        basics every company needs. Checked {CHECKED}.
+      <PageHeader title="Regulations for Zimbabwean startups">
+        Describe what you&apos;re building and see the licences, registrations and rules that
+        apply, with fees, steps and sources.
       </PageHeader>
       <RegulationsExplorer />
     </>

@@ -11,7 +11,7 @@ const LINKS = [
   { href: '/', label: 'Startups' },
   { href: '/videos', label: 'Videos' },
   { href: '/community', label: 'Community' },
-  { href: '/regulations', label: 'Rules' },
+  { href: '/regulations', label: 'Regulations' },
 ];
 
 export default function Nav() {

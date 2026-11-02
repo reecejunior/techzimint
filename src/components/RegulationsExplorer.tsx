@@ -1,46 +1,21 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, ChevronDown, ExternalLink, Loader2, Search, X } from 'lucide-react';
+import { ArrowRight, Loader2, Search, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { SavedChecklist } from '@/lib/types';
 import {
-  GROUP_ORDER, browseAll, countShown, matchIdea,
-  type AiPlan, type GroupKey, type Match, type RuleStatus,
+  GROUP_ORDER, countShown, matchIdea,
+  type AiPlan, type GroupKey,
 } from '@/lib/regulations';
 import { FAILURE_TEXT, MAX_IDEA_LENGTH, isAiFailure, type AiFailure } from '@/lib/regulationsAi';
-import {
-  CHECKED, GAPS, GROUP_INFO, PHASE_LABEL, REGULATORS, RULES, SECTORS,
-} from '@/lib/regulationsData';
-import AskQuestion from './AskQuestion';
-import RegulationsChecklist, { type Restore } from './RegulationsChecklist';
-import RuleReport from './RuleReport';
-import RuleSteps from './RuleSteps';
-import SavedChecklists from './SavedChecklists';
+import { CHECKED, GROUP_INFO, RULES } from '@/lib/regulationsData';
+import { useMember, useSavedChecklists } from '@/lib/hooks';
+import ChecklistDrawer from './ChecklistDrawer';
+import { type Restore } from './RegulationsChecklist';
+import RuleRow from './RuleRow';
 import styles from './RegulationsExplorer.module.css';
-
-const EXAMPLES = [
-  'Mobile wallet with SMS receipts',
-  'Rural Wi-Fi internet provider',
-  'Ride-hailing app',
-  'Online store with delivery',
-  'Solar installation business',
-  'Telemedicine clinic booking',
-];
-
-const STATUS_LABEL: Record<RuleStatus, string> = {
-  official: 'Official',
-  reported: 'Reported',
-  verify: 'Verify',
-};
-
-const STATUS_HELP: Record<RuleStatus, string> = {
-  official: 'Read in the law itself or on the regulator\u2019s own page.',
-  reported: 'From news or a law-firm summary. Likely right, worth a second look.',
-  verify: 'Unclear, dated or only partly confirmed. A lead, not a fact.',
-};
-
-const SECTOR_LABEL = Object.fromEntries(SECTORS.map(s => [s.id, s.label]));
 
 /** The AI step's state for the current search. */
 type AiState =
@@ -51,105 +26,22 @@ type AiState =
   | 'unavailable' // the model host could not be reached
   | 'disabled';   // no model is configured for this site
 
-function StatusPill({ status }: { status: RuleStatus }) {
-  return (
-    <span className={styles.status} data-status={status}>
-      {STATUS_LABEL[status]}
-    </span>
-  );
-}
-
-function RuleRow({ match, browsing, group }: { match: Match; browsing: boolean; group: GroupKey }) {
-  const { rule, hits, ai } = match;
-  const reg = REGULATORS[rule.reg];
-  const addedByAi = ai && hits.length === 0 && rule.scope === 'specific';
-  const showTags = !browsing && (hits.length > 0 || addedByAi);
-  return (
-    <details className={styles.row} id={`rule-${rule.id}`}>
-      <summary className={styles.rowHead}>
-        <span className={styles.reg} data-potraz={rule.reg === 'POTRAZ' || undefined}>
-          <strong>{reg.code}</strong>
-          <span>{reg.name}</span>
-        </span>
-        <span className={styles.rowMain}>
-          <span className={styles.rowTitle}>{rule.title}</span>
-          <span className={styles.rowHeadline}>{rule.headline}</span>
-          {(showTags || group === 'general') && (
-            <span className={styles.tags}>
-              {group === 'general' && (
-                <span className={styles.tag} data-kind="phase">{PHASE_LABEL[rule.phase]}</span>
-              )}
-              {hits.map(h => (
-                <span key={h} className={styles.tag}>{SECTOR_LABEL[h]}</span>
-              ))}
-              {addedByAi && <span className={styles.tag}>Suggested by AI</span>}
-            </span>
-          )}
-          {ai?.reason && (
-            <span className={styles.aiWhy}>
-              <span className={styles.aiBadge}>AI</span> {ai.reason}
-            </span>
-          )}
-        </span>
-        <StatusPill status={rule.status} />
-        <ChevronDown className={styles.chev} size={18} aria-hidden="true" />
-      </summary>
-      <div className={styles.body}>
-        <p className={styles.summary}>{rule.summary}</p>
-        <dl className={styles.facts}>
-          {rule.facts.map(f => (
-            <div key={f.label} className={styles.fact}>
-              <dt>{f.label}</dt>
-              <dd>{f.value}</dd>
-            </div>
-          ))}
-        </dl>
-        <RuleSteps rule={rule} />
-        {rule.note && (
-          <p className={styles.note}>
-            <strong>Check before relying on this. </strong>
-            {rule.note}
-          </p>
-        )}
-        {rule.reviewed && (
-          <p className={styles.reviewed}>
-            <strong>Reviewed</strong> by {rule.reviewed.by}, {rule.reviewed.on}.
-          </p>
-        )}
-        <div className={styles.sources}>
-          <strong>Sources</strong>
-          <ul>
-            {rule.sources.map(src => (
-              <li key={src.u}>
-                <a href={src.u} target="_blank" rel="noopener noreferrer">
-                  {src.t}
-                  <ExternalLink size={12} aria-hidden="true" />
-                </a>
-              </li>
-            ))}
-          </ul>
-          <span className={styles.checked}>Checked {CHECKED}</span>
-        </div>
-        <div className={styles.rowActions}>
-          <AskQuestion ruleId={rule.id} ruleTitle={rule.title} regCode={reg.code} />
-          <RuleReport ruleId={rule.id} ruleTitle={rule.title} />
-        </div>
-      </div>
-    </details>
-  );
-}
-
 function aiStatusText(ai: AiState, failure: AiFailure): string {
   switch (ai) {
-    case 'pending': return 'Refining with AI…';
-    case 'done': return 'Refined with AI';
-    case 'no-opinion': return 'Keyword matches (AI had no extra view)';
+    case 'pending': return 'Checking with AI…';
+    case 'done': return 'Checked with AI';
+    case 'no-opinion': return 'Keyword matches';
     case 'unavailable': return `Keyword matches (${FAILURE_TEXT[failure]})`;
     case 'disabled': return 'Keyword matches';
     default: return '';
   }
 }
 
+/**
+ * The regulations search: one box, then only the regulations that apply to the
+ * idea. The full directory lives on /regulations/all. The checklist is opt-in,
+ * in a drawer behind a small button.
+ */
 export default function RegulationsExplorer() {
   const [draft, setDraft] = useState('');
   /** The idea the results on screen belong to. null = nothing searched yet. */
@@ -160,21 +52,17 @@ export default function RegulationsExplorer() {
   const inputId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
-  const listsRef = useRef<HTMLDivElement>(null);
-  const setAllOpen = (open: boolean) =>
-    listsRef.current?.querySelectorAll('details').forEach(d => { d.open = open; });
   /** Bumped per search so a slow reply for an old idea cannot overwrite a newer one. */
   const requestId = useRef(0);
   const [searchCount, setSearchCount] = useState(0);
   /** Ticks from a saved checklist the member just opened. */
   const [restore, setRestore] = useState<Restore | null>(null);
+  const [drawer, setDrawer] = useState(false);
+  const { user, isMember } = useMember();
+  const { data: saved } = useSavedChecklists(isMember ? user?.uid ?? null : null);
 
-  const browsing = query === null;
-  const matched = useMemo(
-    () => (query === null ? browseAll() : matchIdea(query, plan)),
-    [query, plan],
-  );
-  const shown = countShown(matched);
+  const matched = useMemo(() => (query === null ? null : matchIdea(query, plan)), [query, plan]);
+  const shown = matched ? countShown(matched) : 0;
   const stale = draft.trim() !== (query ?? '');
   const pending = ai === 'pending';
 
@@ -252,6 +140,7 @@ export default function RegulationsExplorer() {
     setQuery(null);
     setPlan(null);
     setAi('idle');
+    inputRef.current?.focus();
   }
 
   // The box grows with what is typed, up to four lines, then scrolls.
@@ -262,8 +151,7 @@ export default function RegulationsExplorer() {
     el.style.height = `${Math.min(el.scrollHeight, 112)}px`;
   }, [draft]);
 
-  // Bring the results into view after a search, so pressing the button visibly
-  // does something even when the list below the fold was already there.
+  // Bring the results into view after a search.
   useEffect(() => {
     if (searchCount === 0) return;
     const el = barRef.current;
@@ -275,10 +163,9 @@ export default function RegulationsExplorer() {
 
   return (
     <div className={clsx('wrap', styles.root)}>
-      <SavedChecklists onOpen={openSaved} />
-
       <form
         className={styles.ask}
+        role="search"
         onSubmit={e => {
           e.preventDefault();
           search(draft);
@@ -304,191 +191,127 @@ export default function RegulationsExplorer() {
                 search(draft);
               }
             }}
-            placeholder="e.g. a mobile wallet for diaspora remittances with SMS receipts"
+            placeholder="e.g. a mobile wallet with SMS receipts"
             spellCheck={false}
           />
+          {draft && (
+            <button type="button" className={styles.clear} onClick={clear} aria-label="Clear">
+              <X size={16} aria-hidden="true" />
+            </button>
+          )}
           <button
             type="submit"
             className={styles.search}
             disabled={pending || !draft.trim()}
-            aria-label={pending ? 'Searching' : 'Find my rules'}
+            aria-label={pending ? 'Searching' : 'Search'}
           >
             {pending ? (
               <Loader2 size={16} className={styles.spin} aria-hidden="true" />
             ) : (
               <ArrowRight size={16} aria-hidden="true" />
             )}
-            <span className={styles.searchText}>{pending ? 'Searching…' : 'Find my rules'}</span>
+            <span className={styles.searchText}>{pending ? 'Searching…' : 'Search'}</span>
           </button>
         </div>
-        <div className={styles.examples} role="group" aria-label="Example ideas">
-          <span className={styles.examplesLabel}>Try:</span>
-          {EXAMPLES.map(ex => (
-            <button key={ex} type="button" className={styles.chip} onClick={() => search(ex)}>
-              {ex}
-            </button>
-          ))}
-          {(draft || query !== null) && (
-            <button type="button" className={styles.clear} onClick={clear}>
-              <X size={14} aria-hidden="true" /> Start over
+        <p className={styles.links}>
+          <Link href="/regulations/all">Browse all {RULES.length} regulations</Link>
+          {isMember && saved.length > 0 && (
+            <button type="button" onClick={() => setDrawer(true)}>
+              Saved checklists ({saved.length})
             </button>
           )}
-        </div>
-        {stale && draft.trim() && (
-          <p className={styles.stale}>
-            {browsing
-              ? 'Press Find my rules to search.'
-              : 'You changed the idea. Press Find my rules to update the results.'}
-          </p>
+        </p>
+        {stale && draft.trim() && query !== null && (
+          <p className={styles.stale}>You changed your idea. Press Search to update the results.</p>
         )}
       </form>
 
-      <div className={styles.bar} ref={barRef} tabIndex={-1} role="status" aria-live="polite">
-        <div className={styles.barMain}>
-          <h2 className={styles.barTitle}>
-            {browsing ? `All ${RULES.length} rules` : <>Rules for &ldquo;{query}&rdquo;</>}
-          </h2>
-          <p className={styles.barSub}>
-            {browsing
-              ? 'Describe your idea above to narrow these down.'
-              : `${shown} of ${RULES.length} rules apply or may apply.`}
-          </p>
-        </div>
-        {!browsing && (
-          <span className={styles.done} data-state={ai}>
-            {pending ? (
-              <Loader2 size={16} className={styles.spin} aria-hidden="true" />
-            ) : (
-              <CheckCircle2 size={16} aria-hidden="true" />
-            )}
-            <strong>{pending ? 'Searching…' : 'Search done'}</strong>
-            <span className={styles.doneSub}>{aiStatusText(ai, failure)}</span>
-          </span>
-        )}
-      </div>
+      {matched && (
+        <>
+          <div className={styles.bar} ref={barRef} tabIndex={-1} role="status" aria-live="polite">
+            <h2 className={styles.barTitle}>
+              {shown} {shown === 1 ? 'regulation applies' : 'regulations apply'} to your idea
+            </h2>
+            <p className={styles.barSub}>
+              {pending && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
+              {aiStatusText(ai, failure)}
+            </p>
+          </div>
 
-      {matched.clarify && (
-        <div className={styles.clarify}>
-          <p><strong>To narrow this down:</strong> {matched.clarify}</p>
-          <p>Add your answer to the description and press Find my rules again.</p>
-        </div>
-      )}
+          {matched.clarify && (
+            <p className={styles.hint}>
+              <strong>To narrow this down:</strong> {matched.clarify} Add it to your idea and
+              search again.
+            </p>
+          )}
 
-      {!browsing && !matched.hasSector && (
-        <div className={styles.empty}>
-          <p><strong>We didn&apos;t recognise a specific sector.</strong> Showing the general
-            rules every business faces. Try words like wallet, ISP, SMS, delivery, drone,
-            insurance or marketplace.</p>
-        </div>
-      )}
+          {!matched.hasSector && (
+            <p className={styles.hint}>
+              We didn&apos;t recognise a specific sector, so these are the regulations every
+              business faces. Try words like wallet, ISP, SMS, delivery, drone or insurance.
+            </p>
+          )}
 
-      {!browsing && <RegulationsChecklist matched={matched} idea={query} restore={restore} />}
+          <div className={styles.groups}>
+            {GROUP_ORDER.map((k: GroupKey) => {
+              const items = matched.groups[k];
+              if (items.length === 0) return null;
+              const info = GROUP_INFO[k];
+              return (
+                <section key={k} className={styles.group} aria-labelledby={`h-${k}`}>
+                  <header className={styles.groupHead}>
+                    <h3 id={`h-${k}`}>{info.title}</h3>
+                    <p>{info.note}</p>
+                  </header>
+                  <div className={styles.list}>
+                    {items.map(m => <RuleRow key={m.rule.id} match={m} />)}
+                  </div>
+                </section>
+              );
+            })}
 
-      <div className={styles.toolbar}>
-        <nav className={styles.jump} aria-label="Jump to a group">
-          {GROUP_ORDER.map(k => (
-            <a
-              key={k}
-              href={`#grp-${k}`}
-              className={styles.jumpLink}
-              data-empty={matched.groups[k].length === 0 || undefined}
-            >
-              {GROUP_INFO[k].title}
-              <span className={styles.jumpCount}>{matched.groups[k].length}</span>
-            </a>
-          ))}
-        </nav>
-        <div className={styles.expandAll}>
-          <button type="button" onClick={() => setAllOpen(true)}>Expand all</button>
-          <button type="button" onClick={() => setAllOpen(false)}>Collapse all</button>
-        </div>
-      </div>
-
-      <div className={styles.groups} ref={listsRef}>
-        {GROUP_ORDER.map((k: GroupKey) => {
-          const items = matched.groups[k];
-          const info = GROUP_INFO[k];
-          // Only the idea-specific groups can be legitimately empty. When a search
-          // found nothing for one, say so rather than letting the group vanish.
-          if (items.length === 0 && (browsing || k === 'general')) return null;
-          return (
-            <section
-              key={k}
-              id={`grp-${k}`}
-              className={styles.group}
-              data-group={k}
-              aria-labelledby={`h-${k}`}
-            >
-              <header className={styles.groupHead}>
-                <h2 id={`h-${k}`}>{info.title}</h2>
-                <span className={styles.groupCount}>
-                  {items.length} {items.length === 1 ? 'rule' : 'rules'}
-                </span>
-              </header>
-              <p className={styles.groupNote}>{info.note}</p>
-              {items.length === 0 ? (
-                <p className={styles.none}>
-                  {matched.hasSector
-                    ? 'Nothing in the directory for this idea in this group.'
-                    : 'Nothing specific recognised for this group. The general rules below still apply.'}
-                </p>
-              ) : (
+            {matched.demoted.length > 0 && (
+              <details className={styles.demoted}>
+                <summary>
+                  {matched.demoted.length} more matched your words but probably don&apos;t apply
+                </summary>
                 <div className={styles.list}>
-                  {items.map(m => (
-                    <RuleRow key={m.rule.id} match={m} browsing={browsing} group={k} />
-                  ))}
+                  {matched.demoted.map(m => <RuleRow key={m.rule.id} match={m} />)}
                 </div>
-              )}
-            </section>
-          );
-        })}
+              </details>
+            )}
+          </div>
 
-        {matched.demoted.length > 0 && (
-          <details className={styles.demoted}>
-            <summary>
-              {matched.demoted.length} more matched your keywords, but the AI thinks they probably
-              don&apos;t apply
-            </summary>
-            <div className={styles.list}>
-              {matched.demoted.map(m => (
-                <RuleRow key={m.rule.id} match={m} browsing={false} group="watch" />
-              ))}
-            </div>
-          </details>
-        )}
-      </div>
-
-      {(ai === 'pending' || ai === 'done' || ai === 'no-opinion') && (
-        <p className={styles.aiNote}>
-          AI help is on. Your description is sent to an open-source model host to pick and order
-          the rules. The AI only chooses from this directory; every fee, deadline and source
-          comes from the directory itself.
-        </p>
+          <footer className={styles.fine}>
+            <p>
+              <span className={styles.verifyDot}>Verify</span> means a figure or rule is unclear,
+              dated or only partly confirmed: treat it as a lead.
+            </p>
+            {(ai === 'pending' || ai === 'done' || ai === 'no-opinion') && (
+              <p>
+                Your description is sent to an open-source AI model to pick and order the
+                regulations. Every fee, deadline and source comes from the directory itself.
+              </p>
+            )}
+            <p>
+              Checked {CHECKED}. A research directory, not legal advice: confirm with the
+              regulator or a Zimbabwean lawyer before you act.{' '}
+              <Link href="/regulations/all#gaps">What we don&apos;t cover yet</Link>
+            </p>
+          </footer>
+        </>
       )}
 
-      <section className={styles.key} aria-labelledby="key-h">
-        <h2 id="key-h">How sure are we?</h2>
-        <ul>
-          {(['official', 'reported', 'verify'] as RuleStatus[]).map(st => (
-            <li key={st}>
-              <StatusPill status={st} />
-              <span>{STATUS_HELP[st]}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className={styles.gaps} aria-labelledby="gaps-h">
-        <h2 id="gaps-h">Not covered yet</h2>
-        <ul>
-          {GAPS.map(g => <li key={g}>{g}</li>)}
-        </ul>
-      </section>
-
-      <p className={styles.disclaimer}>
-        This is a research directory, not legal advice. Fees and rules change; confirm with the
-        regulator or a Zimbabwean lawyer before you act.
-      </p>
+      <ChecklistDrawer
+        open={drawer}
+        onOpenChange={setDrawer}
+        matched={matched}
+        idea={query}
+        restore={restore}
+        onOpenSaved={item => {
+          openSaved(item);
+        }}
+      />
     </div>
   );
 }

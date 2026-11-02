@@ -1,0 +1,122 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  padding-top: var(--s-6);
+  padding-bottom: var(--s-16);
+}
+
+.root > * {
+  width: 100%;
+  max-width: 880px;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 48px;
+  padding: 0 var(--s-5);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  background: var(--white);
+  color: var(--ink-400);
+}
+
+.filter:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.filter input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+  color: var(--ink-900);
+  outline: none;
+}
+
+.filter input:focus-visible {
+  box-shadow: none;
+  outline: none;
+}
+
+.count {
+  margin-top: calc(var(--s-6) * -1);
+  padding-left: var(--s-5);
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  scroll-margin-top: calc(var(--nav-h) + var(--s-4));
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.head h2 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.head p {
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.list {
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.gaps {
+  padding-top: var(--s-6);
+  border-top: 1px solid var(--hairline);
+  scroll-margin-top: calc(var(--nav-h) + var(--s-4));
+}
+
+.gaps h2 {
+  margin-bottom: var(--s-3);
+  font-size: 17px;
+}
+
+.gaps ul {
+  display: grid;
+  gap: var(--s-1);
+  max-width: 70ch;
+  padding-left: var(--s-5);
+  list-style: disc;
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.fine {
+  max-width: 70ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-500);
+}
+
+.back {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 4px;
+}
+
+.back:hover {
+  text-decoration-color: currentColor;
+}

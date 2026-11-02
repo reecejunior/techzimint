@@ -1,0 +1,276 @@
+/* The button that opens the drawer: small, bottom right, out of the way. */
+.fab {
+  position: fixed;
+  right: var(--s-6);
+  bottom: var(--s-6);
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 46px;
+  padding: 0 var(--s-2) 0 var(--s-4);
+  border-radius: var(--r-pill);
+  background: var(--ink-900);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  animation: rise 0.35s var(--ease) both;
+  transition: transform var(--fast) var(--ease);
+}
+
+.fab:hover {
+  transform: translateY(-1px);
+}
+
+.fab:focus-visible {
+  outline: none;
+  box-shadow: var(--ring), 0 8px 24px rgb(0 0 0 / 0.18);
+}
+
+.count {
+  min-width: 28px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 0.16);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* The drawer: a panel on the right on wide screens, a sheet from the bottom on phones. */
+.sheet {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(460px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--white);
+  color: var(--ink-900);
+  box-shadow: -12px 0 40px rgb(0 0 0 / 0.12);
+}
+
+.sheet[open] {
+  animation: slideIn 0.28s var(--ease);
+}
+
+.sheet::backdrop {
+  background: rgb(20 16 12 / 0.32);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-height: 100%;
+  padding: var(--s-5) var(--s-5) var(--s-8);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.head h2 {
+  font-size: 20px;
+  letter-spacing: var(--track-heading);
+}
+
+.idea {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--ink-500);
+  overflow-wrap: anywhere;
+}
+
+.close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-pill);
+  color: var(--ink-500);
+}
+
+.close:hover {
+  background: var(--surface);
+  color: var(--ink-900);
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: auto;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--hairline);
+}
+
+.foot h3 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.saved li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.openSaved {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-width: 0;
+  padding: var(--s-2) 0;
+  text-align: left;
+  font-size: 14px;
+  color: var(--ink-900);
+}
+
+.openSaved span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.openSaved:hover span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prog {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.del {
+  padding: 6px;
+  color: var(--ink-400);
+}
+
+.del:hover {
+  color: var(--orange-800);
+}
+
+.msg {
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  font-size: 13px;
+  color: var(--ink-500);
+  overflow-wrap: anywhere;
+}
+
+.who button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-700);
+}
+
+.who button:hover {
+  color: var(--ink-900);
+}
+
+@media (max-width: 640px) {
+  .fab {
+    right: auto;
+    bottom: var(--s-4);
+    left: 50%;
+    translate: -50% 0;
+  }
+
+  .sheet {
+    inset: auto 0 0 0;
+    width: 100vw;
+    height: auto;
+    max-height: 90dvh;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -12px 40px rgb(0 0 0 / 0.14);
+  }
+
+  .sheet[open] {
+    animation: slideUp 0.28s var(--ease);
+  }
+
+  .inner {
+    min-height: 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .sheet[open] {
+    animation: none;
+  }
+}
+
+@media print {
+  .fab {
+    display: none;
+  }
+
+  .sheet[open] {
+    position: static;
+    width: auto;
+    height: auto;
+    max-height: none;
+    box-shadow: none;
+  }
+
+  .sheet::backdrop {
+    display: none;
+  }
+
+  .head,
+  .foot {
+    display: none;
+  }
+}
