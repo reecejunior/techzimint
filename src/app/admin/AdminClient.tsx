@@ -3,20 +3,22 @@
 import { useMemo, useState } from 'react';
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Lightbulb,
-  Loader2, LogOut, Mail, MessageCircle, Pencil, PlaySquare, RotateCcw, Search, ShieldCheck, Trash2, X,
+  Loader2, LogOut, Mail, MessageCircle, Scale, Pencil, PlaySquare, RotateCcw, Search, ShieldCheck, Trash2, X,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
 import {
-  approveStartup, deletePost, deleteTrackerComment, deleteTrackerOverride, editPost, rejectStartup,
-  reviewTrackerSuggestion, saveTrackerOverride,
+  approveStartup, deletePost, deleteRegulationReport, deleteTrackerComment, deleteTrackerOverride,
+  editPost, rejectStartup, reviewTrackerSuggestion, saveTrackerOverride, setRegulationReportStatus,
 } from '@/lib/firestore';
 import {
-  useAdminAuth, useAllStartupsForAdmin, useStartupPosts, useTrackerCommentsForAdmin,
+  useAdminAuth, useAllStartupsForAdmin, useRegulationReportsForAdmin, useRegulationStatsForAdmin,
+  useStartupPosts, useTrackerCommentsForAdmin,
   useTrackerOverrides, useTrackerSuggestionsForAdmin,
 } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
-import type { Post, Startup, TrackerComment, TrackerOverride, TrackerSuggestion } from '@/lib/types';
+import type { Post, RegulationReport, Startup, TrackerComment, TrackerOverride, TrackerSuggestion } from '@/lib/types';
 import { applyTrackerOverride, WINNERS, type Winner } from '@/app/community/hackathon-tracker/data';
+import { RULES, SECTORS } from '@/lib/regulationsData';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
@@ -66,6 +68,7 @@ export default function AdminClient() {
         <TrackerEntryEditor adminEmail={user?.email ?? ''} />
         <TrackerQueue />
         <TrackerCommentsQueue />
+        <RulesFeedback />
         <Queue />
       </div>
     </div>
@@ -780,6 +783,141 @@ function TrackerCommentRow({ comment }: { comment: TrackerComment }) {
           <button type="button" className={styles.rejectBtn} onClick={remove} disabled={busy}>
             {busy ? <Loader2 size={13} className={styles.spin} aria-hidden="true" /> : <Trash2 size={13} aria-hidden="true" />}
             Remove
+          </button>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+const RULE_TITLE: Record<string, string> = Object.fromEntries(RULES.map(r => [r.id, r.title]));
+const SECTOR_NAME: Record<string, string> = Object.fromEntries(SECTORS.map(x => [x.id, x.label]));
+
+/** Reader error reports and "what people search" counters for /regulations. */
+function RulesFeedback() {
+  const { data: reports, loading, error } = useRegulationReportsForAdmin();
+  const { data: stats, error: statsError } = useRegulationStatsForAdmin();
+
+  const topSectors = stats
+    ? Object.entries(stats.sectors).sort((a, b) => b[1] - a[1]).slice(0, 8)
+    : [];
+  const open = reports.filter(r => r.status === 'new').length;
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <span className={styles.cardIcon} data-tone="neutral">
+          <Scale size={16} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className={styles.cardTitle}>Rules directory</h2>
+          <p className={styles.cardSubtitle}>
+            Corrections readers send from the Regulations page, and which kinds of idea people
+            search. Searches are counted by sector only, so no idea text is stored.
+          </p>
+        </div>
+      </div>
+
+      {statsError ? (
+        <ErrorState message={statsError} />
+      ) : stats ? (
+        <p className={styles.rowFounders}>
+          {stats.searches} searches, {stats.noSector} with no sector recognised
+          {stats.searches > 0 && ` (${Math.round((stats.noSector / stats.searches) * 100)}%)`}.
+          {topSectors.length > 0 && (
+            <>
+              {' '}Most asked about:{' '}
+              {topSectors.map(([id, n]) => `${SECTOR_NAME[id] ?? id} ${n}`).join(', ')}.
+            </>
+          )}
+        </p>
+      ) : (
+        <p className={styles.empty}>No searches counted yet.</p>
+      )}
+
+      <h3 className={styles.rowName}>
+        Error reports {open > 0 && `(${open} new)`}
+      </h3>
+      {error ? (
+        <ErrorState message={error} />
+      ) : loading ? (
+        <div className={styles.list}>
+          <div className={`skel ${styles.skelRow}`} />
+        </div>
+      ) : reports.length === 0 ? (
+        <p className={styles.empty}>No reports yet.</p>
+      ) : (
+        <ul className={styles.list}>
+          {reports.map(r => (
+            <RegulationReportRow key={r.id} report={r} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RegulationReportRow({ report }: { report: RegulationReport }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+
+  async function run(action: () => Promise<void>, gone = false) {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+      if (gone) setRemoved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That did not work.');
+    }
+    setBusy(false);
+  }
+
+  if (removed) return null;
+  const done = report.status === 'done';
+
+  return (
+    <li className={styles.row}>
+      <div className={styles.rowGrid}>
+        <div className={styles.rowBody}>
+          <div className={styles.rowHead}>
+            <span className={styles.rowName}>{RULE_TITLE[report.ruleId] ?? report.ruleId}</span>
+            {done && <span className={styles.rowFounders}>Done</span>}
+          </div>
+          <p className={styles.rowTagline}>{report.message}</p>
+          <p className={styles.rowFounders}>
+            {report.contact ? `${report.contact} · ` : ''}
+            {timeAgo(report.createdAt)}
+          </p>
+          {error && (
+            <p className={styles.formError} role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+        <div className={styles.rowActions}>
+          <button
+            type="button"
+            className={styles.restoreBtn}
+            disabled={busy}
+            onClick={() => run(() => setRegulationReportStatus(report.id, done ? 'new' : 'done'))}
+          >
+            <CheckCircle2 size={13} aria-hidden="true" />
+            {done ? 'Reopen' : 'Mark done'}
+          </button>
+          <button
+            type="button"
+            className={styles.rejectBtn}
+            disabled={busy}
+            onClick={() => {
+              if (window.confirm('Delete this report? This cannot be undone.')) {
+                run(() => deleteRegulationReport(report.id), true);
+              }
+            }}
+          >
+            <Trash2 size={13} aria-hidden="true" />
+            Delete
           </button>
         </div>
       </div>

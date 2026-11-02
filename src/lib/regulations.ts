@@ -59,6 +59,8 @@ export interface Rule {
   facts: { label: string; value: string }[];
   /** What could not be confirmed, or why a figure may be out of date. */
   note?: string;
+  /** Set once a lawyer or the regulator has confirmed the rule. Shown on the row. */
+  reviewed?: { by: string; on: string };
   sources: { t: string; u: string }[];
 }
 
@@ -219,4 +221,49 @@ export function parseAiPlan(raw: unknown): AiPlan | null {
 
   const clarify = cleanText(body.clarify, MAX_CLARIFY);
   return clarify ? { picks, clarify } : { picks };
+}
+
+/** The launch checklist for a result: what to do first, and what comes after. */
+export interface Checklist {
+  before: Match[];
+  later: Match[];
+}
+
+/**
+ * Split a result into "before you launch" and "after you launch". Before: the
+ * idea-specific licences plus any general rule that must be in place first.
+ * After: ongoing duties and moving targets. Order inside each follows the
+ * result list, so POTRAZ stays first.
+ */
+export function checklistOf(m: Matched): Checklist {
+  const generalBefore = m.groups.general.filter(x => x.rule.phase === 'before');
+  const generalLater = m.groups.general.filter(x => x.rule.phase !== 'before');
+  return {
+    before: [...m.groups.before, ...generalBefore],
+    later: [...m.groups.running, ...generalLater, ...m.groups.watch],
+  };
+}
+
+/** Plain-text version of the checklist, for pasting into an email or chat. */
+export function checklistText(opts: {
+  idea: string | null;
+  list: Checklist;
+  ticked: ReadonlySet<string>;
+  checked: string;
+  url: string;
+}): string {
+  const line = (x: Match) => {
+    const box = opts.ticked.has(x.rule.id) ? '[x]' : '[ ]';
+    const flag = x.rule.status === 'verify' ? ' (verify)' : '';
+    return `${box} ${x.rule.title} (${x.rule.reg})${flag}: ${x.rule.headline}`;
+  };
+  const out: string[] = [];
+  out.push(opts.idea ? `Launch checklist for: ${opts.idea}` : 'Launch checklist');
+  out.push(`Techzim Startups, ${opts.url} (rules checked ${opts.checked})`);
+  out.push('', 'BEFORE YOU LAUNCH');
+  out.push(...(opts.list.before.length ? opts.list.before.map(line) : ['Nothing specific found.']));
+  out.push('', 'AFTER YOU LAUNCH');
+  out.push(...(opts.list.later.length ? opts.list.later.map(line) : ['Nothing specific found.']));
+  out.push('', 'Not legal advice. Confirm with the regulator or a Zimbabwean lawyer before you act.');
+  return out.join('\n');
 }

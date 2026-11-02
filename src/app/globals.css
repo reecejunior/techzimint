@@ -257,3 +257,23 @@ p {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Printing a checklist (or anything marked .regs-print-area): hide the rest of
+   the page so "Print / save as PDF" produces just that block. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .regs-print-area,
+  .regs-print-area * {
+    visibility: visible;
+  }
+
+  .regs-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}

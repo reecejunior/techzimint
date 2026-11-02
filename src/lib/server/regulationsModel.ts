@@ -20,7 +20,7 @@ export function getModelConfig(): ModelConfig | null {
   const apiKey = process.env.REGS_AI_API_KEY?.trim();
   const model = process.env.REGS_AI_MODEL?.trim();
   if (!baseUrl || !apiKey || !model) return null;
-  const maxTokens = Number(process.env.REGS_AI_MAX_TOKENS) || 1200;
+  const maxTokens = Number(process.env.REGS_AI_MAX_TOKENS) || 500;
   return { baseUrl, apiKey, model, maxTokens };
 }
 

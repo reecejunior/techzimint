@@ -58,6 +58,8 @@ import type {
   StartupEditInput,
   StartupSubmission,
   PostImage,
+  RegulationReport,
+  RegulationStats,
   TrackerComment,
   TrackerOverride,
   TrackerSuggestion,
@@ -2061,3 +2063,71 @@ export async function deleteTrackerOverride(winnerId: string): Promise<void> {
   await deleteDoc(doc(getDb(), 'trackerOverrides', winnerId));
 }
 
+
+/* ─── Regulations directory: admin inbox and counters ─────────────
+ * Written server-side (see /api/regulations/report and /stat); admins read
+ * and triage them here. Rules in firestore.rules allow admin access only. */
+
+function mapRegulationReport(snap: QueryDocumentSnapshot<DocumentData>): RegulationReport {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    ruleId: typeof d.ruleId === 'string' ? d.ruleId : '',
+    message: typeof d.message === 'string' ? d.message : '',
+    contact: typeof d.contact === 'string' ? d.contact : '',
+    status: d.status === 'done' ? 'done' : 'new',
+    createdAt: toIso(d.createdAt),
+  };
+}
+
+/** Newest 200 reader reports, for the /admin inbox. */
+export function subscribeToRegulationReports(
+  onData: (items: RegulationReport[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(collection(getDb(), 'regulationReports'), orderBy('createdAt', 'desc'), limit(200));
+  return onSnapshot(
+    q,
+    snap => onData(snap.docs.map(mapRegulationReport)),
+    err => onError(err as Error),
+  );
+}
+
+export async function setRegulationReportStatus(id: string, status: 'new' | 'done'): Promise<void> {
+  await updateDoc(doc(getDb(), 'regulationReports', id), { status });
+}
+
+export async function deleteRegulationReport(id: string): Promise<void> {
+  await deleteDoc(doc(getDb(), 'regulationReports', id));
+}
+
+function numberMap(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object') return {};
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = num(v);
+  return out;
+}
+
+/** The single counters document behind the admin "what people search" panel. */
+export function subscribeToRegulationStats(
+  onData: (stats: RegulationStats | null) => void,
+  onError: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    doc(getDb(), 'regulationStats', 'summary'),
+    snap => {
+      const d = snap.data();
+      onData(
+        d
+          ? {
+              searches: num(d.searches),
+              noSector: num(d.noSector),
+              sectors: numberMap(d.sectors),
+              days: numberMap(d.days),
+            }
+          : null,
+      );
+    },
+    err => onError(err as Error),
+  );
+}

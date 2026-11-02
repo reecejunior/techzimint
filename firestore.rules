@@ -722,5 +722,21 @@ service cloud.firestore {
                    && request.resource.data.tokens is list
                    && request.resource.data.tokens.size() <= 10;
     }
+
+    // Regulations directory. Reader reports and the search counters are written
+    // by server routes with the Admin SDK (which skips these rules); the rules
+    // only let the admin panel read and triage them. Nothing here is public.
+    match /regulationReports/{reportId} {
+      allow read: if isAdmin();
+      allow update: if isAdmin() && touched().hasOnly(['status'])
+                    && request.resource.data.status in ['new', 'done'];
+      allow delete: if isAdmin();
+      allow create: if false;
+    }
+
+    match /regulationStats/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
   }
 }

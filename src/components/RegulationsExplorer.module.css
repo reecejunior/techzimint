@@ -555,6 +555,11 @@
   color: var(--orange-800);
 }
 
+.reviewed {
+  font-size: 14px;
+  color: #14532D;
+}
+
 .sources {
   display: flex;
   flex-direction: column;

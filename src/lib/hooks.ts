@@ -25,6 +25,8 @@ import {
   subscribeToStartupPosts,
   subscribeToStartups,
   subscribeToAllTrackerComments,
+  subscribeToRegulationReports,
+  subscribeToRegulationStats,
   subscribeToStartupsForAdmin,
   subscribeToTrackerComments,
   subscribeToTrackerOverrides,
@@ -40,6 +42,8 @@ import type {
   Notification,
   NotificationPref,
   Post,
+  RegulationReport,
+  RegulationStats,
   Review,
   Reviewer,
   ReviewWithStartup,
@@ -712,3 +716,43 @@ export function useReviewerProfile(username: string): AsyncState<Profile> {
   return state;
 }
 
+
+/** Reader reports on the regulations directory — the /admin inbox. */
+export function useRegulationReportsForAdmin(): AsyncState<RegulationReport[]> {
+  const [state, setState] = useState<AsyncState<RegulationReport[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToRegulationReports(
+      items => setState({ data: items, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
+  return state;
+}
+
+/** Counters for what people search on the regulations page (null until the first search). */
+export function useRegulationStatsForAdmin(): AsyncState<RegulationStats | null> {
+  const [state, setState] = useState<AsyncState<RegulationStats | null>>({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToRegulationStats(
+      stats => setState({ data: stats, loading: false, error: null }),
+      err => setState({ data: null, loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: null, loading: false, error: NOT_CONFIGURED };
+  return state;
+}

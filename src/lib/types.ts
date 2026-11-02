@@ -478,3 +478,25 @@ export interface TrackerOverride {
   /** Which admin last saved this, for an audit trail — not shown to visitors. */
   updatedByEmail: string;
 }
+
+/* ─── Regulations directory: reader reports and search counters ───
+ * Reports are written by /api/regulations/report (Admin SDK) and read here by
+ * admins only. The stats document is one set of counters, never idea text. */
+export interface RegulationReport {
+  id: string;
+  ruleId: string;
+  message: string;
+  contact: string;
+  status: 'new' | 'done';
+  createdAt: string;
+}
+
+export interface RegulationStats {
+  searches: number;
+  /** Searches where no sector was recognised in the idea. */
+  noSector: number;
+  /** Sector id -> searches that mentioned it. */
+  sectors: Record<string, number>;
+  /** YYYY-MM-DD -> searches that day. */
+  days: Record<string, number>;
+}
