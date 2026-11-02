@@ -62,7 +62,23 @@ export interface Rule {
   /** Set once a lawyer or the regulator has confirmed the rule. Shown on the row. */
   reviewed?: { by: string; on: string };
   sources: { t: string; u: string }[];
+  /** The order to do it in, written from the regulator's page or the law. */
+  steps?: { t: string; d: string }[];
+  /** Where the steps came from: the regulator or statute, news and law-firm
+   *  reports, or a general outline because no procedure is published. */
+  stepsBasis?: StepsBasis;
+  stepsSources?: { t: string; u: string }[];
+  /** What the steps research could not confirm, shown as "check before you act". */
+  stepsCheck?: string;
 }
+
+export type StepsBasis = 'official' | 'reported' | 'general';
+
+export const STEPS_BASIS_LABEL: Record<StepsBasis, string> = {
+  official: "From the regulator's page or the law itself",
+  reported: 'From news and law-firm reports; no official procedure found',
+  general: 'A general outline; the regulator publishes no procedure',
+};
 
 export type Relevance = 'high' | 'medium' | 'unlikely';
 
@@ -244,6 +260,17 @@ export function checklistOf(m: Matched): Checklist {
   };
 }
 
+/**
+ * A stable key for an idea, so the same idea saved twice lands on the same
+ * document. Case, spacing and trailing punctuation do not matter.
+ */
+export function ideaKey(idea: string | null): string {
+  const norm = (idea ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().slice(0, 300);
+  let h = 5381;
+  for (let i = 0; i < norm.length; i++) h = ((h * 33) ^ norm.charCodeAt(i)) >>> 0;
+  return norm ? h.toString(36) : 'all';
+}
+
 /** Plain-text version of the checklist, for pasting into an email or chat. */
 export function checklistText(opts: {
   idea: string | null;
@@ -251,11 +278,16 @@ export function checklistText(opts: {
   ticked: ReadonlySet<string>;
   checked: string;
   url: string;
+  /** Add each item's numbered steps underneath it. */
+  steps?: boolean;
 }): string {
   const line = (x: Match) => {
     const box = opts.ticked.has(x.rule.id) ? '[x]' : '[ ]';
     const flag = x.rule.status === 'verify' ? ' (verify)' : '';
-    return `${box} ${x.rule.title} (${x.rule.reg})${flag}: ${x.rule.headline}`;
+    const head = `${box} ${x.rule.title} (${x.rule.reg})${flag}: ${x.rule.headline}`;
+    const steps = opts.steps ? x.rule.steps : undefined;
+    if (!steps?.length) return head;
+    return [head, ...steps.map((s, i) => `    ${i + 1}. ${s.t}`)].join('\n');
   };
   const out: string[] = [];
   out.push(opts.idea ? `Launch checklist for: ${opts.idea}` : 'Launch checklist');

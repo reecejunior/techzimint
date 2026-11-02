@@ -70,6 +70,9 @@ export default function CommunityCard({ post, liked }: CommunityCardProps) {
         >
           {KIND_LABEL[post.kind]}
         </span>
+        {post.category === 'regulations' && (
+          <span className={clsx(styles.kindBadge, styles.kindNeutral)}>Regulations</span>
+        )}
 
         {/* Only a question can be "answered" — a showcase or poll never carries this. */}
         {post.kind === 'question' && (

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Lightbulb,
@@ -11,7 +12,7 @@ import {
   editPost, rejectStartup, reviewTrackerSuggestion, saveTrackerOverride, setRegulationReportStatus,
 } from '@/lib/firestore';
 import {
-  useAdminAuth, useAllStartupsForAdmin, useRegulationReportsForAdmin, useRegulationStatsForAdmin,
+  useAdminAuth, useAllStartupsForAdmin, useRegulationReportsForAdmin, useRegulationStatsForAdmin, useRegulationQuestionsForAdmin,
   useStartupPosts, useTrackerCommentsForAdmin,
   useTrackerOverrides, useTrackerSuggestionsForAdmin,
 } from '@/lib/hooks';
@@ -797,6 +798,8 @@ const SECTOR_NAME: Record<string, string> = Object.fromEntries(SECTORS.map(x => 
 function RulesFeedback() {
   const { data: reports, loading, error } = useRegulationReportsForAdmin();
   const { data: stats, error: statsError } = useRegulationStatsForAdmin();
+  const { data: questions, loading: qLoading, error: qError } = useRegulationQuestionsForAdmin();
+  const unanswered = questions.filter(q => !q.isAnswered).length;
 
   const topSectors = stats
     ? Object.entries(stats.sectors).sort((a, b) => b[1] - a[1]).slice(0, 8)
@@ -812,8 +815,8 @@ function RulesFeedback() {
         <div>
           <h2 className={styles.cardTitle}>Rules directory</h2>
           <p className={styles.cardSubtitle}>
-            Corrections readers send from the Regulations page, and which kinds of idea people
-            search. Searches are counted by sector only, so no idea text is stored.
+            Questions and corrections readers send from the Regulations page, and which kinds of
+            idea people search. Searches are counted by sector only, so no idea text is stored.
           </p>
         </div>
       </div>
@@ -833,6 +836,44 @@ function RulesFeedback() {
         </p>
       ) : (
         <p className={styles.empty}>No searches counted yet.</p>
+      )}
+
+      <h3 className={styles.rowName}>
+        Questions from readers {unanswered > 0 && `(${unanswered} unanswered)`}
+      </h3>
+      <p className={styles.rowFounders}>
+        Asked from the Regulations page. Each one is also a public post in the community under
+        Regulations, so answer it there.
+      </p>
+      {qError ? (
+        <ErrorState message={qError} />
+      ) : qLoading ? (
+        <div className={styles.list}>
+          <div className={`skel ${styles.skelRow}`} />
+        </div>
+      ) : questions.length === 0 ? (
+        <p className={styles.empty}>No questions yet.</p>
+      ) : (
+        <ul className={styles.list}>
+          {questions.map(q => (
+            <li key={q.id} className={styles.row}>
+              <div className={styles.rowBody}>
+                <div className={styles.rowHead}>
+                  <Link href={`/community/${q.id}`} className={styles.rowName}>
+                    {q.title}
+                  </Link>
+                  <span className={styles.rowFounders}>{q.isAnswered ? 'Answered' : 'Open'}</span>
+                </div>
+                <p className={styles.rowTagline}>{q.body.split('\n')[0]}</p>
+                <p className={styles.rowFounders}>
+                  {q.ruleId && RULE_TITLE[q.ruleId] ? `${RULE_TITLE[q.ruleId]} · ` : ''}
+                  {q.authorName} · {q.commentCount} {q.commentCount === 1 ? 'reply' : 'replies'} ·{' '}
+                  {timeAgo(q.createdAt)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       <h3 className={styles.rowName}>

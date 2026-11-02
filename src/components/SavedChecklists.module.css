@@ -1,0 +1,121 @@
+.bar {
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: var(--white);
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-4);
+}
+
+.who {
+  font-size: 14px;
+  color: var(--ink-500);
+  overflow-wrap: anywhere;
+}
+
+.who strong {
+  color: var(--ink-900);
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.toggle,
+.out {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-900);
+}
+
+.out {
+  color: var(--ink-500);
+}
+
+.out:hover {
+  color: var(--ink-900);
+}
+
+.chev {
+  transition: transform var(--fast) var(--ease);
+}
+
+.flip {
+  transform: rotate(180deg);
+}
+
+.panel {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--hairline);
+}
+
+.msg {
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  border-top: 1px solid var(--hairline);
+}
+
+.item:first-child {
+  border-top: 0;
+}
+
+.openBtn {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px var(--s-3);
+  min-width: 0;
+  padding: var(--s-2) 0;
+  text-align: left;
+}
+
+.idea {
+  font-size: 15px;
+  color: var(--ink-900);
+  overflow-wrap: anywhere;
+}
+
+.openBtn:hover .idea {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prog {
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.del {
+  padding: 8px;
+  color: var(--ink-400);
+}
+
+.del:hover {
+  color: var(--orange-800);
+}

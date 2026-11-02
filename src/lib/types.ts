@@ -288,6 +288,11 @@ export interface CommunityPost {
   title: string;
   body: string;
   tags: string[];
+  /** Set to 'regulations' on questions asked from the rules directory, so they
+   *  get their own filter in the community and their own list in /admin. */
+  category: CommunityCategory | null;
+  /** The rule a regulations question was asked about, when there was one. */
+  ruleId: string | null;
 
   authorId: string;
   authorName: string;
@@ -337,11 +342,15 @@ export interface CommunityComment {
 }
 
 /** What the composer collects to create a CommunityPost. */
+export type CommunityCategory = 'regulations';
+
 export interface CommunityPostDraft {
   kind: CommunityKind;
   title: string;
   body: string;
   tags: string[];
+  category?: CommunityCategory;
+  ruleId?: string;
   /** Required when `kind === 'poll'` (2–6 options); ignored otherwise. */
   pollOptions?: PollOption[];
 }
@@ -499,4 +508,18 @@ export interface RegulationStats {
   sectors: Record<string, number>;
   /** YYYY-MM-DD -> searches that day. */
   days: Record<string, number>;
+}
+
+/** A checklist a member saved from the rules directory. */
+export interface SavedChecklist {
+  /** `<uid>__<ideaKey>`, so saving the same idea again updates the same one. */
+  id: string;
+  idea: string;
+  /** Rule ids ticked off. */
+  ticked: string[];
+  /** How many before-launch items the checklist had when last saved. */
+  total: number;
+  done: number;
+  createdAt: string;
+  updatedAt: string;
 }

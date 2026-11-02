@@ -31,6 +31,13 @@ service cloud.firestore {
                 ];
     }
 
+    // A visitor who signed up with an email. Everyone else is an anonymous
+    // session. The token claim is what Firebase itself sets, so it cannot be
+    // faked from the browser.
+    function isMember() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     function mine() {
       return signedIn() && resource.data.uid == request.auth.uid;
     }
@@ -737,6 +744,50 @@ service cloud.firestore {
     match /regulationStats/{docId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    // Checklists a member saved from the Regulations page. One document per
+    // (member, idea) with the id `<uid>__<ideaKey>`, readable and writable only
+    // by that member. Anonymous sessions cannot save.
+    match /savedChecklists/{checklistId} {
+      allow get: if isMember() && checklistId.matches(request.auth.uid + '__.*');
+      allow list: if isMember() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isMember()
+                    && checklistId.matches(request.auth.uid + '__.*')
+                    && request.resource.data.keys().hasOnly(
+                         ['ownerId', 'idea', 'ticked', 'total', 'done', 'createdAt', 'updatedAt'])
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.resource.data.idea is string
+                    && request.resource.data.idea.size() <= 600
+                    && request.resource.data.ticked is list
+                    && request.resource.data.ticked.size() <= 120
+                    && request.resource.data.total is int
+                    && request.resource.data.done is int
+                    && request.resource.data.total >= 0 && request.resource.data.total <= 100
+                    && request.resource.data.done >= 0
+                    && request.resource.data.done <= request.resource.data.total
+                    && request.resource.data.createdAt is timestamp
+                    && request.resource.data.updatedAt is timestamp;
+
+      allow update: if isMember()
+                    && resource.data.ownerId == request.auth.uid
+                    && request.resource.data.keys().hasOnly(
+                         ['ownerId', 'idea', 'ticked', 'total', 'done', 'createdAt', 'updatedAt'])
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && request.resource.data.idea is string
+                    && request.resource.data.idea.size() <= 600
+                    && request.resource.data.ticked is list
+                    && request.resource.data.ticked.size() <= 120
+                    && request.resource.data.total is int
+                    && request.resource.data.done is int
+                    && request.resource.data.total >= 0 && request.resource.data.total <= 100
+                    && request.resource.data.done >= 0
+                    && request.resource.data.done <= request.resource.data.total
+                    && request.resource.data.updatedAt is timestamp;
+
+      allow delete: if isMember() && resource.data.ownerId == request.auth.uid;
     }
   }
 }

@@ -571,6 +571,11 @@ export default function CommunityThreadClient({ postId }: { postId: string }) {
                 'Show & Tell'
               )}
             </span>
+            {post.category === 'regulations' && (
+              <Link href="/regulations" className={clsx(styles.kindBadge, styles.kindNeutral)}>
+                Regulations
+              </Link>
+            )}
             {post.kind === 'question' && (
               <span className={clsx(styles.statusBadge, post.isAnswered && styles.statusAnswered)}>
                 {post.isAnswered && <CheckCircle2 size={12} aria-hidden="true" />}
