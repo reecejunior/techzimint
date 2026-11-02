@@ -13,6 +13,13 @@ export const REGULATOR_LOGO: Partial<Record<Regulator, string>> = {
   IPEC: '/regulators/ipec.png',
   CAAZ: '/regulators/caaz.png',
   NSSA: '/regulators/nssa.png',
+  ZIMRA: '/regulators/zimra.png',
+  ZIDA: '/regulators/zida.png',
+  ZMC: '/regulators/zmc.png',
+  IPO: '/regulators/zipo.png',
+  EACZ: '/regulators/eacz.png',
+  ZTA: '/regulators/zta.png',
+  CONSUMER: '/regulators/cpc.png',
   BAZ: '/regulators/baz.png',
   HEALTH: '/regulators/mcaz.png',
   ZERA: '/regulators/zera.png',
@@ -27,7 +34,6 @@ export const REGULATOR_LOGO: Partial<Record<Regulator, string>> = {
 /** Text for the plain circle when there is no logo. */
 export const REGULATOR_MONOGRAM: Partial<Record<Regulator, string>> = {
   CONSUMER: 'CPC',
-  ZIMRA: 'ZRA',
   IPO: 'IP',
   ZMC: 'ZMC',
 };
