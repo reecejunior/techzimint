@@ -710,3 +710,10 @@
     display: none;
   }
 }
+
+.rowActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-2);
+}

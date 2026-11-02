@@ -59,6 +59,7 @@ import type {
   StartupSubmission,
   PostImage,
   RegulationReport,
+  SavedChecklist,
   RegulationStats,
   TrackerComment,
   TrackerOverride,
@@ -1324,6 +1325,8 @@ function mapCommunityPost(
     title: String(d.title ?? ''),
     body: String(d.body ?? ''),
     tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
+    category: d.category === 'regulations' ? 'regulations' : null,
+    ruleId: d.ruleId ? String(d.ruleId) : null,
     authorId: String(d.authorId ?? ''),
     authorName: String(d.authorName ?? 'Anonymous'),
     authorAvatar: String(d.authorAvatar ?? '??'),
@@ -1505,6 +1508,9 @@ export async function createCommunityPost(
     pollOptions,
     approved: true,
     createdAt: serverTimestamp(),
+    // Only written when set, so every other post keeps its old shape.
+    ...(draft.category ? { category: draft.category } : {}),
+    ...(draft.ruleId ? { ruleId: draft.ruleId.slice(0, 60) } : {}),
   });
 
   return postRef.id;
@@ -2130,4 +2136,86 @@ export function subscribeToRegulationStats(
     },
     err => onError(err as Error),
   );
+}
+
+/**
+ * Every question asked from the rules directory, newest first. The admin panel
+ * lists these; they are also ordinary community posts. Sorted here rather than
+ * in the query so no composite index is needed.
+ */
+export function subscribeToRegulationQuestions(
+  onData: (posts: CommunityPost[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(collection(getDb(), 'communityPosts'), where('category', '==', 'regulations'), limit(200));
+  return onSnapshot(
+    q,
+    snap =>
+      onData(
+        snap.docs
+          .map(mapCommunityPost)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      ),
+    err => onError(err as Error),
+  );
+}
+
+function mapSavedChecklist(snap: QueryDocumentSnapshot<DocumentData>): SavedChecklist {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    idea: String(d.idea ?? ''),
+    ticked: Array.isArray(d.ticked) ? d.ticked.map(String) : [],
+    total: num(d.total),
+    done: num(d.done),
+    createdAt: toIso(d.createdAt),
+    updatedAt: toIso(d.updatedAt),
+  };
+}
+
+/** A member's saved checklists, most recently changed first. */
+export function subscribeToSavedChecklists(
+  uid: string,
+  onData: (items: SavedChecklist[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const q = query(collection(getDb(), 'savedChecklists'), where('ownerId', '==', uid), limit(50));
+  return onSnapshot(
+    q,
+    snap =>
+      onData(snap.docs.map(mapSavedChecklist).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))),
+    err => onError(err as Error),
+  );
+}
+
+/**
+ * Save or update a checklist. The id is built from the member's uid and the
+ * idea, so saving the same idea again replaces the ticks instead of adding a
+ * copy. Members only; the rules reject anonymous sessions.
+ */
+export async function saveChecklist(opts: {
+  idea: string;
+  key: string;
+  ticked: string[];
+  total: number;
+  done: number;
+}): Promise<string> {
+  const user = await ensureSignedIn();
+  const id = `${user.uid}__${opts.key}`;
+  const ref = doc(getDb(), 'savedChecklists', id);
+  const existing = await getDoc(ref);
+  await setDoc(ref, {
+    ownerId: user.uid,
+    idea: opts.idea.trim().slice(0, 600),
+    ticked: opts.ticked.slice(0, 120),
+    total: opts.total,
+    done: opts.done,
+    createdAt: existing.exists() ? existing.data().createdAt : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return id;
+}
+
+export async function deleteSavedChecklist(id: string): Promise<void> {
+  await deleteDoc(doc(getDb(), 'savedChecklists', id));
 }

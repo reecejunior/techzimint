@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, ExternalLink, Loader2, Search, X } from 'lucide-react';
 import clsx from 'clsx';
+import type { SavedChecklist } from '@/lib/types';
 import {
   GROUP_ORDER, browseAll, countShown, matchIdea,
   type AiPlan, type GroupKey, type Match, type RuleStatus,
@@ -11,8 +12,11 @@ import { FAILURE_TEXT, MAX_IDEA_LENGTH, isAiFailure, type AiFailure } from '@/li
 import {
   CHECKED, GAPS, GROUP_INFO, PHASE_LABEL, REGULATORS, RULES, SECTORS,
 } from '@/lib/regulationsData';
-import RegulationsChecklist from './RegulationsChecklist';
+import AskQuestion from './AskQuestion';
+import RegulationsChecklist, { type Restore } from './RegulationsChecklist';
 import RuleReport from './RuleReport';
+import RuleSteps from './RuleSteps';
+import SavedChecklists from './SavedChecklists';
 import styles from './RegulationsExplorer.module.css';
 
 const EXAMPLES = [
@@ -100,6 +104,7 @@ function RuleRow({ match, browsing, group }: { match: Match; browsing: boolean; 
             </div>
           ))}
         </dl>
+        <RuleSteps rule={rule} />
         {rule.note && (
           <p className={styles.note}>
             <strong>Check before relying on this. </strong>
@@ -125,7 +130,10 @@ function RuleRow({ match, browsing, group }: { match: Match; browsing: boolean; 
           </ul>
           <span className={styles.checked}>Checked {CHECKED}</span>
         </div>
-        <RuleReport ruleId={rule.id} ruleTitle={rule.title} />
+        <div className={styles.rowActions}>
+          <AskQuestion ruleId={rule.id} ruleTitle={rule.title} regCode={reg.code} />
+          <RuleReport ruleId={rule.id} ruleTitle={rule.title} />
+        </div>
       </div>
     </details>
   );
@@ -157,6 +165,8 @@ export default function RegulationsExplorer() {
   /** Bumped per search so a slow reply for an old idea cannot overwrite a newer one. */
   const requestId = useRef(0);
   const [searchCount, setSearchCount] = useState(0);
+  /** Ticks from a saved checklist the member just opened. */
+  const [restore, setRestore] = useState<Restore | null>(null);
 
   const browsing = query === null;
   const matched = useMemo(
@@ -167,7 +177,8 @@ export default function RegulationsExplorer() {
   const stale = draft.trim() !== (query ?? '');
   const pending = ai === 'pending';
 
-  async function search(text: string) {
+  async function search(text: string, keepRestore = false) {
+    if (!keepRestore) setRestore(null);
     const idea = text.trim().slice(0, MAX_IDEA_LENGTH);
     const id = ++requestId.current;
 
@@ -229,6 +240,11 @@ export default function RegulationsExplorer() {
     }
   }
 
+  function openSaved(item: SavedChecklist) {
+    setRestore({ n: Date.now(), ticked: item.ticked });
+    void search(item.idea, true);
+  }
+
   function clear() {
     requestId.current += 1;
     setDraft('');
@@ -250,6 +266,8 @@ export default function RegulationsExplorer() {
 
   return (
     <div className={clsx('wrap', styles.root)}>
+      <SavedChecklists onOpen={openSaved} />
+
       <form
         className={styles.ask}
         onSubmit={e => {
@@ -348,7 +366,7 @@ export default function RegulationsExplorer() {
         </div>
       )}
 
-      {!browsing && <RegulationsChecklist matched={matched} idea={query} />}
+      {!browsing && <RegulationsChecklist matched={matched} idea={query} restore={restore} />}
 
       <div className={styles.toolbar}>
         <nav className={styles.jump} aria-label="Jump to a group">

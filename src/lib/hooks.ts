@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, onIdTokenChanged, type User } from 'firebase/auth';
+import { ACCOUNT_EVENT, isMemberUser } from './account';
 import { ensureSignedIn, getFirebaseAuth, isAdminUser, isFirebaseConfigured } from './firebase';
 import {
   FEED_PAGE_SIZE,
@@ -26,6 +27,8 @@ import {
   subscribeToStartups,
   subscribeToAllTrackerComments,
   subscribeToRegulationReports,
+  subscribeToRegulationQuestions,
+  subscribeToSavedChecklists,
   subscribeToRegulationStats,
   subscribeToStartupsForAdmin,
   subscribeToTrackerComments,
@@ -43,6 +46,7 @@ import type {
   NotificationPref,
   Post,
   RegulationReport,
+  SavedChecklist,
   RegulationStats,
   Review,
   Reviewer,
@@ -754,5 +758,73 @@ export function useRegulationStatsForAdmin(): AsyncState<RegulationStats | null>
   }, []);
 
   if (!isFirebaseConfigured) return { data: null, loading: false, error: NOT_CONFIGURED };
+  return state;
+}
+
+/** The signed-in member, if any. Anonymous visitors are not members. */
+export function useMember(): { user: User | null; isMember: boolean; loading: boolean } {
+  const [state, setState] = useState<{ user: User | null; loading: boolean }>({
+    user: null,
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    const auth = getFirebaseAuth();
+    const update = () => setState({ user: auth.currentUser, loading: false });
+    // A sign-up links the existing anonymous user, which Firebase reports as a
+    // token change (and our own event), not as a new sign-in.
+    const stopAuth = onAuthStateChanged(auth, update);
+    const stopToken = onIdTokenChanged(auth, update);
+    window.addEventListener(ACCOUNT_EVENT, update);
+    return () => {
+      stopAuth();
+      stopToken();
+      window.removeEventListener(ACCOUNT_EVENT, update);
+    };
+  }, []);
+
+  if (!isFirebaseConfigured) return { user: null, isMember: false, loading: false };
+  return { user: state.user, isMember: isMemberUser(state.user), loading: state.loading };
+}
+
+/** The member's saved checklists. Empty until they sign in. */
+export function useSavedChecklists(uid: string | null): AsyncState<SavedChecklist[]> {
+  const [state, setState] = useState<AsyncState<SavedChecklist[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !uid) return;
+    return subscribeToSavedChecklists(
+      uid,
+      items => setState({ data: items, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, [uid]);
+
+  if (!isFirebaseConfigured || !uid) return { data: [], loading: false, error: null };
+  return state;
+}
+
+/** Questions asked from the rules directory, for the /admin panel. */
+export function useRegulationQuestionsForAdmin(): AsyncState<CommunityPost[]> {
+  const [state, setState] = useState<AsyncState<CommunityPost[]>>({
+    data: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    return subscribeToRegulationQuestions(
+      items => setState({ data: items, loading: false, error: null }),
+      err => setState({ data: [], loading: false, error: err.message }),
+    );
+  }, []);
+
+  if (!isFirebaseConfigured) return { data: [], loading: false, error: NOT_CONFIGURED };
   return state;
 }

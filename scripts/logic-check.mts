@@ -5,7 +5,8 @@ import {
 } from '../src/lib/ranking.ts';
 import type { Startup } from '../src/lib/types.ts';
 import {
-  GROUP_ORDER, browseAll, checklistOf, checklistText, countShown, groupOf, matchIdea, parseAiPlan,
+  GROUP_ORDER, STEPS_BASIS_LABEL, browseAll, checklistOf, checklistText, countShown, groupOf, ideaKey,
+  matchIdea, parseAiPlan,
 } from '../src/lib/regulations.ts';
 import {
   FAILURE_TEXT, MAX_IDEA_LENGTH, buildMessages, extractJson, failureFromStatus, isAiFailure,
@@ -284,6 +285,29 @@ assert.equal(txt.split('\n').filter(l => l.startsWith('[x]')).length, 1);
 assert.ok(txt.includes('BEFORE YOU LAUNCH') && txt.includes('AFTER YOU LAUNCH') && txt.includes('Not legal advice'));
 assert.ok(checklistText({ idea: null, list: { before: [], later: [] }, ticked: new Set(), checked: 'x', url: 'u' })
   .includes('Nothing specific found.'));
+
+/* Every rule carries steps, says where they came from, and says what to check. */
+for (const r of RULES) {
+  assert.ok(r.steps && r.steps.length >= 3 && r.steps.length <= 8, `${r.id} has 3 to 8 steps`);
+  for (const s of r.steps) assert.ok(s.t.length > 0 && s.d.length > 0, `${r.id} steps have text`);
+  assert.ok(r.stepsBasis && r.stepsBasis in STEPS_BASIS_LABEL, `${r.id} says where its steps came from`);
+  assert.ok(r.stepsCheck && r.stepsCheck.length > 20, `${r.id} lists what to check`);
+  assert.ok((r.stepsSources ?? []).every(s => s.u.startsWith('http')), `${r.id} step sources are links`);
+}
+for (const id of ['potraz-courier', 'subscriber-reg', 'cpa']) {
+  const r = RULES.find(x => x.id === id)!;
+  assert.ok(/ask potraz|repealed|disagree/i.test(r.stepsCheck ?? ''), `${id} flags its known conflict`);
+}
+
+/* Saving the same idea twice must hit the same document. */
+assert.equal(ideaKey('A Mobile Wallet!'), ideaKey('  a mobile   wallet '));
+assert.notEqual(ideaKey('a mobile wallet'), ideaKey('a drone delivery app'));
+assert.equal(ideaKey(null), 'all');
+assert.match(ideaKey('a mobile wallet'), /^[a-z0-9]+$/);
+const withSteps = checklistText({
+  idea: 'A mobile wallet', list: cl, ticked: new Set(), checked: 'x', url: 'u', steps: true,
+});
+assert.ok(withSteps.includes('    1. ') && withSteps.length > txt.length, 'steps view lists the numbered steps');
 
 /* A failed AI call says why, so a bad key, model name or quota is obvious. */
 assert.equal(failureFromStatus(401), 'auth');

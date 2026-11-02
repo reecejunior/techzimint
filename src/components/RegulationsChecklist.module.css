@@ -149,6 +149,8 @@
 
 @media print {
   .actions,
+  .tabs,
+  .ask,
   .more {
     display: none;
   }
@@ -165,4 +167,95 @@
   .item {
     break-inside: avoid;
   }
+}
+
+.actions button[data-saved] {
+  border-color: #14532D;
+  color: #14532D;
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+}
+
+.saveError {
+  margin-top: var(--s-2);
+  font-size: 14px;
+  color: var(--orange-800);
+}
+
+.tabs {
+  display: inline-flex;
+  margin-top: var(--s-4);
+  padding: 2px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+}
+
+.tabs button {
+  min-height: 32px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-xs);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+
+.tabs button[data-active] {
+  background: var(--white);
+  box-shadow: 0 0 0 1px var(--hairline-strong);
+  color: var(--ink-900);
+  font-weight: 600;
+}
+
+.stepsNote {
+  margin-top: var(--s-2);
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.steps {
+  flex: 1 1 100%;
+  padding: var(--s-2) 0 var(--s-2) calc(18px + var(--s-3));
+}
+
+.ask {
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--hairline);
+}
+
+.locked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+.lockNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 560px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-700);
+}
+
+.lockNote svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 14px;
+  color: var(--ink-400);
+  filter: blur(2.5px);
+  user-select: none;
 }

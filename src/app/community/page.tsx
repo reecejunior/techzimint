@@ -11,9 +11,12 @@ import PageHeader from '@/components/PageHeader';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
 import styles from './page.module.css';
 
-const TABS: { key: CommunityKind | 'all'; label: string }[] = [
+type Tab = CommunityKind | 'all' | 'regulations';
+
+const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'question', label: 'Questions' },
+  { key: 'regulations', label: 'Regulations' },
   { key: 'showcase', label: 'Show & Tell' },
   { key: 'poll', label: 'Polls' },
 ];
@@ -24,10 +27,10 @@ const TABS: { key: CommunityKind | 'all'; label: string }[] = [
 const MAX_TAG_CHIPS = 10;
 
 export default function CommunityPage() {
-  const [tab, setTab] = useState<CommunityKind | 'all'>('all');
+  const [tab, setTab] = useState<Tab>('all');
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const { data: posts, loading, error } = useCommunityFeed(tab);
+  const { data: posts, loading, error } = useCommunityFeed(tab === 'regulations' ? 'all' : tab);
   const likes = useMyCommunityLikes();
 
   // Tags and search are both plain client-side filters over the already-
@@ -47,10 +50,11 @@ export default function CommunityPage() {
     const q = search.trim().toLowerCase();
     return posts.filter(
       p =>
+        (tab !== 'regulations' || p.category === 'regulations') &&
         (!activeTag || p.tags.includes(activeTag)) &&
         (!q || p.title.toLowerCase().includes(q) || p.body.toLowerCase().includes(q)),
     );
-  }, [posts, activeTag, search]);
+  }, [posts, tab, activeTag, search]);
 
   const filtering = Boolean(activeTag) || search.trim().length > 0;
 
@@ -152,6 +156,10 @@ export default function CommunityPage() {
                   ? 'No polls yet. '
                   : 'Nothing posted yet. '}
             <Link href="/community/new">Be the first to post</Link>.
+          </EmptyState>
+        ) : visible.length === 0 && tab === 'regulations' && !filtering ? (
+          <EmptyState title="No regulations questions yet">
+            Ask one from any rule on the <Link href="/regulations">regulations page</Link>.
           </EmptyState>
         ) : visible.length === 0 && filtering ? (
           <EmptyState title="Nothing matches that">
