@@ -16,7 +16,7 @@
 }
 
 .later {
-  align-self: flex-start;
+  align-self: center;
   font-size: 14px;
   color: var(--ink-500);
   text-decoration: underline;
