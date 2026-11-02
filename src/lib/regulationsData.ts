@@ -13,7 +13,7 @@
  * When a fee or deadline is changed, update `CHECKED` too. Facts that could
  * not be confirmed belong in `note`, or in `GAPS` if nothing was found.
  */
-import type { Regulator, Rule, Sector } from './regulations.ts';
+import type { GroupKey, Regulator, Rule, Sector } from './regulations.ts';
 
 export const CHECKED = '31 Oct 2026';
 
@@ -154,12 +154,12 @@ export const SECTORS: Sector[] = [
 export const RULES: Rule[] = [
   {
     "id": "dp-licence",
+    "scope": "general",
+    "phase": "before",
     "reg": "POTRAZ",
     "tags": [
       "data"
     ],
-    "baseline": true,
-    "general": false,
     "status": "official",
     "title": "Data controller licence from POTRAZ",
     "headline": "Licence fee of $50 to $2,500 a year, set by how many people's data you hold.",
@@ -216,12 +216,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "dp-dpo",
+    "scope": "general",
+    "phase": "running",
     "reg": "POTRAZ",
     "tags": [
       "data"
     ],
-    "baseline": true,
-    "general": false,
     "status": "official",
     "title": "Appoint a certified data protection officer",
     "headline": "Every licensed controller names a DPO and tells POTRAZ on Form DP2.",
@@ -258,12 +258,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "dp-breach",
+    "scope": "general",
+    "phase": "running",
     "reg": "POTRAZ",
     "tags": [
       "data"
     ],
-    "baseline": true,
-    "general": false,
     "status": "official",
     "title": "Breach reports, foreign data transfers and children's data",
     "headline": "Report a breach to POTRAZ within 24 hours, and tell POTRAZ before sending data abroad.",
@@ -304,12 +304,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "cyber-offences",
+    "scope": "specific",
+    "phase": "running",
     "reg": "POTRAZ",
     "tags": [
       "social"
     ],
-    "baseline": false,
-    "general": false,
     "status": "reported",
     "title": "Cyber-crime offences that touch platforms and user content",
     "headline": "Hacking, data interference, cyber-bullying and non-consensual explicit content are criminal offences.",
@@ -334,12 +334,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "potraz-isp",
+    "scope": "specific",
+    "phase": "before",
     "reg": "POTRAZ",
     "tags": [
       "isp"
     ],
-    "baseline": false,
-    "general": false,
     "status": "verify",
     "title": "Internet service provider (ISP) licence",
     "headline": "Five ISP tiers, from $50 for a community ISP to $50,000 for a national one.",
@@ -380,12 +380,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "potraz-mvno",
+    "scope": "specific",
+    "phase": "before",
     "reg": "POTRAZ",
     "tags": [
       "mvno"
     ],
-    "baseline": false,
-    "general": false,
     "status": "verify",
     "title": "Mobile virtual network (MVNO, MVNE) licences",
     "headline": "From $500 for a branded reseller to $50,000 for a full MVNO.",
@@ -426,13 +426,13 @@ export const RULES: Rule[] = [
   },
   {
     "id": "potraz-app",
+    "scope": "specific",
+    "phase": "before",
     "reg": "POTRAZ",
     "tags": [
       "vas",
       "platform"
     ],
-    "baseline": false,
-    "general": false,
     "status": "verify",
     "title": "Application Services licence (category 1.4)",
     "headline": "A category called Application Services exists with a $525,000 initial fee. Whether your app needs it is not stated.",
@@ -465,12 +465,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "potraz-codes",
+    "scope": "specific",
+    "phase": "before",
     "reg": "POTRAZ",
     "tags": [
       "vas"
     ],
-    "baseline": false,
-    "general": false,
     "status": "verify",
     "title": "Short codes, USSD codes and numbering",
     "headline": "A five-digit premium short code costs $1,200 to apply and $1,200 a year.",
@@ -503,14 +503,14 @@ export const RULES: Rule[] = [
   },
   {
     "id": "potraz-type",
+    "scope": "specific",
+    "phase": "before",
     "reg": "POTRAZ",
     "tags": [
       "hardware",
       "isp",
       "drones"
     ],
-    "baseline": false,
-    "general": false,
     "status": "verify",
     "title": "Type approval for radio and telecom equipment",
     "headline": "A testing lab says POTRAZ approval is mandatory for radio equipment, taking about six weeks.",
@@ -551,12 +551,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "potraz-courier",
+    "scope": "specific",
+    "phase": "before",
     "reg": "POTRAZ",
     "tags": [
       "courier"
     ],
-    "baseline": false,
-    "general": false,
     "status": "verify",
     "title": "Postal and courier operator licence",
     "headline": "POTRAZ licenses courier operators, and unlicensed runners have been arrested.",
@@ -589,12 +589,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "rbz-mm",
+    "scope": "specific",
+    "phase": "before",
     "reg": "RBZ",
     "tags": [
       "payments"
     ],
-    "baseline": false,
-    "general": false,
     "status": "official",
     "title": "Mobile money and money transmission",
     "headline": "Payment systems need recognition under the National Payment Systems Act. Mobile money providers count as financial institutions.",
@@ -643,12 +643,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "fiu-vasp",
+    "scope": "specific",
+    "phase": "before",
     "reg": "FIU",
     "tags": [
       "crypto"
     ],
-    "baseline": false,
-    "general": false,
     "status": "reported",
     "title": "Virtual asset service provider registration",
     "headline": "Crypto businesses must register with the Financial Intelligence Unit. Registration is not permission to operate.",
@@ -693,13 +693,13 @@ export const RULES: Rule[] = [
   },
   {
     "id": "secz-sandbox",
+    "scope": "specific",
+    "phase": "watch",
     "reg": "SECZ",
     "tags": [
       "investment",
       "crypto"
     ],
-    "baseline": false,
-    "general": false,
     "status": "reported",
     "title": "SECZ regulatory sandbox for investment and tokenization",
     "headline": "Seven firms were admitted on a public notice dated 27 July 2026.",
@@ -736,12 +736,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "ipec",
+    "scope": "specific",
+    "phase": "watch",
     "reg": "IPEC",
     "tags": [
       "insurtech"
     ],
-    "baseline": false,
-    "general": false,
     "status": "reported",
     "title": "IPEC sandbox and the 2026 amendments",
     "headline": "IPEC has a regulatory sandbox, and amendments widen who it registers.",
@@ -782,12 +782,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "ehailing",
+    "scope": "specific",
+    "phase": "watch",
     "reg": "TRANSPORT",
     "tags": [
       "ridehailing"
     ],
-    "baseline": false,
-    "general": false,
     "status": "reported",
     "title": "E-hailing: rules are being written",
     "headline": "Government says current law has no provision for e-hailing, and a five-month moratorium was reported on 8 Sep 2026.",
@@ -832,13 +832,13 @@ export const RULES: Rule[] = [
   },
   {
     "id": "dswt",
+    "scope": "specific",
+    "phase": "running",
     "reg": "ZIMRA",
     "tags": [
       "ridehailing",
       "platform"
     ],
-    "baseline": false,
-    "general": false,
     "status": "reported",
     "title": "Digital Services Withholding Tax",
     "headline": "15.5% where a foreign digital supplier is not VAT-registered in Zimbabwe, from 1 Jan 2026.",
@@ -867,12 +867,12 @@ export const RULES: Rule[] = [
   },
   {
     "id": "drones",
+    "scope": "specific",
+    "phase": "before",
     "reg": "CAAZ",
     "tags": [
       "drones"
     ],
-    "baseline": false,
-    "general": false,
     "status": "verify",
     "title": "Drones: CAAZ clearance and ZIMRA import rules",
     "headline": "Drones need CAAZ registration and clearance, and are cleared through ZIMRA on import.",
@@ -913,13 +913,13 @@ export const RULES: Rule[] = [
   },
   {
     "id": "cpa",
+    "scope": "specific",
+    "phase": "running",
     "reg": "CONSUMER",
     "tags": [
       "ecommerce",
       "platform"
     ],
-    "baseline": false,
-    "general": false,
     "status": "reported",
     "title": "Consumer Protection Act duties for online sellers",
     "headline": "Seven-day cooling-off, and the advertised price binds you.",
@@ -952,10 +952,10 @@ export const RULES: Rule[] = [
   },
   {
     "id": "zimra-reg",
+    "scope": "general",
+    "phase": "before",
     "reg": "ZIMRA",
     "tags": [],
-    "baseline": false,
-    "general": true,
     "status": "official",
     "title": "Register with ZIMRA and set up your tax calendar",
     "headline": "Get a Taxpayer Identification Number on the self-service portal before you trade.",
@@ -996,10 +996,10 @@ export const RULES: Rule[] = [
   },
   {
     "id": "company-reg",
+    "scope": "general",
+    "phase": "before",
     "reg": "REGISTRAR",
     "tags": [],
-    "baseline": false,
-    "general": true,
     "status": "verify",
     "title": "Register your company",
     "headline": "Name search, then incorporation papers. Allow up to two weeks after the name is cleared.",
@@ -1052,3 +1052,37 @@ export const GAPS: string[] = [
   "Broadcasting and streaming (BAZ), health, education and agri-tech regulation.",
   "Investment licences from ZIDA, and the beneficial ownership register."
 ];
+
+/**
+ * The four buckets a founder reads the results in. Which bucket a rule falls
+ * in comes from its scope (does it depend on what you build?) and phase (is it
+ * a gate before you start, a duty once you run, or still moving?).
+ */
+export const GROUP_INFO: Record<GroupKey, { title: string; caption: string; note: string }> = {
+  before: {
+    title: "Can't start without",
+    caption: 'Licences and registrations for your idea',
+    note: 'Have these in place before you launch or take your first customer. POTRAZ rules are listed first.',
+  },
+  general: {
+    title: 'General',
+    caption: 'Every business',
+    note: 'These apply to nearly every startup whatever you build. Each is marked as needed before you start or as an ongoing duty.',
+  },
+  running: {
+    title: "Once you're running",
+    caption: 'Ongoing duties for your idea',
+    note: "You can launch first, but these apply as soon as you operate.",
+  },
+  watch: {
+    title: 'Still changing or optional',
+    caption: 'Moving targets and optional routes',
+    note: 'Rules still being written, and sandboxes you can choose to join. Check these before you commit.',
+  },
+};
+
+export const PHASE_LABEL: Record<Rule['phase'], string> = {
+  before: 'Needed before you start',
+  running: 'Ongoing duty',
+  watch: 'Changing or optional',
+};
