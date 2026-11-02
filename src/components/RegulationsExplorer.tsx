@@ -11,6 +11,8 @@ import { FAILURE_TEXT, MAX_IDEA_LENGTH, isAiFailure, type AiFailure } from '@/li
 import {
   CHECKED, GAPS, GROUP_INFO, PHASE_LABEL, REGULATORS, RULES, SECTORS,
 } from '@/lib/regulationsData';
+import RegulationsChecklist from './RegulationsChecklist';
+import RuleReport from './RuleReport';
 import styles from './RegulationsExplorer.module.css';
 
 const EXAMPLES = [
@@ -104,6 +106,11 @@ function RuleRow({ match, browsing, group }: { match: Match; browsing: boolean; 
             {rule.note}
           </p>
         )}
+        {rule.reviewed && (
+          <p className={styles.reviewed}>
+            <strong>Reviewed</strong> by {rule.reviewed.by}, {rule.reviewed.on}.
+          </p>
+        )}
         <div className={styles.sources}>
           <strong>Sources</strong>
           <ul>
@@ -118,6 +125,7 @@ function RuleRow({ match, browsing, group }: { match: Match; browsing: boolean; 
           </ul>
           <span className={styles.checked}>Checked {CHECKED}</span>
         </div>
+        <RuleReport ruleId={rule.id} ruleTitle={rule.title} />
       </div>
     </details>
   );
@@ -169,6 +177,15 @@ export default function RegulationsExplorer() {
       setAi('idle');
       return;
     }
+
+    // Count what kind of idea this was (sector ids and a yes/no, never the text).
+    const seen = matchIdea(idea);
+    fetch('/api/regulations/stat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sectors: seen.recognised, noSector: !seen.hasSector }),
+      keepalive: true,
+    }).catch(() => {});
 
     setDraft(idea);
     setQuery(idea);
@@ -330,6 +347,8 @@ export default function RegulationsExplorer() {
             insurance or marketplace.</p>
         </div>
       )}
+
+      {!browsing && <RegulationsChecklist matched={matched} idea={query} />}
 
       <div className={styles.toolbar}>
         <nav className={styles.jump} aria-label="Jump to a group">

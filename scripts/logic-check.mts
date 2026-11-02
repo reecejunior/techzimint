@@ -5,7 +5,7 @@ import {
 } from '../src/lib/ranking.ts';
 import type { Startup } from '../src/lib/types.ts';
 import {
-  GROUP_ORDER, browseAll, countShown, groupOf, matchIdea, parseAiPlan,
+  GROUP_ORDER, browseAll, checklistOf, checklistText, countShown, groupOf, matchIdea, parseAiPlan,
 } from '../src/lib/regulations.ts';
 import {
   FAILURE_TEXT, MAX_IDEA_LENGTH, buildMessages, extractJson, failureFromStatus, isAiFailure,
@@ -263,6 +263,27 @@ assert.ok(buildMessages('x'.repeat(5000))[1].content.length < MAX_IDEA_LENGTH + 
 assert.deepEqual(extractJson('Sure! ```json\n{"picks":[]}\n``` done'), { picks: [] });
 assert.equal(extractJson('no json here'), undefined);
 assert.equal(extractJson('{broken'), undefined);
+
+/* The launch checklist: licences first, ongoing duties after, nothing lost or doubled. */
+const cl = checklistOf(wallet);
+const clIds = [...cl.before, ...cl.later].map(m => m.rule.id);
+assert.equal(clIds.length, countShown(wallet), 'every shown rule is on the checklist exactly once');
+assert.equal(new Set(clIds).size, clIds.length);
+assert.ok(cl.before.some(m => m.rule.id === 'rbz-mm') && cl.before.some(m => m.rule.id === 'dp-licence'),
+  'idea-specific gates and general must-haves come before launch');
+assert.ok(cl.later.some(m => m.rule.id === 'dp-breach') && !cl.before.some(m => m.rule.id === 'dp-breach'),
+  'ongoing duties come after launch');
+assert.equal(cl.before[0].rule.reg, 'POTRAZ', 'POTRAZ still leads');
+const txt = checklistText({
+  idea: 'A mobile wallet', list: cl, ticked: new Set(['rbz-mm']), checked: '2 Nov 2026',
+  url: 'https://startups.techzim.co.zw/regulations',
+});
+assert.ok(txt.startsWith('Launch checklist for: A mobile wallet'));
+assert.ok(txt.includes('[x] ') && txt.includes('[ ] '), 'ticked and unticked rules are marked differently');
+assert.equal(txt.split('\n').filter(l => l.startsWith('[x]')).length, 1);
+assert.ok(txt.includes('BEFORE YOU LAUNCH') && txt.includes('AFTER YOU LAUNCH') && txt.includes('Not legal advice'));
+assert.ok(checklistText({ idea: null, list: { before: [], later: [] }, ticked: new Set(), checked: 'x', url: 'u' })
+  .includes('Nothing specific found.'));
 
 /* A failed AI call says why, so a bad key, model name or quota is obvious. */
 assert.equal(failureFromStatus(401), 'auth');
