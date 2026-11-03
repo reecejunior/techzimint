@@ -139,27 +139,40 @@ const all = (m: ReturnType<typeof matchIdea>) => GROUP_ORDER.flatMap(k => ids(m.
 /* Every rule lands in exactly one group: worth-doing first, then scope + phase. */
 for (const r of RULES) {
   const g = groupOf(r);
-  const want = r.need === 'worth' ? 'worth' : r.scope === 'general' ? 'general' : r.phase;
-  assert.equal(g, want, `${r.id} is grouped by need, scope, then phase`);
+  const want = r.need === 'worth' ? 'worth' : r.phase === 'watch' ? 'watch' : r.need === 'gate' ? 'before' : 'when';
+  assert.equal(g, want, `${r.id} is grouped by need, then phase`);
+  assert.ok(r.need && r.when && r.when.length > 10, `${r.id} says when it applies`);
   assert.ok(r.sources.length > 0, `${r.id} cites at least one source`);
   assert.ok(r.sources.every(s => s.u.startsWith('https://')), `${r.id} sources are https`);
 }
 
 const wallet = matchIdea('A mobile wallet for diaspora remittances with SMS receipts');
-assert.ok(ids(wallet.groups.before).includes('potraz-codes'), 'SMS ideas surface the short-code licence');
-assert.ok(ids(wallet.groups.before).includes('rbz-mm'), 'wallets surface the mobile money recognition');
+assert.ok(ids(wallet.groups.when).includes('potraz-codes'), 'SMS ideas surface the short-code licence');
+assert.ok(ids(wallet.groups.before).includes('rbz-mm'), 'a wallet cannot start without RBZ approval');
 assert.ok(!all(wallet).includes('ehailing'), 'unrelated sector rules stay out');
 
-/* "Can't start without" lists POTRAZ first. */
-const beforeRegs = wallet.groups.before.map(m => m.rule.reg);
-assert.equal(beforeRegs[0], 'POTRAZ', 'POTRAZ leads the can\'t-start-without group');
-assert.ok(beforeRegs.lastIndexOf('POTRAZ') < beforeRegs.indexOf('RBZ'), 'all POTRAZ rows precede RBZ');
+/* Within a group, POTRAZ rows come first. */
+const whenRegs = wallet.groups.when.map(m => m.rule.reg);
+assert.equal(whenRegs[0], 'POTRAZ', 'POTRAZ leads the group');
+assert.ok(whenRegs.lastIndexOf('POTRAZ') < whenRegs.findIndex(r => r !== 'POTRAZ'), 'all POTRAZ rows come first');
 
-/* General rules are always present, POTRAZ data rules first, whatever was typed. */
+/* General rules are always present, whatever was typed, POTRAZ first. None of
+   them is a "before you start" gate: each kicks in at a point. */
 const general = ['dp-licence', 'zimra-reg', 'nssa', 'labour-act'];
 const worth = ['company-reg', 'bank-account', 'praz', 'ip'];
-assert.deepEqual([...ids(wallet.groups.general)].sort(), [...general].sort());
-assert.deepEqual(ids(wallet.groups.general)[0], 'dp-licence');
+const generalIn = (m: ReturnType<typeof matchIdea>) =>
+  GROUP_ORDER.flatMap(k => m.groups[k]).filter(x => x.rule.scope === 'general' && x.rule.need !== 'worth');
+assert.deepEqual(ids(generalIn(wallet)).sort(), [...general].sort());
+assert.ok(ids(wallet.groups.when).includes('dp-licence'));
+assert.ok(!general.some(id => ids(wallet.groups.before).includes(id)), 'no general rule is a before-you-start gate');
+assert.match(RULES.find(r => r.id === 'dp-licence')!.when!, /50 or more/);
+
+/* Only rules the law clearly bars you from operating without are gates. */
+const gates = RULES.filter(r => r.need === 'gate').map(r => r.id).sort();
+assert.deepEqual(gates, ['fiu-vasp', 'ipec', 'microfinance', 'potraz-isp', 'potraz-mvno', 'psp', 'rbz-mm']);
+for (const r of RULES.filter(x => x.need === 'gate')) {
+  assert.ok(r.scope === 'specific', `${r.id}: only idea-specific licences can block you from starting`);
+}
 assert.deepEqual([...ids(wallet.groups.worth)].sort(), [...worth].sort(), 'worth-doing items show for every idea');
 
 /* Duties that come with a licence live inside it, not as rows of their own. */
@@ -180,37 +193,37 @@ assert.ok(zimraRule.need !== 'worth' && (zimraRule.benefits ?? []).length > 0, '
 
 const isp = matchIdea('Rural Wi-Fi internet service provider');
 assert.ok(ids(isp.groups.before).includes('potraz-isp'));
-assert.ok(ids(isp.groups.before).includes('potraz-type'), 'Wi-Fi hardware tag brings in type approval');
+assert.ok(ids(isp.groups.when).includes('potraz-type'), 'Wi-Fi hardware tag brings in type approval');
 
 const bakery = matchIdea('a bakery');
 assert.equal(bakery.hasSector, false, 'no sector recognised for an unrelated idea');
-assert.equal(bakery.groups.before.length + bakery.groups.running.length + bakery.groups.watch.length, 0,
+assert.ok(GROUP_ORDER.every(k => bakery.groups[k].every(m => m.rule.scope === 'general')),
   'an unrecognised idea gets only the general rules');
-assert.equal(bakery.groups.general.length, general.length);
+assert.equal(generalIn(bakery).length, general.length);
 
 assert.ok(ids(matchIdea('Ride-hailing app for Bulawayo').groups.watch).includes('ehailing'),
   'e-hailing is in the still-changing group, not a hard gate');
-assert.ok(ids(matchIdea('Drone delivery of medical supplies').groups.before).includes('drones'));
+assert.ok(ids(matchIdea('Drone delivery of medical supplies').groups.when).includes('drones'));
 assert.ok(ids(matchIdea('Funeral cover app').groups.before).includes('ipec'),
   'IPEC registration is a gate now that the 2026 Amendment Act is in force');
 assert.ok(ids(matchIdea('Crypto exchange').groups.before).includes('fiu-vasp'));
 
 /* Rules added in the second research pass. */
-const covers = (idea: string, id: string, group: 'before' | 'running' | 'watch') =>
+const covers = (idea: string, id: string, group: 'before' | 'when' | 'watch') =>
   assert.ok(ids(matchIdea(idea).groups[group]).includes(id), `"${idea}" surfaces ${id} in ${group}`);
 covers('Microfinance loans app', 'microfinance', 'before');
 covers('Buy now pay later for students', 'microfinance', 'before');
-covers('Podcast and web radio network', 'broadcasting', 'before');
-covers('Telemedicine clinic booking', 'health', 'before');
-covers('Solar installation and battery leasing', 'energy', 'before');
-covers('Airbnb style booking for lodges', 'tourism', 'before');
-covers('Rental listings for landlords', 'proptech', 'before');
-covers('Farm inputs marketplace', 'agritech', 'before');
-covers('Online tutoring platform', 'edtech', 'before');
-covers('Foreign investor SaaS exporting services', 'exchange-control', 'running');
-covers('Delivery on motorbikes', 'transport-ops', 'before');
+covers('Podcast and web radio network', 'broadcasting', 'when');
+covers('Telemedicine clinic booking', 'health', 'when');
+covers('Solar installation and battery leasing', 'energy', 'when');
+covers('Airbnb style booking for lodges', 'tourism', 'when');
+covers('Rental listings for landlords', 'proptech', 'when');
+covers('Farm inputs marketplace', 'agritech', 'when');
+covers('Online tutoring platform', 'edtech', 'when');
+covers('Foreign investor SaaS exporting services', 'exchange-control', 'when');
+covers('Delivery on motorbikes', 'transport-ops', 'when');
 assert.ok(!all(matchIdea('Funeral cover app')).includes('microfinance'), 'insurance ideas do not pull lending rules');
-assert.ok(ids(matchIdea('Online clothes store with delivery').groups.running).includes('cpa'),
+assert.ok(ids(matchIdea('Online clothes store with delivery').groups.when).includes('cpa'),
   'consumer-law duties are an ongoing duty');
 
 /* Browsing shows every rule once. */
@@ -260,8 +273,8 @@ assert.deepEqual(ids(demoteSms.demoted), ['potraz-codes'], 'but it stays visible
 const guarded = matchIdea('a bakery', {
   picks: { 'dp-licence': { relevance: 'unlikely', reason: 'No personal data.' } },
 });
-assert.equal(guarded.groups.general.length, general.length, 'general rules cannot be demoted by the model');
-assert.equal(guarded.groups.general.find(m => m.rule.id === 'dp-licence')!.ai, undefined,
+assert.equal(generalIn(guarded).length, general.length, 'general rules cannot be demoted by the model');
+assert.equal(generalIn(guarded).find(m => m.rule.id === 'dp-licence')!.ai, undefined,
   'an "unlikely" note is not shown on a general rule');
 
 /* ── AI prompt ── */
@@ -287,12 +300,12 @@ const cl = checklistOf(wallet);
 const clIds = [...cl.before, ...cl.worth, ...cl.later].map(m => m.rule.id);
 assert.equal(clIds.length, countShown(wallet), 'every shown rule is on the checklist exactly once');
 assert.equal(new Set(clIds).size, clIds.length);
-assert.ok(cl.before.some(m => m.rule.id === 'rbz-mm') && cl.before.some(m => m.rule.id === 'dp-licence'),
-  'idea-specific gates and general must-haves come before launch');
+assert.ok(cl.before.some(m => m.rule.id === 'rbz-mm') && !cl.before.some(m => m.rule.id === 'dp-licence'),
+  'only legal gates come before you start; the data licence waits for 50 people');
 assert.ok(cl.later.some(m => m.rule.id === 'nssa') && !cl.before.some(m => m.rule.id === 'nssa'),
   'ongoing duties come after launch');
 assert.ok(cl.worth.some(m => m.rule.id === 'company-reg'), 'company registration is worth doing, not a gate');
-assert.equal(cl.before[0].rule.reg, 'POTRAZ', 'POTRAZ still leads');
+assert.equal(cl.later[0].rule.reg, 'POTRAZ', 'POTRAZ still leads');
 const txt = checklistText({
   idea: 'A mobile wallet', list: cl, ticked: new Set(['rbz-mm']), checked: '2 Nov 2026',
   url: 'https://startups.techzim.co.zw/regulations',
@@ -300,9 +313,9 @@ const txt = checklistText({
 assert.ok(txt.startsWith('Launch checklist for: A mobile wallet'));
 assert.ok(txt.includes('[x] ') && txt.includes('[ ] '), 'ticked and unticked rules are marked differently');
 assert.equal(txt.split('\n').filter(l => l.startsWith('[x]')).length, 1);
-assert.ok(txt.includes('BEFORE YOU LAUNCH') && txt.includes('WORTH DOING') && txt.includes('AFTER YOU LAUNCH') && txt.includes('Not legal advice'));
+assert.ok(txt.includes('NEEDED BEFORE YOU START') && txt.includes('NEEDED WHEN IT APPLIES') && txt.includes('WORTH DOING') && txt.includes('When: ') && txt.includes('Not legal advice'));
 assert.ok(checklistText({ idea: null, list: { before: [], worth: [], later: [] }, ticked: new Set(), checked: 'x', url: 'u' })
-  .includes('Nothing specific found.'));
+  .includes('Nothing found.'));
 
 /* Every rule carries steps, says where they came from, and says what to check. */
 for (const r of RULES) {
@@ -321,8 +334,8 @@ for (const id of ['potraz-courier', 'interception', 'cpa']) {
    which is what triggers the "no specific regulation" panel and its contacts. */
 {
   const m = matchIdea('Handmade candles');
-  assert.equal(m.groups.before.length + m.groups.running.length + m.groups.watch.length, 0);
-  assert.ok(m.groups.general.length > 0, 'the basics still show');
+  assert.ok(GROUP_ORDER.every(k => m.groups[k].every(x => x.rule.scope === 'general')));
+  assert.ok(m.groups.when.length > 0, 'the basics still show');
   assert.ok(NO_RULE_CONTACTS.length >= 3 && NO_RULE_CONTACTS.every(c => c.url.startsWith('https://')));
 }
 

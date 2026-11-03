@@ -34,6 +34,12 @@ export default function RuleRow({ match, plain = false }: { match: Match; plain?
               </span>
             )}
           </span>
+          {rule.when && (
+            <span className={styles.when} data-need={rule.need}>
+              <span className={styles.whenLabel}>{rule.need === 'worth' ? 'Optional' : 'Needed'}</span>
+              {rule.when.replace(/^Optional\.\s*/, '')}
+            </span>
+          )}
           <span className={styles.headline}>{rule.headline}</span>
           {ai?.reason && <span className={styles.why}>{ai.reason}</span>}
         </span>

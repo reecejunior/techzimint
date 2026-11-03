@@ -169,6 +169,14 @@
   text-decoration-color: currentColor;
 }
 
+.when {
+  margin-top: 2px;
+  padding-left: calc(18px + var(--s-3));
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+
 .steps {
   padding: var(--s-2) 0 var(--s-1) calc(18px + var(--s-3));
 }

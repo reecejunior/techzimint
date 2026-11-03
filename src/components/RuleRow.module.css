@@ -109,6 +109,32 @@
   transform: rotate(-45deg);
 }
 
+.when {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-900);
+}
+
+.whenLabel {
+  margin-right: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink-700);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.when[data-need='gate'] .whenLabel {
+  background: var(--orange-100);
+  color: var(--orange-800);
+}
+
+.when[data-need='worth'] .whenLabel {
+  background: #EAF5EE;
+  color: #1F5A37;
+}
+
 .headline {
   max-width: 68ch;
   font-size: 14px;

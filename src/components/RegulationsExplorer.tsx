@@ -71,7 +71,7 @@ export default function RegulationsExplorer() {
   const noSpecific =
     matched !== null &&
     !pending &&
-    matched.groups.before.length + matched.groups.running.length + matched.groups.watch.length === 0;
+    Object.values(matched.groups).every(g => g.every(m => m.rule.scope === 'general'));
 
   async function search(text: string, keepRestore = false) {
     if (!keepRestore) setRestore(null);
