@@ -136,10 +136,11 @@ assert.equal(ago('not a date'), '', 'a bad timestamp renders nothing, not NaN');
 const ids = (xs: { rule: { id: string } }[]) => xs.map(x => x.rule.id);
 const all = (m: ReturnType<typeof matchIdea>) => GROUP_ORDER.flatMap(k => ids(m.groups[k]));
 
-/* Every rule lands in exactly one group, and the group follows scope + phase. */
+/* Every rule lands in exactly one group: worth-doing first, then scope + phase. */
 for (const r of RULES) {
   const g = groupOf(r);
-  assert.equal(g, r.scope === 'general' ? 'general' : r.phase, `${r.id} is grouped by scope then phase`);
+  const want = r.need === 'worth' ? 'worth' : r.scope === 'general' ? 'general' : r.phase;
+  assert.equal(g, want, `${r.id} is grouped by need, scope, then phase`);
   assert.ok(r.sources.length > 0, `${r.id} cites at least one source`);
   assert.ok(r.sources.every(s => s.u.startsWith('https://')), `${r.id} sources are https`);
 }
@@ -155,9 +156,27 @@ assert.equal(beforeRegs[0], 'POTRAZ', 'POTRAZ leads the can\'t-start-without gro
 assert.ok(beforeRegs.lastIndexOf('POTRAZ') < beforeRegs.indexOf('RBZ'), 'all POTRAZ rows precede RBZ');
 
 /* General rules are always present, POTRAZ data rules first, whatever was typed. */
-const general = ['dp-licence', 'dp-dpo', 'dp-breach', 'zimra-reg', 'company-reg', 'nssa', 'labour-act', 'tax-more'];
+const general = ['dp-licence', 'zimra-reg', 'nssa', 'labour-act'];
+const worth = ['company-reg', 'bank-account', 'praz', 'ip'];
 assert.deepEqual([...ids(wallet.groups.general)].sort(), [...general].sort());
-assert.deepEqual(ids(wallet.groups.general).slice(0, 3), ['dp-licence', 'dp-dpo', 'dp-breach']);
+assert.deepEqual(ids(wallet.groups.general)[0], 'dp-licence');
+assert.deepEqual([...ids(wallet.groups.worth)].sort(), [...worth].sort(), 'worth-doing items show for every idea');
+
+/* Duties that come with a licence live inside it, not as rows of their own. */
+for (const gone of ['dp-dpo', 'dp-breach', 'tax-more', 'subscriber-reg']) {
+  assert.ok(!RULES.some(r => r.id === gone), `${gone} is folded into its parent rule`);
+}
+const dpRule = RULES.find(r => r.id === 'dp-licence')!;
+assert.ok(dpRule.facts.some(f => f.label === 'Data protection officer') && dpRule.facts.some(f => f.label === 'Breaches'));
+assert.ok(RULES.find(r => r.id === 'interception')!.facts.some(f => f.label === 'SIM registration'));
+
+/* Worth-doing items say why; ZIMRA stays required but says what you get. */
+for (const r of RULES.filter(x => x.need === 'worth')) {
+  assert.ok(r.benefits && r.benefits.length >= 2, `${r.id} says why it is worth doing`);
+  assert.equal(groupOf(r), 'worth');
+}
+const zimraRule = RULES.find(r => r.id === 'zimra-reg')!;
+assert.ok(zimraRule.need !== 'worth' && (zimraRule.benefits ?? []).length > 0, 'ZIMRA is required and lists its benefits');
 
 const isp = matchIdea('Rural Wi-Fi internet service provider');
 assert.ok(ids(isp.groups.before).includes('potraz-isp'));
@@ -189,8 +208,6 @@ covers('Rental listings for landlords', 'proptech', 'before');
 covers('Farm inputs marketplace', 'agritech', 'before');
 covers('Online tutoring platform', 'edtech', 'before');
 covers('Foreign investor SaaS exporting services', 'exchange-control', 'running');
-covers('Brand and logo for my software', 'ip', 'watch');
-assert.ok(!all(matchIdea('Mobile app for my church')).includes('ip'), 'the word app alone does not pull IP rules');
 covers('Delivery on motorbikes', 'transport-ops', 'before');
 assert.ok(!all(matchIdea('Funeral cover app')).includes('microfinance'), 'insurance ideas do not pull lending rules');
 assert.ok(ids(matchIdea('Online clothes store with delivery').groups.running).includes('cpa'),
@@ -267,13 +284,14 @@ assert.equal(extractJson('{broken'), undefined);
 
 /* The launch checklist: licences first, ongoing duties after, nothing lost or doubled. */
 const cl = checklistOf(wallet);
-const clIds = [...cl.before, ...cl.later].map(m => m.rule.id);
+const clIds = [...cl.before, ...cl.worth, ...cl.later].map(m => m.rule.id);
 assert.equal(clIds.length, countShown(wallet), 'every shown rule is on the checklist exactly once');
 assert.equal(new Set(clIds).size, clIds.length);
 assert.ok(cl.before.some(m => m.rule.id === 'rbz-mm') && cl.before.some(m => m.rule.id === 'dp-licence'),
   'idea-specific gates and general must-haves come before launch');
-assert.ok(cl.later.some(m => m.rule.id === 'dp-breach') && !cl.before.some(m => m.rule.id === 'dp-breach'),
+assert.ok(cl.later.some(m => m.rule.id === 'nssa') && !cl.before.some(m => m.rule.id === 'nssa'),
   'ongoing duties come after launch');
+assert.ok(cl.worth.some(m => m.rule.id === 'company-reg'), 'company registration is worth doing, not a gate');
 assert.equal(cl.before[0].rule.reg, 'POTRAZ', 'POTRAZ still leads');
 const txt = checklistText({
   idea: 'A mobile wallet', list: cl, ticked: new Set(['rbz-mm']), checked: '2 Nov 2026',
@@ -282,8 +300,8 @@ const txt = checklistText({
 assert.ok(txt.startsWith('Launch checklist for: A mobile wallet'));
 assert.ok(txt.includes('[x] ') && txt.includes('[ ] '), 'ticked and unticked rules are marked differently');
 assert.equal(txt.split('\n').filter(l => l.startsWith('[x]')).length, 1);
-assert.ok(txt.includes('BEFORE YOU LAUNCH') && txt.includes('AFTER YOU LAUNCH') && txt.includes('Not legal advice'));
-assert.ok(checklistText({ idea: null, list: { before: [], later: [] }, ticked: new Set(), checked: 'x', url: 'u' })
+assert.ok(txt.includes('BEFORE YOU LAUNCH') && txt.includes('WORTH DOING') && txt.includes('AFTER YOU LAUNCH') && txt.includes('Not legal advice'));
+assert.ok(checklistText({ idea: null, list: { before: [], worth: [], later: [] }, ticked: new Set(), checked: 'x', url: 'u' })
   .includes('Nothing specific found.'));
 
 /* Every rule carries steps, says where they came from, and says what to check. */
@@ -294,7 +312,7 @@ for (const r of RULES) {
   assert.ok(r.stepsCheck && r.stepsCheck.length > 20, `${r.id} lists what to check`);
   assert.ok((r.stepsSources ?? []).every(s => s.u.startsWith('http')), `${r.id} step sources are links`);
 }
-for (const id of ['potraz-courier', 'subscriber-reg', 'cpa']) {
+for (const id of ['potraz-courier', 'interception', 'cpa']) {
   const r = RULES.find(x => x.id === id)!;
   assert.ok(/ask potraz|repealed|disagree/i.test(r.stepsCheck ?? ''), `${id} flags its known conflict`);
 }

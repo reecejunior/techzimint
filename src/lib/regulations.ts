@@ -22,7 +22,7 @@ export type Regulator =
   | 'POTRAZ' | 'RBZ' | 'FIU' | 'SECZ' | 'IPEC'
   | 'TRANSPORT' | 'ZIMRA' | 'CAAZ' | 'CONSUMER' | 'REGISTRAR'
   | 'NSSA' | 'LABOUR' | 'ZIDA' | 'BAZ' | 'ZMC' | 'IPO' | 'HEALTH'
-  | 'EDU' | 'EACZ' | 'AGRI' | 'ZTA' | 'ZERA' | 'ICT';
+  | 'EDU' | 'EACZ' | 'AGRI' | 'ZTA' | 'ZERA' | 'ICT' | 'BANKS' | 'PRAZ';
 
 /** How firmly a rule is sourced. See the header of regulationsData.ts. */
 export type RuleStatus = 'official' | 'reported' | 'verify';
@@ -34,8 +34,8 @@ export type Scope = 'general' | 'specific';
 export type Phase = 'before' | 'running' | 'watch';
 
 /** The four buckets results are read in, in display order. */
-export type GroupKey = 'before' | 'general' | 'running' | 'watch';
-export const GROUP_ORDER: GroupKey[] = ['before', 'general', 'running', 'watch'];
+export type GroupKey = 'before' | 'general' | 'worth' | 'running' | 'watch';
+export const GROUP_ORDER: GroupKey[] = ['before', 'general', 'worth', 'running', 'watch'];
 
 export interface Sector {
   id: string;
@@ -62,6 +62,10 @@ export interface Rule {
   /** Set once a lawyer or the regulator has confirmed the rule. Shown on the row. */
   reviewed?: { by: string; on: string };
   sources: { t: string; u: string }[];
+  /** 'worth': not needed to start trading, but brings real benefits. */
+  need?: 'worth';
+  /** Why it pays to do this, one short line each. */
+  benefits?: string[];
   /** The order to do it in, written from the regulator's page or the law. */
   steps?: { t: string; d: string }[];
   /** Where the steps came from: the regulator or statute, news and law-firm
@@ -116,6 +120,7 @@ export interface Matched {
 
 /** Which group a rule is read in. */
 export function groupOf(rule: Rule): GroupKey {
+  if (rule.need === 'worth') return 'worth';
   if (rule.scope === 'general') return 'general';
   return rule.phase;
 }
@@ -134,7 +139,7 @@ export function analyse(text: string): Record<string, number> {
 const RELEVANCE_RANK: Record<Relevance, number> = { high: 0, medium: 1, unlikely: 2 };
 
 function emptyGroups(): Record<GroupKey, Match[]> {
-  return { before: [], general: [], running: [], watch: [] };
+  return { before: [], general: [], worth: [], running: [], watch: [] };
 }
 
 /** POTRAZ first, then what the AI is surest of, then keyword strength. */
@@ -169,7 +174,7 @@ export function matchIdea(text: string, plan?: AiPlan | null): Matched {
     const m: Match = { rule, hits, score, ai: keep };
 
     if (rule.scope === 'general') {
-      groups.general.push(m);
+      groups[groupOf(rule)].push(m);
     } else if (pick?.relevance === 'unlikely') {
       if (score > 0) demoted.push({ rule, hits, score, ai: pick });
     } else if (keep || score > 0) {
@@ -242,6 +247,8 @@ export function parseAiPlan(raw: unknown): AiPlan | null {
 /** The launch checklist for a result: what to do first, and what comes after. */
 export interface Checklist {
   before: Match[];
+  /** Not needed to start, but worth doing. */
+  worth: Match[];
   later: Match[];
 }
 
@@ -256,6 +263,7 @@ export function checklistOf(m: Matched): Checklist {
   const generalLater = m.groups.general.filter(x => x.rule.phase !== 'before');
   return {
     before: [...m.groups.before, ...generalBefore],
+    worth: m.groups.worth,
     later: [...m.groups.running, ...generalLater, ...m.groups.watch],
   };
 }
@@ -294,6 +302,7 @@ export function checklistText(opts: {
   out.push(`Techzim Startups, ${opts.url} (rules checked ${opts.checked})`);
   out.push('', 'BEFORE YOU LAUNCH');
   out.push(...(opts.list.before.length ? opts.list.before.map(line) : ['Nothing specific found.']));
+  if (opts.list.worth.length) out.push('', 'WORTH DOING', ...opts.list.worth.map(line));
   out.push('', 'AFTER YOU LAUNCH');
   out.push(...(opts.list.later.length ? opts.list.later.map(line) : ['Nothing specific found.']));
   out.push('', 'Not legal advice. Confirm with the regulator or a Zimbabwean lawyer before you act.');

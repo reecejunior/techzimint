@@ -109,6 +109,14 @@ export const REGULATORS: Record<Regulator, { code: string; name: string }> = {
   "ICT": {
     "code": "ICT",
     "name": "Digital law reform"
+  },
+  "BANKS": {
+    "code": "Banks",
+    "name": "Your bank"
+  },
+  "PRAZ": {
+    "code": "PRAZ",
+    "name": "Public procurement regulator"
   }
 };
 
@@ -122,6 +130,8 @@ export const REGULATOR_ORDER: Regulator[] = [
   "NSSA",
   "LABOUR",
   "REGISTRAR",
+  "BANKS",
+  "PRAZ",
   "ZIDA",
   "TRANSPORT",
   "CAAZ",
@@ -278,7 +288,7 @@ export const RULES: Rule[] = [
     "status": "official",
     "title": "Data controller licence from POTRAZ",
     "headline": "Licence fee of $50 to $2,500 a year, set by how many people's data you hold.",
-    "summary": "POTRAZ is the Data Protection Authority. If you decide why and how personal data is processed, or process it for commercial gain, you need a licence. That covers most apps, wallets, shops and platforms.",
+    "summary": "POTRAZ is the Data Protection Authority. If you decide why and how personal data is processed, or process it for commercial gain, you need a licence. That covers most apps, wallets, shops and platforms. The licence comes with duties: a certified data protection officer, breach reports within 24 hours, and telling POTRAZ before you send data abroad.",
     "facts": [
       {
         "label": "Law",
@@ -315,9 +325,25 @@ export const RULES: Rule[] = [
       {
         "label": "Penalty",
         "value": "Processing without a licence: a fine up to level 11, up to 7 years in prison, or both. The standard scale of fines (S.I. 14A of 2023, reported) sets level 11 at US$1,000 and level 7 at US$400, payable in local currency at the interbank rate. A later revision was not checked."
+      },
+      {
+        "label": "Data protection officer",
+        "value": "Every licensed controller names a certified DPO on Form DP2. $1,250 for Zimbabwean citizens, $1,450 for international candidates. Training application fee $30 or $50. No DPO: a fine up to level 7, up to 2 years in prison, or both."
+      },
+      {
+        "label": "Breaches",
+        "value": "Tell POTRAZ within 24 hours on Form DP3, and affected people within 72 hours if the risk to them is high."
+      },
+      {
+        "label": "Data abroad",
+        "value": "Tell POTRAZ before transferring data outside Zimbabwe, for example to a foreign cloud or analytics service."
+      },
+      {
+        "label": "Children",
+        "value": "Parental consent and reasonable verification for data of anyone under 18."
       }
     ],
-    "note": "The regulations do not say what applies below 50 data subjects. The PDF text has scanning artefacts, so check amounts against the Gazette. Existing controllers had to apply within 6 months of the September 2024 promulgation.",
+    "note": "The regulations do not say what applies below 50 data subjects. The PDF text has scanning artefacts, so check amounts against the Gazette. Existing controllers had to apply within 6 months of the September 2024 promulgation. Reports say POTRAZ Regulatory Notice 2 of 2026 starts risk-based inspections from 1 September 2026, beginning with banks, insurers, hospitals, schools, churches, NGOs and mines, checking licensing, cybersecurity and data governance. Business Times earlier said audits would come in Q4 2026, so the date is not settled. A vendor says CDPG 1 of 2025 makes staff training mandatory; we found only that one source.",
     "sources": [
       {
         "t": "S.I. 155 of 2024 on POTRAZ",
@@ -330,6 +356,14 @@ export const RULES: Rule[] = [
       {
         "t": "Fine scale reported by Zimbabwe Now (S.I. 14A of 2023)",
         "u": "https://zimbabwenow.co.zw/articles/2766/govt-sets-us-dollar-fines-scale"
+      },
+      {
+        "t": "Techpoint on the POTRAZ inspection notice",
+        "u": "https://techpoint.africa/insight/techpoint-digest-1398/"
+      },
+      {
+        "t": "CITE on POTRAZ data licence fees",
+        "u": "https://cite.org.zw/potraz-data-licence-fees-slammed-as-costly-burden-on-businesses-and-consumers/"
       }
     ],
     "steps": [
@@ -354,8 +388,12 @@ export const RULES: Rule[] = [
         "d": "POTRAZ may ask for more information, issue the licence (possibly with conditions) or reject with reasons (reg 4(3)-(4))."
       },
       {
-        "t": "Renew on DP1 at least 3 months before expiry",
-        "d": "Licence lasts 12 months; failing to renew without just cause is an offence (reg 5)."
+        "t": "Appoint a certified data protection officer",
+        "d": "Put them through a POTRAZ-approved course, then notify POTRAZ on Form DP2 and within 14 days of any change."
+      },
+      {
+        "t": "Set up breach reporting and transfer notices",
+        "d": "Report breaches within 24 hours on Form DP3, and tell POTRAZ before sending data abroad. Get parental consent for anyone under 18."
       }
     ],
     "stepsBasis": "official",
@@ -379,82 +417,6 @@ export const RULES: Rule[] = [
       {
         "t": "potraz.gov.zw",
         "u": "https://www.potraz.gov.zw/?page_id=2220"
-      }
-    ],
-    "stepsCheck": "No submission channel, email or portal address found (DP1 points to a registration guide at www.potraz.zw). POTRAZ Guidelines on Licensing of Data Controllers 2025 PDF could not be read. Full document checklist beyond certificate of incorporation not found. Tier 2 to 3 ranges only from Techzim."
-  },
-  {
-    "id": "dp-dpo",
-    "scope": "general",
-    "phase": "running",
-    "reg": "POTRAZ",
-    "tags": [
-      "data"
-    ],
-    "status": "official",
-    "title": "Appoint a certified data protection officer",
-    "headline": "Every licensed controller names a DPO and tells POTRAZ on Form DP2.",
-    "summary": "The DPO must hold an approved certification, so start early. The regulations state no minimum company size.",
-    "facts": [
-      {
-        "label": "Form",
-        "value": "Form DP2, in writing to POTRAZ. Appoint within 90 days of promulgation, or of a DPO contract ending."
-      },
-      {
-        "label": "Changes",
-        "value": "Tell POTRAZ within 14 days of a change in DPO contact details, or of the DPO resigning or being dismissed."
-      },
-      {
-        "label": "Who qualifies",
-        "value": "Skill or experience in data science, analytics, information security, systems audit, law, audit or similar, plus knowledge of the data protection law and of your operations. Must complete an Authority-approved certification course."
-      },
-      {
-        "label": "Certification fee",
-        "value": "$1,250 for Zimbabwean citizens, $1,450 for international candidates. Training application fee $30 or $50."
-      },
-      {
-        "label": "Penalty",
-        "value": "No DPO: a fine up to level 7, up to 2 years in prison, or both."
-      }
-    ],
-    "note": "One compliance vendor says Tier 1 controllers only need a DPO when handling sensitive data. The regulation text read here sets no such threshold.",
-    "sources": [
-      {
-        "t": "S.I. 155 of 2024 on POTRAZ",
-        "u": "https://www.potraz.gov.zw/wp-content/uploads/2025/02/sI-155-of-2024-Cyber-and-Data-Protection-Normal_240913_1250178.pdf"
-      }
-    ],
-    "steps": [
-      {
-        "t": "Choose a DPO with relevant skills",
-        "d": "Skills such as data science, law, audit or information security, knowledge of data protection law, and understanding of your operations (SI 155 reg 13(1))."
-      },
-      {
-        "t": "Get the DPO through a POTRAZ-approved certification course",
-        "d": "DPOs must complete an Authority-approved course (reg 13(2)). POTRAZ lists a DPO Training Application Form and a DPO Certification Course document."
-      },
-      {
-        "t": "Pay training and certification fees",
-        "d": "Training application USD 30 (citizen) or USD 50 (international); certification USD 1,250 (citizen) or USD 1,450 (international)."
-      },
-      {
-        "t": "Notify POTRAZ of the DPO on Form DP2",
-        "d": "DP2 needs the DPO's registration number, contact details and qualifications, plus your licence number (reg 12(1)-(2))."
-      },
-      {
-        "t": "Notify changes and replace a departing DPO",
-        "d": "Report contact changes, dismissal or resignation within 14 days; appoint a replacement within 90 days (reg 12(3)-(5))."
-      }
-    ],
-    "stepsBasis": "official",
-    "stepsSources": [
-      {
-        "t": "potraz.gov.zw",
-        "u": "http://www.potraz.gov.zw/wp-content/uploads/2025/02/sI-155-of-2024-Cyber-and-Data-Protection-Normal_240913_1250178.pdf"
-      },
-      {
-        "t": "potraz.gov.zw",
-        "u": "https://www.potraz.gov.zw/?page_id=2840"
       },
       {
         "t": "potraz.gov.zw",
@@ -467,90 +429,6 @@ export const RULES: Rule[] = [
       {
         "t": "dlapiperafrica.com",
         "u": "https://www.dlapiperafrica.com/en/zimbabwe/insights/2024/A-Quick-Start-Guide-to-Zimbabwes-Data-Protection-Regulations"
-      }
-    ],
-    "stepsCheck": "2026 DPO training calendar is an image and could not be read; course eligibility, duration and where to submit forms not found. DPO Appointment Guidelines 2024 PDF could not be read. DP2 and DP3 give no submission channel."
-  },
-  {
-    "id": "dp-breach",
-    "scope": "general",
-    "phase": "running",
-    "reg": "POTRAZ",
-    "tags": [
-      "data"
-    ],
-    "status": "official",
-    "title": "Breach reports, foreign data transfers and children's data",
-    "headline": "Report a breach to POTRAZ within 24 hours, and tell POTRAZ before sending data abroad.",
-    "summary": "These duties bite startups that use foreign cloud services, analytics tools or payment processors, and any product with users under 18.",
-    "facts": [
-      {
-        "label": "Breach to POTRAZ",
-        "value": "Within 24 hours of becoming aware, on Form DP3."
-      },
-      {
-        "label": "Breach to users",
-        "value": "Within 72 hours if the risk to them is high."
-      },
-      {
-        "label": "Follow-up",
-        "value": "Answer POTRAZ information requests within 14 days. Investigation report within 21 days."
-      },
-      {
-        "label": "Notify POTRAZ",
-        "value": "Your processing activities, intended transfers outside Zimbabwe, and any biometric or genetic processing."
-      },
-      {
-        "label": "Children",
-        "value": "Parental consent and reasonable verification for data of anyone under 18."
-      },
-      {
-        "label": "Penalty",
-        "value": "Breach-reporting failures carry a fine up to level 11, up to 7 years in prison, or both."
-      }
-    ],
-    "note": "Reports say POTRAZ Regulatory Notice 2 of 2026 starts risk-based inspections from 1 September 2026, beginning with banks, insurers, hospitals, schools, churches, NGOs and mines, checking licensing, cybersecurity and data governance. Business Times earlier said audits would come in Q4 2026, so the date is not settled. A vendor says CDPG 1 of 2025 makes staff training mandatory; we found only that one source.",
-    "sources": [
-      {
-        "t": "S.I. 155 of 2024 on POTRAZ",
-        "u": "https://www.potraz.gov.zw/wp-content/uploads/2025/02/sI-155-of-2024-Cyber-and-Data-Protection-Normal_240913_1250178.pdf"
-      },
-      {
-        "t": "Techpoint on the POTRAZ inspection notice",
-        "u": "https://techpoint.africa/insight/techpoint-digest-1398/"
-      },
-      {
-        "t": "CITE on POTRAZ data licence fees",
-        "u": "https://cite.org.zw/potraz-data-licence-fees-slammed-as-costly-burden-on-businesses-and-consumers/"
-      }
-    ],
-    "steps": [
-      {
-        "t": "Set up breach detection and an incident record",
-        "d": "Keep a record of all breaches and internal reporting procedures (reg 17(4))."
-      },
-      {
-        "t": "Report any breach to POTRAZ within 24 hours on Form DP3",
-        "d": "DP3 asks for breach and discovery dates, systems hit, data types and record counts, likely impact and remedial measures (reg 17; Act s19)."
-      },
-      {
-        "t": "Tell affected people within 72 hours if risk is high",
-        "d": "Applies where the breach is likely to pose a high risk to individuals' rights and freedoms (reg 17(3))."
-      },
-      {
-        "t": "Cooperate with the investigation",
-        "d": "Answer POTRAZ information requests within 14 days and file an investigation report within 21 days of notification (reg 17(5))."
-      },
-      {
-        "t": "Notify POTRAZ before sending data abroad; get parental consent for children",
-        "d": "Transfers require adequate protection (Act ss28-29) and notice to POTRAZ (reg 10(2)(c)). Child data needs verified parent consent, regular DPIAs, and no automated decisions (reg 10(5))."
-      }
-    ],
-    "stepsBasis": "official",
-    "stepsSources": [
-      {
-        "t": "potraz.gov.zw",
-        "u": "http://www.potraz.gov.zw/wp-content/uploads/2025/02/sI-155-of-2024-Cyber-and-Data-Protection-Normal_240913_1250178.pdf"
       },
       {
         "t": "potraz.gov.zw",
@@ -559,13 +437,9 @@ export const RULES: Rule[] = [
       {
         "t": "zimlii.org",
         "u": "https://zimlii.org/akn/zw/act/2021/5/eng@2022-03-11/source"
-      },
-      {
-        "t": "potraz.gov.zw",
-        "u": "https://www.potraz.gov.zw/?page_id=2220"
       }
     ],
-    "stepsCheck": "No submission email or portal for DP3; only POTRAZ postal and physical address (P.O. Box MP 843 Mt Pleasant; 1111 Performance Close, Mt Pleasant Business Park, Harare; 0242-333032). POTRAZ guidelines on breach, cross-border transfers and children's data PDFs could not be read, so the transfer authorisation process is not confirmed."
+    "stepsCheck": "No submission channel, email or portal address found (DP1 points to a registration guide at www.potraz.zw). POTRAZ Guidelines on Licensing of Data Controllers 2025 PDF could not be read. Full document checklist beyond certificate of incorporation not found. Tier 2 to 3 ranges only from Techzim."
   },
   {
     "id": "cyber-offences",
@@ -1954,8 +1828,8 @@ export const RULES: Rule[] = [
     "reg": "ZIMRA",
     "tags": [],
     "status": "official",
-    "title": "Register with ZIMRA and set up your tax calendar",
-    "headline": "Get a Taxpayer Identification Number on the self-service portal before you trade.",
+    "title": "Register with ZIMRA",
+    "headline": "Required within 30 days of starting. It also gets you tax clearance, so clients pay you in full.",
     "summary": "All individuals, companies, partnerships and cooperatives starting a business must register. VAT starts once turnover passes US$25,000.",
     "facts": [
       {
@@ -1981,13 +1855,61 @@ export const RULES: Rule[] = [
       {
         "label": "Records",
         "value": "Keep them for at least six years."
+      },
+      {
+        "label": "Tax clearance",
+        "value": "The ITF263 is free and valid for 12 months. ZIMRA emails it to taxpayers who are up to date."
+      },
+      {
+        "label": "Without it",
+        "value": "Companies and government withhold 30% of payments of US$1,000 or more to you (Income Tax Act s80)."
+      },
+      {
+        "label": "Company tax",
+        "value": "25%, with a 3% AIDS levy on the tax charged (ZIMRA)."
+      },
+      {
+        "label": "Transfer tax (IMTT)",
+        "value": "1.5% on ZiG and 2% on foreign currency transfers, collected by your bank or mobile money provider."
+      },
+      {
+        "label": "Tax breaks",
+        "value": "A Special Initial Allowance for SMEs: 100% in total (50% in year 1, 25% over each of the next two years) (ZIMRA)."
       }
     ],
-    "note": "ZIMRA's page is undated and thresholds may have changed.",
+    "note": "ZIMRA's page is undated and thresholds may have changed. ZIMRA's own pages were read for rates and incentives; IMTT figures are from press and EY summaries, and Treasury was reported to be considering a further cut. Sources disagree on whether VAT is 15.5%, so check that separately.",
     "sources": [
       {
         "t": "ZIMRA: requirements for new businesses",
         "u": "https://zimra.co.zw/domestic-taxes/corporate/new-businesses"
+      },
+      {
+        "t": "ZIMRA: withholding tax on tenders (s80)",
+        "u": "https://zimra.co.zw/news/2195:withholding-tax-on-tenders"
+      },
+      {
+        "t": "ZIMRA: tax clearance certificate ITF263",
+        "u": "https://www.zimra.co.zw/news/2235-tax-clearance-certificate-itf263-2"
+      },
+      {
+        "t": "ZIMRA corporate tax rates",
+        "u": "https://www.zimra.co.zw/domestic-taxes/corporate/tax-rates"
+      },
+      {
+        "t": "ZIMRA fiscal incentives",
+        "u": "https://www.zimra.co.zw/domestic-taxes/corporate/fiscal-incentives"
+      },
+      {
+        "t": "Financial Gazette on IMTT",
+        "u": "https://fingaz.co.zw/2026/05/06/unpacking-intermediated-money-transfer-tax/"
+      },
+      {
+        "t": "allAfrica on IMTT, Oct 2026",
+        "u": "https://allafrica.com/stories/202610200234.html"
+      },
+      {
+        "t": "Startup bill (OpenParly)",
+        "u": "https://openparly.com/bill-alert-science-technology-innovation-start-up-and-knowledge-based-economy-promotion-bill"
       }
     ],
     "steps": [
@@ -2021,9 +1943,30 @@ export const RULES: Rule[] = [
       {
         "t": "zimra.co.zw",
         "u": "https://zimra.co.zw/news/2346-taxpayer-registration"
+      },
+      {
+        "t": "zimra.co.zw",
+        "u": "https://www.zimra.co.zw/domestic-taxes/corporate/tax-rates"
+      },
+      {
+        "t": "fingaz.co.zw",
+        "u": "https://fingaz.co.zw/2026/05/06/unpacking-intermediated-money-transfer-tax/"
+      },
+      {
+        "t": "allafrica.com",
+        "u": "https://allafrica.com/stories/202610200234.html"
+      },
+      {
+        "t": "ey.com",
+        "u": "https://www.ey.com/content/dam/ey-unified-site/ey-com/en-zw/documents/ey-zw-post-budget-tax-spotlight-november-2025.pdf"
       }
     ],
-    "stepsCheck": "ZIMRA's pages do not list the documents to attach. No registration fee or approval timeline stated. The page says to keep records for 6 years."
+    "stepsCheck": "ZIMRA's pages do not list the documents to attach. No registration fee or approval timeline stated. The page says to keep records for 6 years.",
+    "benefits": [
+      "Get paid in full: clients withhold 30% from suppliers without tax clearance (ITF263).",
+      "Bid for tenders and register with PRAZ, which both ask for tax clearance.",
+      "Claim back input VAT once you are VAT-registered."
+    ]
   },
   {
     "id": "company-reg",
@@ -2032,10 +1975,14 @@ export const RULES: Rule[] = [
     "reg": "REGISTRAR",
     "tags": [],
     "status": "verify",
-    "title": "Register your company",
-    "headline": "Name search, then incorporation papers. Allow up to two weeks after the name is cleared.",
+    "title": "Register a company",
+    "headline": "You can trade as a sole trader without it, but a company limits your risk and lets you take investors.",
     "summary": "Most startups register a private limited company with the Registrar of Companies and Other Business Entities.",
     "facts": [
+      {
+        "label": "Sole trader",
+        "value": "You can trade without registering, but you are personally liable for everything the business owes."
+      },
       {
         "label": "Entity types",
         "value": "Public limited, private limited, company limited by guarantee, co-operative, foreign company, private business corporation, and partnerships and similar groups."
@@ -2086,6 +2033,10 @@ export const RULES: Rule[] = [
       {
         "t": "Mondaq on the merged Companies and IP office",
         "u": "https://www.mondaq.com/trademark/1139954/zimbabwe-ip-office-joined-with-companies-office-becomes-autonomous"
+      },
+      {
+        "t": "Companies and Other Business Entities Act (ZimLII)",
+        "u": "https://zimlii.org/akn/zw/act/2019/4"
       }
     ],
     "steps": [
@@ -2133,7 +2084,139 @@ export const RULES: Rule[] = [
         "u": "https://lexafrica.com/2024/09/zimbabwean-companies-obliged-to-re-register-under-new-electronic-filing-system/"
       }
     ],
-    "stepsCheck": "Fees quoted online (US$5 reservation, US$140 incorporation) date from 2019. The beneficial-owner threshold appears as both 'more than 20%' and 'at least 20%'. No official registry page or portal URL found. Fees are from a 2019 article (US$5 reservation, US$140 incorporation) and may be outdated. CR16 and the 7-day deadline come from an opinion article, and ss.72-73 text was not read. Beneficial-owner threshold is stated as more than 20% (ZimLII) and at least 20% (Business Times). Re-registration of pre-2019 companies is mentioned, but its deadline was not found."
+    "stepsCheck": "Fees quoted online (US$5 reservation, US$140 incorporation) date from 2019. The beneficial-owner threshold appears as both 'more than 20%' and 'at least 20%'. No official registry page or portal URL found. Fees are from a 2019 article (US$5 reservation, US$140 incorporation) and may be outdated. CR16 and the 7-day deadline come from an opinion article, and ss.72-73 text was not read. Beneficial-owner threshold is stated as more than 20% (ZimLII) and at least 20% (Business Times). Re-registration of pre-2019 companies is mentioned, but its deadline was not found.",
+    "need": "worth",
+    "benefits": [
+      "Limit your risk: owners are not personally liable for the company's debts.",
+      "Take on investors by issuing shares.",
+      "Open a business bank account, register with PRAZ, and apply for POTRAZ or RBZ licences."
+    ]
+  },
+  {
+    "id": "bank-account",
+    "reg": "BANKS",
+    "scope": "general",
+    "phase": "before",
+    "need": "worth",
+    "tags": [],
+    "status": "reported",
+    "title": "Open a business bank account",
+    "headline": "No law requires it, but it's how companies and government will pay you.",
+    "summary": "Most clients pay by bank transfer, and a bank record is what lenders look at for an SME loan. Reports say an RBZ policy ties council trading licences to having a bank account and a card machine.",
+    "benefits": [
+      "Get paid by transfer: RTGS, ZIPIT, EcoCash or card.",
+      "Build the record lenders look at for an SME loan.",
+      "Keep clean records for ZIMRA."
+    ],
+    "facts": [
+      {
+        "label": "Company documents",
+        "value": "Certificate of incorporation, CR6, CR14, memorandum and articles, tax clearance or TIN, and each director's ID."
+      },
+      {
+        "label": "Proof of residence",
+        "value": "Usually less than 3 months old, for each director."
+      }
+    ],
+    "sources": [
+      {
+        "t": "NMB: corporate account requirements",
+        "u": "https://onlinesupport.nmbz.co.zw/support/solutions/articles/23000011701-what-are-the-requirements-for-opening-a-corporate-account-"
+      },
+      {
+        "t": "Equity Axis: RBZ on POS machines and bank accounts",
+        "u": "https://equityaxis.net/post/18254/2025/2/no-pos-machine-no-licence-no-bank-account-no-licence-rbz-commands"
+      }
+    ],
+    "steps": [
+      {
+        "t": "Gather your documents",
+        "d": "Company papers (certificate, CR6, CR14, memorandum and articles), tax clearance or TIN, and directors' IDs and proof of residence."
+      },
+      {
+        "t": "Visit the bank with every director",
+        "d": "Most banks ask all directors to attend to open a company account."
+      },
+      {
+        "t": "Ask for card and mobile money collections",
+        "d": "Request a POS machine or merchant code so customers can pay you directly."
+      }
+    ],
+    "stepsBasis": "general",
+    "stepsSources": [
+      {
+        "t": "onlinesupport.nmbz.co.zw",
+        "u": "https://onlinesupport.nmbz.co.zw/support/solutions/articles/23000011701-what-are-the-requirements-for-opening-a-corporate-account-"
+      }
+    ],
+    "stepsCheck": "Document lists differ by bank, and sole-trader requirements are not published. The RBZ link to council licences is reported policy, not a statute."
+  },
+  {
+    "id": "praz",
+    "reg": "PRAZ",
+    "scope": "general",
+    "phase": "before",
+    "need": "worth",
+    "tags": [],
+    "status": "reported",
+    "title": "Register with PRAZ to sell to government",
+    "headline": "Lets you bid for tenders from ministries, parastatals and councils.",
+    "summary": "The Procurement Regulatory Authority of Zimbabwe keeps the register of suppliers that public bodies buy from. Supplier guides say you must be registered to bid. Registration is online, on the e-GP system.",
+    "benefits": [
+      "Bid for public tenders from ministries, parastatals and councils.",
+      "Pay a lower fee as a micro or small business.",
+      "Get a supplier number buyers can check."
+    ],
+    "facts": [
+      {
+        "label": "Fee per year",
+        "value": "Micro US$50, SME US$60, other local suppliers US$75, foreign suppliers US$850."
+      },
+      {
+        "label": "Expires",
+        "value": "31 December each year. Renew in January."
+      },
+      {
+        "label": "Documents",
+        "value": "CR6, CR14, tax clearance (ITF263) and NSSA compliance."
+      }
+    ],
+    "sources": [
+      {
+        "t": "PRAZ e-GP system",
+        "u": "https://egp.praz.org.zw/"
+      },
+      {
+        "t": "Lucent: PRAZ registration categories",
+        "u": "https://lucent.co.zw/business/procurement-regulatory-authority-of-zimbabwe-praz-understanding-the-new-registration-categories/"
+      }
+    ],
+    "steps": [
+      {
+        "t": "Gather your documents",
+        "d": "CR6, CR14, a current tax clearance (ITF263) and NSSA compliance."
+      },
+      {
+        "t": "Sign up on the e-GP system",
+        "d": "Create a supplier account at egp.praz.org.zw and choose your categories."
+      },
+      {
+        "t": "Pay and renew each year",
+        "d": "Pay the fee (reported as payable at CBZ), then renew every January."
+      }
+    ],
+    "stepsBasis": "reported",
+    "stepsSources": [
+      {
+        "t": "egp.praz.org.zw",
+        "u": "https://egp.praz.org.zw/"
+      },
+      {
+        "t": "lucent.co.zw",
+        "u": "https://lucent.co.zw/business/procurement-regulatory-authority-of-zimbabwe-praz-understanding-the-new-registration-categories/"
+      }
+    ],
+    "stepsCheck": "The document list and validity come from consultants, not PRAZ. The fee per category and processing time were not confirmed, and the Act itself only sets up the register."
   },
   {
     "id": "nssa",
@@ -2302,112 +2385,6 @@ export const RULES: Rule[] = [
       }
     ],
     "stepsCheck": "No source states a procedure for registering an employer with an employment council, and Chambers does not say registration is required. The ZimLII text ended before the sections on councils. Check with your sector NEC. Works councils (s.25A) apply only where a workers committee exists."
-  },
-  {
-    "id": "tax-more",
-    "reg": "ZIMRA",
-    "scope": "general",
-    "phase": "running",
-    "tags": [],
-    "status": "reported",
-    "title": "Company tax, money transfer tax and tax breaks",
-    "headline": "Corporate tax is 25% plus a 3% AIDS levy. Mobile and bank transfers carry IMTT, now 1.5% on ZiG and 2% on foreign currency.",
-    "summary": "Beyond registering and filing returns, three taxes shape a startup's costs and pricing. A startup bill with tax incentives has been announced but is not law.",
-    "facts": [
-      {
-        "label": "Corporate tax",
-        "value": "25%, with a 3% AIDS levy on the tax charged (ZIMRA)."
-      },
-      {
-        "label": "Investor rates",
-        "value": "0% for five years then 25% for licensed investors, and 0% for five years then 15% for special economic zone investors (ZIMRA)."
-      },
-      {
-        "label": "SME allowance",
-        "value": "A Special Initial Allowance for SMEs: 100% in total (50% in year 1, 25% over each of the next two years) (ZIMRA)."
-      },
-      {
-        "label": "IMTT",
-        "value": "Intermediated Money Transfer Tax sits in the 30th Schedule to the Income Tax Act. The financial institution remits it and recovers it from customers by the 10th of the next month, with a 15% late penalty. Rate 1.5% on ZiG transactions and 2% on foreign currency, deductible for income tax from 2026. Salaries and ZIMRA payments are exempt."
-      },
-      {
-        "label": "Presumptive tax",
-        "value": "The 2026 budget adds a 10% withholding on rent paid to presumptive taxpayers. Small-business rates and thresholds were not confirmed."
-      },
-      {
-        "label": "Startup bill",
-        "value": "The Science, Technology, Innovation Start-up and Knowledge-based Economy Promotion Bill had its principles adopted by Cabinet (September 2024 report), with tax incentives and preferential procurement. No enacted startup law or fund was found."
-      }
-    ],
-    "note": "ZIMRA's own pages were read for rates and incentives; IMTT figures are from press and EY summaries, and Treasury was reported to be considering a further cut. Sources disagree on whether VAT is 15.5%, so check that separately.",
-    "sources": [
-      {
-        "t": "ZIMRA corporate tax rates",
-        "u": "https://www.zimra.co.zw/domestic-taxes/corporate/tax-rates"
-      },
-      {
-        "t": "ZIMRA fiscal incentives",
-        "u": "https://www.zimra.co.zw/domestic-taxes/corporate/fiscal-incentives"
-      },
-      {
-        "t": "Financial Gazette on IMTT",
-        "u": "https://fingaz.co.zw/2026/05/06/unpacking-intermediated-money-transfer-tax/"
-      },
-      {
-        "t": "allAfrica on IMTT, Oct 2026",
-        "u": "https://allafrica.com/stories/202610200234.html"
-      },
-      {
-        "t": "Startup bill (OpenParly)",
-        "u": "https://openparly.com/bill-alert-science-technology-innovation-start-up-and-knowledge-based-economy-promotion-bill"
-      }
-    ],
-    "steps": [
-      {
-        "t": "Confirm your company tax rate",
-        "d": "ZIMRA lists company income at 25% plus a 3% AIDS levy on tax chargeable. Manufacturing exporters pay 15-20% depending on export share."
-      },
-      {
-        "t": "Check for tax breaks",
-        "d": "Licensed investors pay 0% for 5 years, then 25%. Special Economic Zone companies pay 0% for 5 years, then 15%. Conditions are on ZIMRA's incentives pages."
-      },
-      {
-        "t": "Pay provisional tax and file the annual return",
-        "d": "Pay quarterly on 25 Mar, 25 Jun, 25 Sep and 20 Dec, and file by 30 Apr. Withhold 30% on contracts of US$1,000 or more with payees who have no tax clearance (s.80)."
-      },
-      {
-        "t": "Account for IMTT if you run a financial institution",
-        "d": "Intermediated money transfer tax is withheld by the intermediating bank, mobile money or money transfer provider. Remit it with a return by the 10th of the next month."
-      },
-      {
-        "t": "Note the current IMTT rate and deductibility",
-        "d": "The rate is 1.5% on ZiG transactions and 2% on foreign currency. Further cuts are under consideration. IMTT is deductible from 2026."
-      }
-    ],
-    "stepsBasis": "official",
-    "stepsSources": [
-      {
-        "t": "zimra.co.zw",
-        "u": "https://www.zimra.co.zw/domestic-taxes/corporate/tax-rates"
-      },
-      {
-        "t": "zimra.co.zw",
-        "u": "https://www.zimra.co.zw/domestic-taxes/corporate/new-businesses"
-      },
-      {
-        "t": "fingaz.co.zw",
-        "u": "https://fingaz.co.zw/2026/05/06/unpacking-intermediated-money-transfer-tax/"
-      },
-      {
-        "t": "allafrica.com",
-        "u": "https://allafrica.com/stories/202610200234.html"
-      },
-      {
-        "t": "ey.com",
-        "u": "https://www.ey.com/content/dam/ey-unified-site/ey-com/en-zw/documents/ey-zw-post-budget-tax-spotlight-november-2025.pdf"
-      }
-    ],
-    "stepsCheck": "ZIMRA's rates page did not cover capital gains or withholding on dividends to residents or non-residents. The incentive eligibility pages were not opened. Whether a payer must register separately for IMTT was not stated. Rates for 2026 are from an AllAfrica article dated 20 Oct 2026 and the EY post-budget note, so check the Finance Act."
   },
   {
     "id": "zida",
@@ -2875,87 +2852,6 @@ export const RULES: Rule[] = [
     "stepsCheck": "No FIU or RBZ page and no published registration or reporting procedure for general reporting entities (such as a payments fintech licensed by the RBZ). The statute details come from a secondary article about accountants, and it did not read s.25 on compliance officers. VASP fees (up to US$500 registration, US$400 renewal, 90-day decision) apply only to virtual asset providers. Payment-provider licensing under the RBZ was not researched."
   },
   {
-    "id": "subscriber-reg",
-    "reg": "POTRAZ",
-    "scope": "specific",
-    "phase": "running",
-    "tags": [
-      "mvno",
-      "vas"
-    ],
-    "status": "reported",
-    "title": "Subscriber registration for SIMs",
-    "headline": "Operators must collect a customer's name, addresses and national ID before contracting.",
-    "summary": "The Postal and Telecommunications (Subscriber Registration) Regulations, S.I. 95 of 2014 (which repealed S.I. 142 of 2013) bind network operators. Whether airtime resellers and agents are bound was not confirmed.",
-    "facts": [
-      {
-        "label": "Duty",
-        "value": "Collect name, addresses and national ID before contracting."
-      },
-      {
-        "label": "Access",
-        "value": "Law enforcement needs a warrant or court order to access the data."
-      },
-      {
-        "label": "Handset registration",
-        "value": "POTRAZ was lobbying for handset registration in April 2025 (reported). Nothing was found showing it is law."
-      }
-    ],
-    "note": "Penalties and the text of S.I. 95 of 2014 were not read.",
-    "sources": [
-      {
-        "t": "S.I. 142 of 2013 and its repeal (Veritas)",
-        "u": "https://veritaszim.net/node/639"
-      },
-      {
-        "t": "MISA Zimbabwe on the regulations",
-        "u": "https://zimbabwe.misa.org/2016/04/01/misa-zimbabwe-statement-on-the-postal-and-telecommunications-subscriber-registration-regulations/"
-      }
-    ],
-    "steps": [
-      {
-        "t": "Register every subscriber before activating a SIM",
-        "d": "Do not activate a SIM or start service until details are registered (SI 142 of 2013, s3)."
-      },
-      {
-        "t": "Collect required ID details",
-        "d": "Individuals: name, address, nationality, gender, SIM number, national ID or passport. Companies: registration certificate or licence, representative's ID and a letter of authority or affidavit."
-      },
-      {
-        "t": "Verify identity and pass agent forms within 7 days",
-        "d": "Verify names, ID and address. Agents, distributors and dealers hand completed forms to the provider within 7 days."
-      },
-      {
-        "t": "Keep hard and electronic Subscriber Register for 5 years",
-        "d": "Retain records for 5 years after the contract ends. Give POTRAZ extracts free on request and allow inspection."
-      },
-      {
-        "t": "Transmit subscriber data to POTRAZ monthly",
-        "d": "Send monthly or at the interval POTRAZ sets. Keep data in Zimbabwe and report breaches to POTRAZ."
-      },
-      {
-        "t": "Handle lost SIMs, changes and police requests",
-        "d": "Customers report loss to police and provider and report changes within 21 days. Staff report suspected false IDs to police within 24 hours. Law-enforcement requests go through POTRAZ."
-      }
-    ],
-    "stepsBasis": "official",
-    "stepsSources": [
-      {
-        "t": "veritaszim.net",
-        "u": "https://veritaszim.net/sites/veritas_d/files/SI%202013-142%20-%20Postal%20and%20Telecommunications%20%28Subscriber%20Registration%29%20Regulations%2C%202013.pdf"
-      },
-      {
-        "t": "veritaszim.net",
-        "u": "https://veritaszim.net/node/639"
-      },
-      {
-        "t": "nehandaradio.com",
-        "u": "https://nehandaradio.com/2013/09/28/30-day-ultimatum-for-cellphone-users/"
-      }
-    ],
-    "stepsCheck": "The steps follow S.I. 142 of 2013. One source says those regulations were repealed and replaced (S.I. 95 of 2014), so confirm with POTRAZ which text is in force before you build your sign-up flow around it. Based on the 2013 SI 142 text; later amendments or new rules not checked. No fee or application, as this is a compliance duty. Penalties: fine up to level 7 per day for providers and agents. The Herald article on police-report SIM replacement could not be opened."
-  },
-  {
     "id": "interception",
     "reg": "POTRAZ",
     "scope": "specific",
@@ -2966,10 +2862,14 @@ export const RULES: Rule[] = [
       "vas"
     ],
     "status": "official",
-    "title": "Lawful interception duties for telecom and internet providers",
-    "headline": "Providers must keep systems able to support lawful interception, at their own cost, or face a fine up to level 12 or 3 years.",
-    "summary": "The Interception of Communications Act [Chapter 11:20] applies to providers of telecommunication services. No retention period is set in the Act.",
+    "title": "Duties that come with a telecom licence",
+    "headline": "Register every SIM customer with ID before connecting them, and keep systems ready for lawful interception.",
+    "summary": "These come with an operator, ISP or MVNO licence rather than being separate applications. The Postal and Telecommunications (Subscriber Registration) Regulations, S.I. 95 of 2014 (which repealed S.I. 142 of 2013) bind network operators. Whether airtime resellers and agents are bound was not confirmed. The Interception of Communications Act [Chapter 11:20] applies to providers of telecommunication services. No retention period is set in the Act.",
     "facts": [
+      {
+        "label": "SIM registration",
+        "value": "Collect name, addresses and national ID before contracting. Law enforcement needs a warrant or court order to access the data."
+      },
       {
         "label": "Systems (s9)",
         "value": "Providers must keep systems able to support lawful interception. Failure: a fine up to level 12 or 3 years."
@@ -2987,14 +2887,30 @@ export const RULES: Rule[] = [
         "value": "Disclosing intercepted information: level 14 or 5 years."
       }
     ],
-    "note": "Whether a pure app or SaaS firm counts as a telecommunication provider was not examined.",
+    "note": "Whether a pure app or SaaS firm counts as a telecommunication provider was not examined. Penalties and the text of S.I. 95 of 2014 were not read.",
     "sources": [
       {
         "t": "Interception of Communications Act (ZimLII)",
         "u": "https://zimlii.org/akn/zw/act/2007/6/eng@2022-03-11"
+      },
+      {
+        "t": "S.I. 142 of 2013 and its repeal (Veritas)",
+        "u": "https://veritaszim.net/node/639"
+      },
+      {
+        "t": "MISA Zimbabwe on the regulations",
+        "u": "https://zimbabwe.misa.org/2016/04/01/misa-zimbabwe-statement-on-the-postal-and-telecommunications-subscriber-registration-regulations/"
       }
     ],
     "steps": [
+      {
+        "t": "Register every subscriber before activating a SIM",
+        "d": "Do not activate a SIM or start service until details are registered (SI 142 of 2013, s3)."
+      },
+      {
+        "t": "Keep hard and electronic Subscriber Register for 5 years",
+        "d": "Retain records for 5 years after the contract ends. Give POTRAZ extracts free on request and allow inspection."
+      },
       {
         "t": "Make services interception-capable",
         "d": "Under s12(1) of the Interception of Communications Act, a provider must offer a service that can be intercepted."
@@ -3004,20 +2920,8 @@ export const RULES: Rule[] = [
         "d": "The Authority issues a directive on facilities, devices and compliance deadline (s12(2)-(3)). Providers acquire the specified equipment at their own expense."
       },
       {
-        "t": "Connect to the interception centre",
-        "d": "Provide interfaces and links to the Cyber Security and Monitoring of Interception of Communications Centre, with real-time monitoring and simultaneous interceptions (s9)."
-      },
-      {
-        "t": "Collect and keep customer identity records",
-        "d": "Before contracting, record the customer's name, addresses and ID number, and keep records of changes (s10)."
-      },
-      {
         "t": "Comply with warrants and keep them confidential",
         "d": "Supply call data in real time or soon after call end. Do not disclose information obtained under the Act (s16)."
-      },
-      {
-        "t": "Claim compensation only for gazetted assistance",
-        "d": "The Minister gazettes eligible assistance and tariffs; compensation covers direct personnel and administration costs only (s13)."
       }
     ],
     "stepsBasis": "official",
@@ -3025,9 +2929,21 @@ export const RULES: Rule[] = [
       {
         "t": "zimlii.org",
         "u": "https://zimlii.org/akn/zw/act/2007/6/eng@2022-03-11"
+      },
+      {
+        "t": "veritaszim.net",
+        "u": "https://veritaszim.net/sites/veritas_d/files/SI%202013-142%20-%20Postal%20and%20Telecommunications%20%28Subscriber%20Registration%29%20Regulations%2C%202013.pdf"
+      },
+      {
+        "t": "veritaszim.net",
+        "u": "https://veritaszim.net/node/639"
+      },
+      {
+        "t": "nehandaradio.com",
+        "u": "https://nehandaradio.com/2013/09/28/30-day-ultimatum-for-cellphone-users/"
       }
     ],
-    "stepsCheck": "There is no published application or certification process, so this outlines legal duties only. I did not find the current technical directive or compliance deadline, or any named contact. Penalties: failing to assist is a fine up to level 12 or 3 years' prison; unlawful disclosure up to level 14 or 5 years."
+    "stepsCheck": "The steps follow S.I. 142 of 2013. One source says those regulations were repealed and replaced (S.I. 95 of 2014), so confirm with POTRAZ which text is in force before you build your sign-up flow around it. There is no published application or certification process, so this outlines legal duties only. I did not find the current technical directive or compliance deadline, or any named contact. Penalties: failing to assist is a fine up to level 12 or 3 years' prison; unlawful disclosure up to level 14 or 5 years."
   },
   {
     "id": "broadcasting",
@@ -3229,13 +3145,13 @@ export const RULES: Rule[] = [
   {
     "id": "ip",
     "reg": "IPO",
-    "scope": "specific",
+    "scope": "general",
     "phase": "watch",
     "tags": [
       "ip"
     ],
     "status": "reported",
-    "title": "Protecting your brand, software and content",
+    "title": "Protect your name and brand",
     "headline": "Software copyright is automatic and needs no registration. Trademarks and patents are registered at the IP office.",
     "summary": "Registration is optional, but a trademark is the only way to stop someone else registering your name. Fees below are from a 2022 guide and may have changed.",
     "facts": [
@@ -3316,7 +3232,12 @@ export const RULES: Rule[] = [
         "u": "https://www.wipo.int/wipolex/en/text/216399"
       }
     ],
-    "stepsCheck": "No official ZIPO page was found or opened, so trade mark forms, address, online portal and current fees (2025 amending regulations) are unconfirmed. Copyright fee schedule and Form CNR 2 to 7 amounts unreadable; the Registrar's copyright register mainly records assignments and licences, and a copyright application section (reg 3) was not visible."
+    "stepsCheck": "No official ZIPO page was found or opened, so trade mark forms, address, online portal and current fees (2025 amending regulations) are unconfirmed. Copyright fee schedule and Form CNR 2 to 7 amounts unreadable; the Registrar's copyright register mainly records assignments and licences, and a copyright application section (reg 3) was not visible.",
+    "need": "worth",
+    "benefits": [
+      "Stop anyone else registering your name or logo as a trademark.",
+      "Software and content copyright is automatic: keep dated proof you made it."
+    ]
   },
   {
     "id": "e-transactions",
@@ -4029,6 +3950,11 @@ export const GROUP_INFO: Record<GroupKey, { title: string; caption: string; note
     title: "Once you're running",
     caption: 'Ongoing duties for your idea',
     note: 'You can launch first, but these apply as soon as you operate.',
+  },
+  worth: {
+    title: 'Worth doing',
+    caption: 'Not needed to start',
+    note: "You don't need these to start, but each one opens doors.",
   },
   watch: {
     title: 'Keep an eye on',

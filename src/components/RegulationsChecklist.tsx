@@ -121,12 +121,12 @@ export default function RegulationsChecklist({
 
   const total = list.before.length;
   const done = list.before.filter(m => ticked.has(m.rule.id)).length;
-  const count = list.before.length + list.later.length;
+  const count = list.before.length + list.worth.length + list.later.length;
   const key = ideaKey(idea);
   const savedId = user ? `${user.uid}__${key}` : '';
   const isSaved = saved.some(s => s.id === savedId);
   const allIds = useMemo(
-    () => [...list.before, ...list.later].map(m => m.rule.id),
+    () => [...list.before, ...list.worth, ...list.later].map(m => m.rule.id),
     [list],
   );
 
@@ -237,6 +237,16 @@ export default function RegulationsChecklist({
           <h3 className={styles.sub}>Before you launch</h3>
           <ul className={styles.list}>
             {list.before.map(m => (
+              <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
+            ))}
+          </ul>
+        </>
+      )}
+      {list.worth.length > 0 && (
+        <>
+          <h3 className={styles.sub}>Worth doing</h3>
+          <ul className={styles.list}>
+            {list.worth.map(m => (
               <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
             ))}
           </ul>
