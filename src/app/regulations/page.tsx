@@ -5,15 +5,14 @@ import RegulationsExplorer from '@/components/RegulationsExplorer';
 export const metadata: Metadata = {
   title: 'Zimbabwe startup regulations',
   description:
-    'Describe what you want to build and see the Zimbabwean regulations that apply: licences, registrations, fees and steps, each with its source.',
+    'See regulations and fees for what you are building in Zimbabwe: licences, registrations, steps and sources.',
 };
 
 export default function RegulationsPage() {
   return (
     <>
       <PageHeader title="Regulations for Zimbabwean startups">
-        Describe what you&apos;re building and see the licences, registrations and rules that
-        apply, with fees, steps and sources.
+        See regulations &amp; fees for what you&apos;re building.
       </PageHeader>
       <RegulationsExplorer />
     </>

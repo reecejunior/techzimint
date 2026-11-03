@@ -24,6 +24,7 @@ export const REGULATOR_LOGO: Partial<Record<Regulator, string>> = {
   HEALTH: '/regulators/mcaz.png',
   ZERA: '/regulators/zera.png',
   EDU: '/regulators/zimche.png',
+  PRAZ: '/regulators/praz.png',
   TRANSPORT: '/regulators/coat-of-arms.svg',
   LABOUR: '/regulators/coat-of-arms.svg',
   REGISTRAR: '/regulators/coat-of-arms.svg',
@@ -36,4 +37,5 @@ export const REGULATOR_MONOGRAM: Partial<Record<Regulator, string>> = {
   CONSUMER: 'CPC',
   IPO: 'IP',
   ZMC: 'ZMC',
+  BANKS: 'BANK',
 };

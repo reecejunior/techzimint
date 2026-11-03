@@ -27,6 +27,7 @@ export default function RuleRow({ match, plain = false }: { match: Match; plain?
           )}
           <span className={styles.title}>
             {rule.title}
+            {plain && rule.need === 'worth' && <span className={styles.worth}>Worth doing</span>}
             {rule.status === 'verify' && (
               <span className={styles.verify} title="Unclear, dated or only partly confirmed">
                 Verify
@@ -40,6 +41,16 @@ export default function RuleRow({ match, plain = false }: { match: Match; plain?
       </summary>
 
       <div className={styles.body}>
+        {rule.benefits && rule.benefits.length > 0 && (
+          <div className={styles.benefits}>
+            <span className={styles.label}>
+              {rule.need === 'worth' ? "Why it's worth doing" : 'What you get'}
+            </span>
+            <ul>
+              {rule.benefits.map(b => <li key={b}>{b}</li>)}
+            </ul>
+          </div>
+        )}
         <p className={styles.summary}>{rule.summary}</p>
         <dl className={styles.facts}>
           {rule.facts.map(f => (
