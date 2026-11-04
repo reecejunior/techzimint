@@ -13,7 +13,8 @@
     "remove:duplicate-reviews": "node scripts/remove-duplicate-reviews.mjs",
     "seed": "node scripts/seed.mjs",
     "snapshot-ranks": "node scripts/snapshot-ranks.mjs",
-    "test:logic": "node --experimental-strip-types --no-warnings scripts/logic-check.mts"
+    "test:logic": "node --experimental-strip-types --no-warnings scripts/logic-check.mts",
+    "logos": "node scripts/optimise-logos.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

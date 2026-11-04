@@ -1,13 +1,14 @@
 import type { Regulator } from './regulations';
 
 /**
- * Logo files for each regulator, served from /public/regulators. Rows for a
+ * Logo files for each regulator, served from /public/regulators. Run
+ * `npm run logos` after adding one: it shrinks every file to a small PNG. Rows for a
  * government ministry use the national coat of arms. A regulator with no entry,
  * or whose file is missing, shows its short code in a plain circle instead.
  */
 export const REGULATOR_LOGO: Partial<Record<Regulator, string>> = {
   POTRAZ: '/regulators/potraz.png',
-  RBZ: '/regulators/rbz.gif',
+  RBZ: '/regulators/rbz.png',
   FIU: '/regulators/fiu.png',
   SECZ: '/regulators/secz.png',
   IPEC: '/regulators/ipec.png',
@@ -25,11 +26,11 @@ export const REGULATOR_LOGO: Partial<Record<Regulator, string>> = {
   ZERA: '/regulators/zera.png',
   EDU: '/regulators/zimche.png',
   PRAZ: '/regulators/praz.png',
-  TRANSPORT: '/regulators/coat-of-arms.svg',
-  LABOUR: '/regulators/coat-of-arms.svg',
-  REGISTRAR: '/regulators/coat-of-arms.svg',
-  AGRI: '/regulators/coat-of-arms.svg',
-  ICT: '/regulators/coat-of-arms.svg',
+  TRANSPORT: '/regulators/coat-of-arms.png',
+  LABOUR: '/regulators/coat-of-arms.png',
+  REGISTRAR: '/regulators/coat-of-arms.png',
+  AGRI: '/regulators/coat-of-arms.png',
+  ICT: '/regulators/coat-of-arms.png',
 };
 
 /** Text for the plain circle when there is no logo. */

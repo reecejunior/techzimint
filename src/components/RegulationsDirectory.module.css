@@ -80,6 +80,84 @@
   overflow: hidden;
 }
 
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: calc(var(--s-4) * -1);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-700);
+}
+
+.legend p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px var(--s-2);
+}
+
+.kindGet,
+.kindFollow {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.kindGet {
+  background: var(--ink-900);
+  color: var(--white);
+}
+
+.kindFollow {
+  border: 1px dashed var(--ink-400);
+  background: var(--white);
+  color: var(--ink-700);
+}
+
+.sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-top: var(--s-1);
+}
+
+.subNote {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-500);
+}
+
+.list[data-kind='follow'] {
+  border-style: dashed;
+  background: var(--surface);
+}
+
+.rulesBlock {
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--hairline);
+}
+
+.rulesBlock > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  cursor: pointer;
+}
+
+.rulesBlock .kindFollow {
+  font-size: 14px;
+}
+
 .gaps {
   padding-top: var(--s-6);
   border-top: 1px solid var(--hairline);
@@ -119,4 +197,18 @@
 
 .back:hover {
   text-decoration-color: currentColor;
+}
+
+.rulesBlock > summary::after {
+  content: 'Show';
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rulesBlock[open] > summary::after {
+  content: 'Hide';
 }

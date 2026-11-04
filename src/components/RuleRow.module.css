@@ -42,6 +42,17 @@
   color: var(--ink-500);
 }
 
+.notLicence {
+  margin-left: var(--s-2);
+  padding: 0 7px;
+  border: 1px dashed var(--ink-400);
+  border-radius: var(--r-pill);
+  color: var(--ink-700);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .title {
   font-size: 16px;
   font-weight: 600;
@@ -107,6 +118,33 @@
   border-bottom: 2px solid #2F7D4F;
   border-left: 2px solid #2F7D4F;
   transform: rotate(-45deg);
+}
+
+.when {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-900);
+}
+
+.whenLabel {
+  margin-right: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink-700);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.when[data-need='gate'] .whenLabel {
+  background: var(--orange-100);
+  color: var(--orange-800);
+}
+
+.when[data-need='worth'] .whenLabel,
+.when[data-need='choice'] .whenLabel {
+  background: #EAF5EE;
+  color: #1F5A37;
 }
 
 .headline {

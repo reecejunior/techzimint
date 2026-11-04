@@ -286,8 +286,11 @@ export const RULES: Rule[] = [
       "data"
     ],
     "status": "official",
-    "title": "Data controller licence from POTRAZ",
-    "headline": "Licence fee of $50 to $2,500 a year, set by how many people's data you hold.",
+    "title": "Data protection licence",
+    "headline": "A yearly POTRAZ licence for businesses that collect personal data: US$50 to US$2,500, set by how many people.",
+    "when": "Once you hold personal data on 50 or more people. The smallest licence tier starts at 50.",
+    "need": "when",
+    "kind": "get",
     "summary": "POTRAZ is the Data Protection Authority. If you decide why and how personal data is processed, or process it for commercial gain, you need a licence. That covers most apps, wallets, shops and platforms. The licence comes with duties: a certified data protection officer, breach reports within 24 hours, and telling POTRAZ before you send data abroad.",
     "facts": [
       {
@@ -452,8 +455,11 @@ export const RULES: Rule[] = [
       "media"
     ],
     "status": "official",
-    "title": "Cyber-crime offences and duties for platforms hosting user content",
-    "headline": "Hosts must remove illegal content promptly once a court orders it or they become aware, or face an offence.",
+    "title": "Rules for content your users post",
+    "headline": "Take down illegal content once a court orders it or you learn of it.",
+    "when": "If people can post content on your platform.",
+    "need": "when",
+    "kind": "follow",
     "summary": "The Cyber and Data Protection Act [Chapter 12:07] rewrote sections 163 to 166 of the Criminal Law Code and added intermediary rules. Platforms with user posts, comments or images should plan moderation and takedown around these.",
     "facts": [
       {
@@ -525,7 +531,10 @@ export const RULES: Rule[] = [
     ],
     "status": "verify",
     "title": "Internet service provider (ISP) licence",
-    "headline": "Five ISP tiers, from $50 for a community ISP to $50,000 for a national one.",
+    "headline": "You need this POTRAZ licence to sell internet access. From US$50 for a community ISP to US$50,000 for a national one.",
+    "when": "Before you sell internet access to anyone.",
+    "need": "gate",
+    "kind": "get",
     "summary": "POTRAZ's fee table lists ISP categories by coverage area. Provincial, metropolitan, district and community tiers are listed as exempt from the annual levy.",
     "facts": [
       {
@@ -624,8 +633,11 @@ export const RULES: Rule[] = [
       "mvno"
     ],
     "status": "verify",
-    "title": "Mobile virtual network (MVNO, MVNE) licences",
-    "headline": "From $500 for a branded reseller to $50,000 for a full MVNO.",
+    "title": "Mobile network (MVNO) licence",
+    "headline": "You need this POTRAZ licence to sell airtime, data or SIMs under your own brand. From US$500 for a reseller to US$50,000.",
+    "when": "Before you sell mobile services under your own brand.",
+    "need": "gate",
+    "kind": "get",
     "summary": "POTRAZ lists four virtual-network categories under converged licensing. The role definitions come from a 2017 proposal article, so confirm them before you choose a category.",
     "facts": [
       {
@@ -708,91 +720,6 @@ export const RULES: Rule[] = [
     "stepsCheck": "No online portal, processing time or renewal steps found. Whether a full MVNO also needs host-network agreements or spectrum is not stated. The fee PDF is a 2022 schedule and may be outdated. Contact is the general POTRAZ address above."
   },
   {
-    "id": "potraz-app",
-    "scope": "specific",
-    "phase": "before",
-    "reg": "POTRAZ",
-    "tags": [
-      "vas",
-      "platform"
-    ],
-    "status": "verify",
-    "title": "Application Services licence (category 1.4)",
-    "headline": "Bulk SMS and SMS gateway services likely need a POTRAZ licence. For ordinary apps, SaaS and content the position is not stated.",
-    "summary": "POTRAZ's fee table has no category named value-added services and does not define who must hold Application Services. Do not assume you need it, and do not assume you are exempt.",
-    "facts": [
-      {
-        "label": "Fee table",
-        "value": "Application $800. Initial or renewal $525,000. Levy 3.5% of gross turnover plus VAT. Term 20 years. Sub-categories 1.4.1 to 1.4.9 are the MVNO, MVNE and ISP tiers."
-      },
-      {
-        "label": "2015 draft definition",
-        "value": "\"The Application Services Licence shall allow the provision of electronic communication services to end-users\", such as internet services, VoIP, messaging services, video conferences and mobile money."
-      },
-      {
-        "label": "2015 draft classes",
-        "value": "Category A: an individual licence of 10 years. Category B: a class licence of 5 years for firms without their own network. The draft names value-added service provision and SMS aggregation or SMS gateway operation."
-      },
-      {
-        "label": "Not found",
-        "value": "Nothing on whether USSD, OTT, apps, SaaS or content platforms need it."
-      }
-    ],
-    "note": "The definitions come from a 2015 consultation draft, not the final framework, which we could not find. Ask POTRAZ in writing whether your product counts as an application service and keep the reply on file.",
-    "sources": [
-      {
-        "t": "POTRAZ licence categories and fees (PDF)",
-        "u": "https://www.potraz.gov.zw/wp-content/uploads/2022/03/Licence-Categories-Including-Fees.pdf"
-      },
-      {
-        "t": "POTRAZ 2015 converged licensing consultation paper",
-        "u": "https://www.potraz.gov.zw/wp-content/uploads/2015/10/CONSULTATION_PAPER_CONVERGED_LICENSING_FRAMEWORK_2015.pdf"
-      }
-    ],
-    "steps": [
-      {
-        "t": "Confirm you need Application Services licence 1.4",
-        "d": "It covers end-user services without owning or operating a network."
-      },
-      {
-        "t": "Download PT1 form and write cover letter to Director General",
-        "d": "Form signed by approved persons."
-      },
-      {
-        "t": "Assemble proposal document",
-        "d": "Include CR14, Certificate of Incorporation, market analysis, 5-year plan, proof of financial capacity, services description, area of operation, and technical description."
-      },
-      {
-        "t": "Pay US$800 application fee and submit",
-        "d": "Include the receipt. Submit when POTRAZ opens applications; incomplete files are returned for missing documents."
-      },
-      {
-        "t": "Wait for evaluation, Board and Minister approval",
-        "d": "No processing time is published."
-      },
-      {
-        "t": "Pay US$525,000 initial fee, then 3.5% of turnover",
-        "d": "Licence issues after payment. Tenure 20 years. The levy is USF plus annual fee plus VAT."
-      }
-    ],
-    "stepsBasis": "official",
-    "stepsSources": [
-      {
-        "t": "potraz.gov.zw",
-        "u": "https://www.potraz.gov.zw/?page_id=2274"
-      },
-      {
-        "t": "potraz.gov.zw",
-        "u": "http://www.potraz.gov.zw/wp-content/uploads/2022/03/Licence-Categories-Including-Fees.pdf"
-      },
-      {
-        "t": "potraz.gov.zw",
-        "u": "https://www.potraz.gov.zw/?page_id=2284"
-      }
-    ],
-    "stepsCheck": "The fee schedule lists 1.4 Application Services at US$525,000, which looks like the full category; whether narrower app or content services get a cheaper licence is not stated. No portal, timeline or renewal process found."
-  },
-  {
     "id": "potraz-codes",
     "scope": "specific",
     "phase": "before",
@@ -801,8 +728,11 @@ export const RULES: Rule[] = [
       "vas"
     ],
     "status": "verify",
-    "title": "Short codes, USSD codes and numbering",
-    "headline": "A five-digit premium short code costs $1,200 to apply and $1,200 a year.",
+    "title": "A short code or USSD menu",
+    "headline": "You rent the number from POTRAZ: from US$50 a year for a three-digit code to US$1,200 for a five-digit premium one.",
+    "when": "Only if you want a short code or USSD menu.",
+    "need": "choice",
+    "kind": "get",
     "summary": "If your service runs on a short code or special number, POTRAZ charges for the number itself on top of any licence.",
     "facts": [
       {
@@ -883,9 +813,12 @@ export const RULES: Rule[] = [
       "drones"
     ],
     "status": "verify",
-    "title": "Type approval for radio and telecom equipment",
-    "headline": "Radio equipment needs POTRAZ type approval (US$500 in the 2001 regulations) and a licence to import radio transmitters.",
-    "summary": "Devices with radios such as WLAN, Bluetooth and Zigbee reportedly need POTRAZ homologation before they are sold or used. We could not find the regulation itself.",
+    "title": "Approval for radio devices",
+    "headline": "Devices with Wi-Fi, Bluetooth or GSM must be approved by POTRAZ before you sell them in Zimbabwe.",
+    "when": "Before you sell or import devices with radios (Wi-Fi, Bluetooth, GSM).",
+    "need": "when",
+    "kind": "get",
+    "summary": "Anything that transmits by radio, such as Wi-Fi, Bluetooth or Zigbee devices, is reported to need POTRAZ approval (homologation) before it is sold or used here. If you import or sell hardware, ask POTRAZ which of your devices are covered.",
     "facts": [
       {
         "label": "Radio equipment",
@@ -959,9 +892,12 @@ export const RULES: Rule[] = [
       "courier"
     ],
     "status": "official",
-    "title": "Postal and courier operator licence",
-    "headline": "Courier licences cost from US$50 to US$250 to apply and US$500 to US$100,000 to hold, set by how far you deliver.",
-    "summary": "Section 32 of the Postal and Telecommunications Act [Chapter 12:05] bars anyone from operating a postal service without a licence. S.I. 110 of 2023 sets the fees by category. Whether delivery apps and runners are caught is not stated.",
+    "title": "Courier licence",
+    "headline": "Delivering parcels or mail for others needs a POTRAZ licence, priced by how far you deliver.",
+    "when": "If you deliver parcels or mail for others.",
+    "need": "when",
+    "kind": "get",
+    "summary": "Section 32 of the Postal and Telecommunications Act [Chapter 12:05] bars anyone from running a postal or courier service without a licence, and S.I. 110 of 2023 sets the fees. If you run a delivery app, ask POTRAZ whether your model counts as a courier service.",
     "facts": [
       {
         "label": "Law",
@@ -1063,8 +999,11 @@ export const RULES: Rule[] = [
       "payments"
     ],
     "status": "official",
-    "title": "Mobile money and money transmission",
-    "headline": "Payment systems need recognition under the National Payment Systems Act. Mobile money providers count as financial institutions.",
+    "title": "Mobile money approval (RBZ)",
+    "headline": "Holding or moving customers' money needs the Reserve Bank to approve your payment system first.",
+    "when": "Before you hold or move customers' money.",
+    "need": "gate",
+    "kind": "get",
     "summary": "If your product holds or moves customers' money, such as a wallet, remittance service or mobile banking, S.I. 80 of 2020 applies.",
     "facts": [
       {
@@ -1159,8 +1098,11 @@ export const RULES: Rule[] = [
       "crypto"
     ],
     "status": "official",
-    "title": "Virtual asset service provider registration",
-    "headline": "Crypto businesses must register with the FIU: US$500 for 12 months, and a Zimbabwe-incorporated entity is required.",
+    "title": "Crypto business registration (FIU)",
+    "headline": "Crypto exchanges, wallets and custody services must register with the FIU: US$500 a year.",
+    "when": "Before you offer crypto exchange, transfer or custody.",
+    "need": "gate",
+    "kind": "get",
     "summary": "S.I. 99 of 2026 brought exchanges, transfer services and custody providers under anti-money-laundering rules. The FIU says registration is not permission to trade, so the Reserve Bank or SECZ may still need to authorise you.",
     "facts": [
       {
@@ -1264,8 +1206,11 @@ export const RULES: Rule[] = [
       "crypto"
     ],
     "status": "reported",
-    "title": "SECZ regulatory sandbox for investment and tokenization",
-    "headline": "Seven firms were admitted on a public notice dated 27 July 2026.",
+    "title": "Investment sandbox (SECZ)",
+    "headline": "Optional: test an investment or tokenisation product under SECZ supervision before applying for a full licence.",
+    "when": "Only if you want to test an investment or tokenisation product.",
+    "need": "choice",
+    "kind": "get",
     "summary": "The sandbox lets approved solutions test within set limits. Admission does not promise a full licence.",
     "facts": [
       {
@@ -1352,8 +1297,11 @@ export const RULES: Rule[] = [
       "insurtech"
     ],
     "status": "official",
-    "title": "Register with IPEC to sell insurance or run a pension scheme",
-    "headline": "The IPEC Amendment Act, 2026 is in force (24 April 2026), and brokers must now be registered and supervised.",
+    "title": "Insurance and pensions registration (IPEC)",
+    "headline": "Selling insurance, or running a pension or medical aid scheme, needs IPEC registration first.",
+    "when": "Before you sell insurance or run a pension or medical aid scheme.",
+    "need": "gate",
+    "kind": "get",
     "summary": "IPEC's Circular 13 of 2026 says the Amendment Act (Act No. 2 of 2026) took effect on 24 April 2026. IPEC publishes licensing checklists for insurers, brokers and agents, an online portal and a regulatory sandbox you can apply to join.",
     "facts": [
       {
@@ -1472,8 +1420,11 @@ export const RULES: Rule[] = [
       "ridehailing"
     ],
     "status": "reported",
-    "title": "E-hailing: rules are being written",
-    "headline": "Government says current law has no provision for e-hailing, and a five-month moratorium was reported on 8 Sep 2026.",
+    "title": "Ride-hailing: rules are coming",
+    "headline": "There is no e-hailing law yet. Government says new rules are on the way and platforms should register with ZIMRA.",
+    "when": "If you run ride-hailing. New rules are on the way.",
+    "need": "when",
+    "kind": "follow",
     "summary": "Ride-hailing sits in a gap. Expect new registration, safety standards and fees, and watch for the interim statutory instrument.",
     "facts": [
       {
@@ -1565,8 +1516,11 @@ export const RULES: Rule[] = [
       "platform"
     ],
     "status": "reported",
-    "title": "Digital Services Withholding Tax",
-    "headline": "15.5% where a foreign digital supplier is not VAT-registered in Zimbabwe, from 1 Jan 2026.",
+    "title": "Tax on foreign digital services",
+    "headline": "Foreign platforms that aren't VAT-registered here have 15.5% withheld. It matters if you buy from, or compete with, one.",
+    "when": "If a foreign platform sells digital services to your customers, or to you.",
+    "need": "when",
+    "kind": "follow",
     "summary": "ZIMRA guidance reportedly names platform-based transport hailing among covered services. It matters if your platform, or a platform you depend on, is foreign-operated.",
     "facts": [
       {
@@ -1645,8 +1599,11 @@ export const RULES: Rule[] = [
       "drones"
     ],
     "status": "verify",
-    "title": "Drones: CAAZ clearance and ZIMRA import rules",
-    "headline": "Drones need CAAZ registration and clearance, and are cleared through ZIMRA on import.",
+    "title": "Drone registration (CAAZ)",
+    "headline": "Drones must be registered and cleared by the Civil Aviation Authority, and cleared through customs when imported.",
+    "when": "Before you fly drones for business.",
+    "need": "when",
+    "kind": "get",
     "summary": "Commercial drone operators deal with the Civil Aviation Authority first, then customs. Broadcast drones need extra permits.",
     "facts": [
       {
@@ -1746,8 +1703,11 @@ export const RULES: Rule[] = [
       "platform"
     ],
     "status": "reported",
-    "title": "Consumer Protection Act duties for online sellers",
-    "headline": "Online sellers must disclose who they are and the full price, and buyers can cancel an electronic transaction and get a refund within 14 days.",
+    "title": "Consumer protection rules",
+    "headline": "Show who you are and the full price, and let online buyers cancel for a refund.",
+    "when": "When you sell to consumers, online or offline.",
+    "need": "when",
+    "kind": "follow",
     "summary": "The Consumer Protection Act, 2019 [Chapter 14:44] applies to online shops. Build disclosure, a secure payment system, the cooling-off right and an unsubscribe option into your checkout and marketing.",
     "facts": [
       {
@@ -1829,7 +1789,10 @@ export const RULES: Rule[] = [
     "tags": [],
     "status": "official",
     "title": "Register with ZIMRA",
-    "headline": "Required within 30 days of starting. It also gets you tax clearance, so clients pay you in full.",
+    "headline": "Tax clearance means clients pay you in full, and it opens government tenders.",
+    "when": "Within 30 days of starting to trade. VAT once turnover passes US$25,000 a year.",
+    "need": "when",
+    "kind": "get",
     "summary": "All individuals, companies, partnerships and cooperatives starting a business must register. VAT starts once turnover passes US$25,000.",
     "facts": [
       {
@@ -1977,6 +1940,9 @@ export const RULES: Rule[] = [
     "status": "verify",
     "title": "Register a company",
     "headline": "You can trade as a sole trader without it, but a company limits your risk and lets you take investors.",
+    "when": "Optional. Worth it once you want investors or to protect your personal assets.",
+    "need": "worth",
+    "kind": "get",
     "summary": "Most startups register a private limited company with the Registrar of Companies and Other Business Entities.",
     "facts": [
       {
@@ -2085,7 +2051,6 @@ export const RULES: Rule[] = [
       }
     ],
     "stepsCheck": "Fees quoted online (US$5 reservation, US$140 incorporation) date from 2019. The beneficial-owner threshold appears as both 'more than 20%' and 'at least 20%'. No official registry page or portal URL found. Fees are from a 2019 article (US$5 reservation, US$140 incorporation) and may be outdated. CR16 and the 7-day deadline come from an opinion article, and ss.72-73 text was not read. Beneficial-owner threshold is stated as more than 20% (ZimLII) and at least 20% (Business Times). Re-registration of pre-2019 companies is mentioned, but its deadline was not found.",
-    "need": "worth",
     "benefits": [
       "Limit your risk: owners are not personally liable for the company's debts.",
       "Take on investors by issuing shares.",
@@ -2097,11 +2062,13 @@ export const RULES: Rule[] = [
     "reg": "BANKS",
     "scope": "general",
     "phase": "before",
-    "need": "worth",
     "tags": [],
     "status": "reported",
     "title": "Open a business bank account",
     "headline": "No law requires it, but it's how companies and government will pay you.",
+    "when": "Optional. Worth it once companies or government start paying you.",
+    "need": "worth",
+    "kind": "get",
     "summary": "Most clients pay by bank transfer, and a bank record is what lenders look at for an SME loan. Reports say an RBZ policy ties council trading licences to having a bank account and a card machine.",
     "benefits": [
       "Get paid by transfer: RTGS, ZIPIT, EcoCash or card.",
@@ -2156,11 +2123,13 @@ export const RULES: Rule[] = [
     "reg": "PRAZ",
     "scope": "general",
     "phase": "before",
-    "need": "worth",
     "tags": [],
     "status": "reported",
     "title": "Register with PRAZ to sell to government",
     "headline": "Lets you bid for tenders from ministries, parastatals and councils.",
+    "when": "Optional. Needed only to bid for government tenders.",
+    "need": "worth",
+    "kind": "get",
     "summary": "The Procurement Regulatory Authority of Zimbabwe keeps the register of suppliers that public bodies buy from. Supplier guides say you must be registered to bid. Registration is online, on the e-GP system.",
     "benefits": [
       "Bid for public tenders from ministries, parastatals and councils.",
@@ -2225,8 +2194,11 @@ export const RULES: Rule[] = [
     "phase": "running",
     "tags": [],
     "status": "official",
-    "title": "Register with NSSA when you hire",
-    "headline": "Registering as an employer brings your staff into both NSSA schemes. The pension rate is 4.5% from you and 4.5% from each employee.",
+    "title": "NSSA registration",
+    "headline": "Register as an employer and pay pension contributions: 4.5% from you and 4.5% from each employee.",
+    "when": "When you hire your first employee.",
+    "need": "when",
+    "kind": "get",
     "summary": "As soon as you take on an employee you register on the NSSA self-service portal and pay monthly. Domestic workers and non-resident foreign nationals are excluded from the pension scheme.",
     "facts": [
       {
@@ -2315,8 +2287,11 @@ export const RULES: Rule[] = [
     "phase": "running",
     "tags": [],
     "status": "reported",
-    "title": "Labour Act basics for your first hires",
-    "headline": "Give written particulars when you engage someone, and notice periods run from one day to three months by length of service.",
+    "title": "Employment rules",
+    "headline": "Give written terms, follow the notice periods and pay at least your industry's minimum wage.",
+    "when": "When you hire your first employee.",
+    "need": "when",
+    "kind": "follow",
     "summary": "The Labour Act [Chapter 28:01] and industry employment council agreements set the floor for pay, leave and dismissal, even in a small team.",
     "facts": [
       {
@@ -2395,8 +2370,11 @@ export const RULES: Rule[] = [
       "foreign"
     ],
     "status": "reported",
-    "title": "Foreign investors, reserved sectors and ZIDA",
-    "headline": "Foreign-owned startups need a ZIDA licence only in reserved sectors, and new thresholds apply there (S.I. 215 of 2025).",
+    "title": "Investment licence for foreign owners (ZIDA)",
+    "headline": "Only foreign-owned businesses in reserved sectors, such as retail or haulage, need a ZIDA licence.",
+    "when": "Only if you are foreign-owned and in a reserved sector.",
+    "need": "when",
+    "kind": "get",
     "summary": "A General Investment Licence is not compulsory unless your activity is reserved. Retail, haulage, grain milling, shipping and forwarding, advertising, employment agencies and estate agencies are reserved sectors.",
     "facts": [
       {
@@ -2484,8 +2462,11 @@ export const RULES: Rule[] = [
       "payments"
     ],
     "status": "verify",
-    "title": "Exchange control: foreign income, foreign vendors and dividends",
-    "headline": "Exporters surrender 30% of foreign currency and keep 70%, and recurring foreign service fees need an RBZ-registered agreement.",
+    "title": "Foreign currency rules",
+    "headline": "Exporters convert 30% of foreign earnings, and recurring payments to foreign vendors need an RBZ-registered agreement.",
+    "when": "When you earn foreign currency, pay foreign vendors or send profits abroad.",
+    "need": "when",
+    "kind": "follow",
     "summary": "The Reserve Bank's Foreign Exchange Guidelines (FXD5 v2.0, March 2026) matter to startups that earn in dollars, pay foreign software or cloud vendors, or send dividends abroad.",
     "facts": [
       {
@@ -2572,9 +2553,12 @@ export const RULES: Rule[] = [
       "lending"
     ],
     "status": "official",
-    "title": "Lending and credit: register as a microfinance institution",
-    "headline": "Lending without registration is an offence, and the loan carries no interest.",
-    "summary": "Anyone conducting microfinance business, whether credit-only or deposit-taking, must be a company registered with the Registrar of Microfinance Institutions at the Reserve Bank. Whether app-based lenders and buy-now-pay-later are named was not confirmed.",
+    "title": "Lending licence (microfinance)",
+    "headline": "Lending money as a business needs registration with the Reserve Bank's registrar. Unregistered loans earn no interest.",
+    "when": "Before you lend money to customers. Unregistered loans carry no interest.",
+    "need": "gate",
+    "kind": "get",
+    "summary": "Anyone in the business of lending, whether they only lend or also take deposits, must be a company registered with the Registrar of Microfinance Institutions at the Reserve Bank. App-based lending and buy-now-pay-later fall under lending, so plan for registration.",
     "facts": [
       {
         "label": "Law",
@@ -2668,8 +2652,11 @@ export const RULES: Rule[] = [
       "payments"
     ],
     "status": "official",
-    "title": "Payment service providers and aggregators",
-    "headline": "Non-banks go through a partner deposit-taking institution, and nothing may launch, even as a pilot, without Reserve Bank approval.",
+    "title": "Payment service provider approval (RBZ)",
+    "headline": "Processing payments for others needs Reserve Bank approval through a partner bank. No pilots before approval.",
+    "when": "Before you process payments for others, even as a pilot.",
+    "need": "gate",
+    "kind": "get",
     "summary": "The Reserve Bank's 2016 Recognition Framework still sets the route for a fintech that processes payments but is not a bank or mobile network operator. No separate aggregator or gateway licence category was found.",
     "facts": [
       {
@@ -2772,8 +2759,11 @@ export const RULES: Rule[] = [
       "insurtech"
     ],
     "status": "official",
-    "title": "Know your customer and anti-money-laundering duties",
-    "headline": "Verify customers when a relationship opens, keep records for 5 years, and failing to identify a customer can cost up to US$100,000 and/or 3 years.",
+    "title": "Know-your-customer rules",
+    "headline": "Payments, lending and crypto businesses must verify customers and keep records for 5 years.",
+    "when": "Once you run payments, lending, crypto or investments.",
+    "need": "when",
+    "kind": "follow",
     "summary": "The Money Laundering and Proceeds of Crime Act [Chapter 9:24], amended in 2025, binds financial institutions and a list of designated businesses. Design onboarding around it from day one.",
     "facts": [
       {
@@ -2863,8 +2853,11 @@ export const RULES: Rule[] = [
     ],
     "status": "official",
     "title": "Duties that come with a telecom licence",
-    "headline": "Register every SIM customer with ID before connecting them, and keep systems ready for lawful interception.",
-    "summary": "These come with an operator, ISP or MVNO licence rather than being separate applications. The Postal and Telecommunications (Subscriber Registration) Regulations, S.I. 95 of 2014 (which repealed S.I. 142 of 2013) bind network operators. Whether airtime resellers and agents are bound was not confirmed. The Interception of Communications Act [Chapter 11:20] applies to providers of telecommunication services. No retention period is set in the Act.",
+    "headline": "Telecom licence holders must register every SIM customer with ID and keep systems ready for lawful interception.",
+    "when": "Once you hold an ISP, MVNO or other telecom licence.",
+    "need": "when",
+    "kind": "follow",
+    "summary": "These come with an ISP, MVNO or operator licence rather than being separate applications. Operators must register every SIM customer under the Subscriber Registration Regulations (S.I. 95 of 2014), and keep their network ready for lawful interception under the Interception of Communications Act [Chapter 11:20].",
     "facts": [
       {
         "label": "SIM registration",
@@ -2954,8 +2947,11 @@ export const RULES: Rule[] = [
       "media"
     ],
     "status": "verify",
-    "title": "Streaming, podcasts and web radio fall under the BAZ licence regime",
-    "headline": "A 2025 amendment brought internet-based broadcasting, webcasting and podcasts into the Broadcasting Services Act.",
+    "title": "Online broadcasting licence (BAZ)",
+    "headline": "Streaming, web TV, internet radio and podcasts now fall under the Broadcasting Services Act. Check with BAZ before launch.",
+    "when": "If you stream, webcast or run internet radio or TV.",
+    "need": "when",
+    "kind": "get",
     "summary": "The Broadcasting Services Amendment Act No. 2 of 2025 was gazetted on 23 May 2025 and commenced by S.I. 73 of 2025. A pre-launch licence is likely for streaming, web TV and internet radio, but the text read has no explicit licence sentence.",
     "facts": [
       {
@@ -3063,8 +3059,11 @@ export const RULES: Rule[] = [
       "social"
     ],
     "status": "reported",
-    "title": "Media and social media law reform",
-    "headline": "A Media Practitioners Bill and a social media law are in preparation, and no registration rule for bloggers is confirmed.",
+    "title": "Media law changes",
+    "headline": "Bloggers and online publishers need no registration yet, but new media and social media laws are being drafted.",
+    "when": "If you publish news or run a social platform.",
+    "need": "when",
+    "kind": "follow",
     "summary": "The Zimbabwe Media Commission Act has no registration or accreditation requirement for online publishers or bloggers, but mass media owners pay an annual levy. Reform is pending.",
     "facts": [
       {
@@ -3153,6 +3152,9 @@ export const RULES: Rule[] = [
     "status": "reported",
     "title": "Protect your name and brand",
     "headline": "Software copyright is automatic and needs no registration. Trademarks and patents are registered at the IP office.",
+    "when": "Optional. Worth it before you spend on your brand.",
+    "need": "worth",
+    "kind": "get",
     "summary": "Registration is optional, but a trademark is the only way to stop someone else registering your name. Fees below are from a 2022 guide and may have changed.",
     "facts": [
       {
@@ -3233,7 +3235,6 @@ export const RULES: Rule[] = [
       }
     ],
     "stepsCheck": "No official ZIPO page was found or opened, so trade mark forms, address, online portal and current fees (2025 amending regulations) are unconfirmed. Copyright fee schedule and Form CNR 2 to 7 amounts unreadable; the Registrar's copyright register mainly records assignments and licences, and a copyright application section (reg 3) was not visible.",
-    "need": "worth",
     "benefits": [
       "Stop anyone else registering your name or logo as a trademark.",
       "Software and content copyright is automatic: keep dated proof you made it."
@@ -3250,8 +3251,11 @@ export const RULES: Rule[] = [
       "payments"
     ],
     "status": "reported",
-    "title": "Electronic contracts and signatures: no general law yet",
-    "headline": "No enacted e-transactions or e-signature statute was found. Cabinet only approved the bill's principles, in September 2021.",
+    "title": "Electronic contracts and signatures",
+    "headline": "There's no e-signature law yet, but most contracts can be signed electronically. Property deeds still need originals.",
+    "when": "If you sign contracts or take orders online.",
+    "need": "when",
+    "kind": "follow",
     "summary": "Most contracts can be signed electronically in practice, but notarial and registered instruments under the Deeds Registries Act need originals.",
     "facts": [
       {
@@ -3322,8 +3326,11 @@ export const RULES: Rule[] = [
       "health"
     ],
     "status": "verify",
-    "title": "Health platforms: clinician registration, telemedicine policy and device rules",
-    "headline": "Telemedicine must link to registered premises, so a fully virtual clinic is not permitted under the 2022 doctors' policy.",
+    "title": "Rules for health platforms",
+    "headline": "Clinicians on your platform must be registered with their council, and telemedicine must link to a registered practice.",
+    "when": "If clinicians on your platform treat patients.",
+    "need": "when",
+    "kind": "follow",
     "summary": "Only condoms and gloves are currently regulated as medical devices, and no MCAZ rule on health software was found. The clinicians you onboard must still be registered with their councils.",
     "facts": [
       {
@@ -3418,8 +3425,11 @@ export const RULES: Rule[] = [
       "education"
     ],
     "status": "verify",
-    "title": "Education platforms: schools and higher education programmes",
-    "headline": "Non-government schools must be registered, and every higher education programme needs ZIMCHE accreditation before it is offered.",
+    "title": "School registration and course accreditation",
+    "headline": "Private schools must be registered, and every higher education programme needs ZIMCHE accreditation before it is offered.",
+    "when": "If you run a school or offer a higher education programme.",
+    "need": "when",
+    "kind": "get",
     "summary": "Nothing was found on online-only schools. The March 2026 online-degree standards cover conventional universities, not new providers.",
     "facts": [
       {
@@ -3502,9 +3512,12 @@ export const RULES: Rule[] = [
       "property"
     ],
     "status": "verify",
-    "title": "Property platforms: estate agent registration",
-    "headline": "Practising as an estate agent without registration is an offence, and the definition includes collecting rent or deposits.",
-    "summary": "Bringing parties together for payment, negotiating, valuing, and collecting rent or deposits count as practising. Advertising alone is not listed, so a pure listings portal may fall outside, but that is not confirmed.",
+    "title": "Estate agent registration",
+    "headline": "Negotiating property deals, or collecting rent or deposits for others, needs Estate Agents Council registration.",
+    "when": "If you negotiate deals or collect rent or deposits for others.",
+    "need": "when",
+    "kind": "get",
+    "summary": "Negotiating deals, valuing property and collecting rent or deposits for others all count as practising as an estate agent. A platform that only lists properties, without handling deals or money, may not need to register: ask the Estate Agents Council.",
     "facts": [
       {
         "label": "Offence (s60)",
@@ -3574,8 +3587,11 @@ export const RULES: Rule[] = [
       "agri"
     ],
     "status": "verify",
-    "title": "Agriculture platforms: input registration and warehouse receipts",
-    "headline": "Fertilisers, feeds and remedies must be registered with the FFRI, and warehouses and managers need licences under the Warehouse Receipt Act.",
+    "title": "Farm input and warehouse registration",
+    "headline": "Fertiliser, feed and remedies must be registered before sale, and warehouses issuing receipts need a licence.",
+    "when": "If you sell fertiliser, feed or remedies, or issue warehouse receipts.",
+    "need": "when",
+    "kind": "get",
     "summary": "If your platform sells inputs or issues warehouse receipts, two registrations matter. Nothing specific was found on contract farming or digital marketplaces.",
     "facts": [
       {
@@ -3646,8 +3662,11 @@ export const RULES: Rule[] = [
       "tourism"
     ],
     "status": "reported",
-    "title": "Tourism and booking platforms: ZTA registration",
-    "headline": "Tourism Act No. 5 of 2026 will make platforms ensure their hosts are registered, once it commences.",
+    "title": "Tourism registration (ZTA)",
+    "headline": "Lodges, hotels and other tourism facilities must register with ZTA. A new Act will extend this to booking platforms.",
+    "when": "If you run a lodge or other tourism facility. Booking platforms once the 2026 Act starts.",
+    "need": "when",
+    "kind": "get",
     "summary": "Registering designated tourism facilities with the Zimbabwe Tourism Authority is already mandatory, and a new Act published on 18 September 2026 widens it to online hosts and platforms.",
     "facts": [
       {
@@ -3722,8 +3741,11 @@ export const RULES: Rule[] = [
       "energy"
     ],
     "status": "verify",
-    "title": "Solar and energy startups: ZERA licensing and registration",
-    "headline": "Generation above 10 MW needs a licence, and 100 kW to 10 MW for own use needs registration before construction.",
+    "title": "Energy registration or licence (ZERA)",
+    "headline": "Generating 100 kW or more needs ZERA registration before you build. Above 10 MW you need a licence.",
+    "when": "If you generate 100 kW or more, or sell electricity.",
+    "need": "when",
+    "kind": "get",
     "summary": "S.I. 126 of 2026 (31 July 2026) sets the capacity rules for own-consumption plants. ZERA's June 2026 guidelines say undertakings above 100 kW must be licensed, which conflicts, so ask ZERA which prevails.",
     "facts": [
       {
@@ -3819,8 +3841,11 @@ export const RULES: Rule[] = [
       "ridehailing"
     ],
     "status": "official",
-    "title": "Operator licences for freight, passenger and delivery vehicles",
-    "headline": "Goods vehicles over 10 tonnes, omnibuses, taxicabs and tours need an operator licence. Motorbikes and small vans are not addressed.",
+    "title": "Vehicle operator licence",
+    "headline": "Trucks over 10 tonnes, buses, taxis and tours need an operator licence from the Commissioner of Road Transport.",
+    "when": "If you run trucks over 10 tonnes, buses, taxis or tours.",
+    "need": "when",
+    "kind": "get",
     "summary": "The Road Motor Transportation Act sets who needs an operator licence. Delivery startups on motorbikes need the right driver's licence class, but no operator licence rule for them was found.",
     "facts": [
       {
@@ -3915,6 +3940,7 @@ export const NO_RULE_CONTACTS: { name: string; what: string; url: string }[] = [
 ];
 
 export const GAPS: string[] = [
+  "Who needs POTRAZ's Application Services licence (category 1.4). Its fee table lists the licence but POTRAZ has not said whether apps, SaaS or bulk SMS services need it.",
   "Payment aggregator or gateway minimum capital, and whether the RBZ fintech sandbox is open.",
   "Suspicious transaction reporting duties and thresholds (Money Laundering Act sections 26 to 30).",
   "Digital lending, buy-now-pay-later and interest-rate cap rules, and the Money Lending and Rates of Interest Act.",
@@ -3937,31 +3963,47 @@ export const GAPS: string[] = [
  */
 export const GROUP_INFO: Record<GroupKey, { title: string; caption: string; note: string }> = {
   before: {
-    title: 'Before you launch',
-    caption: 'Licences and registrations for your idea',
-    note: 'Get these in place before you launch or take your first customer.',
+    title: 'Needed before you start',
+    caption: 'Licences the law requires first',
+    note: 'Operating without these is an offence, so get them first.',
   },
-  general: {
-    title: 'Every business',
-    caption: 'Every business',
-    note: 'These apply to almost every startup, whatever you build.',
+  when: {
+    title: 'Needed when it applies',
+    caption: 'Each starts at a point',
+    note: "None of these stop you starting. Each one kicks in at a point: a number of users, your first hire, your first sale.",
   },
-  running: {
-    title: "Once you're running",
-    caption: 'Ongoing duties for your idea',
-    note: 'You can launch first, but these apply as soon as you operate.',
+  optional: {
+    title: 'Optional',
+    caption: 'Not needed',
+    note: "You don't need these. Some open doors; others only matter if you choose that route.",
   },
-  worth: {
-    title: 'Worth doing',
-    caption: 'Not needed to start',
-    note: "You don't need these to start, but each one opens doors.",
-  },
-  watch: {
-    title: 'Keep an eye on',
-    caption: 'Moving targets and optional routes',
-    note: 'Rules still being written, and optional routes.',
+  rules: {
+    title: 'Rules to follow',
+    caption: 'Nothing to apply for',
+    note: "There's nothing to apply for here, but the law expects these once they apply to you.",
   },
 };
+
+/**
+ * The all-regulations page, grouped by the kind of business rather than by
+ * regulator, so a founder reads what applies to them. Every rule appears once.
+ */
+export const DIRECTORY_SECTIONS: { title: string; note: string; ids: string[] }[] = [
+  { title: 'Most startups', note: 'Each one applies once you reach its point, or is optional.', ids: ['zimra-reg', 'dp-licence', 'nssa', 'labour-act', 'company-reg', 'bank-account', 'ip', 'praz'] },
+  { title: 'Selling online and running platforms', note: 'Shops, marketplaces and apps with users.', ids: ['cpa', 'cyber-offences', 'dswt', 'e-transactions', 'potraz-codes'] },
+  { title: 'Payments, lending and crypto', note: 'Anything that holds, moves or lends money.', ids: ['rbz-mm', 'psp', 'microfinance', 'aml', 'fiu-vasp', 'secz-sandbox'] },
+  { title: 'Foreign money and foreign owners', note: 'Earning or paying in foreign currency, or foreign shareholders.', ids: ['exchange-control', 'zida'] },
+  { title: 'Internet and telecoms', note: 'Selling connectivity, airtime or radio devices.', ids: ['potraz-isp', 'potraz-mvno', 'interception', 'potraz-type'] },
+  { title: 'Transport and delivery', note: 'Moving people or goods.', ids: ['potraz-courier', 'transport-ops', 'ehailing', 'drones'] },
+  { title: 'Media and content', note: 'Streaming, broadcasting and publishing.', ids: ['broadcasting', 'media-reform'] },
+  { title: 'Insurance', note: 'Insurance, pensions and medical aid.', ids: ['ipec'] },
+  { title: 'Health', note: 'Telemedicine and health platforms.', ids: ['health'] },
+  { title: 'Education', note: 'Schools, colleges and online courses.', ids: ['edtech'] },
+  { title: 'Property', note: 'Rentals, sales and listings.', ids: ['proptech'] },
+  { title: 'Farming', note: 'Inputs, produce and storage.', ids: ['agritech'] },
+  { title: 'Tourism', note: 'Lodges, hosts and bookings.', ids: ['tourism'] },
+  { title: 'Energy', note: 'Solar, generation and power sales.', ids: ['energy'] },
+];
 
 export const PHASE_LABEL: Record<Rule['phase'], string> = {
   before: 'Needed before you start',

@@ -23,17 +23,27 @@ export default function RuleRow({ match, plain = false }: { match: Match; plain?
           {!plain && (
             <span className={styles.reg}>
               {reg.code} · {reg.name}
+              {rule.kind === 'follow' && <span className={styles.notLicence}>Rule to follow, not a licence</span>}
             </span>
           )}
           <span className={styles.title}>
             {rule.title}
-            {plain && rule.need === 'worth' && <span className={styles.worth}>Worth doing</span>}
             {rule.status === 'verify' && (
               <span className={styles.verify} title="Unclear, dated or only partly confirmed">
                 Verify
               </span>
             )}
           </span>
+          {rule.when && (
+            <span className={styles.when} data-need={rule.kind === 'follow' ? 'follow' : rule.need}>
+              <span className={styles.whenLabel}>
+                {rule.kind === 'follow'
+                  ? 'Applies'
+                  : rule.need === 'worth' || rule.need === 'choice' ? 'Optional' : 'Needed'}
+              </span>
+              {rule.when.replace(/^Optional\.\s*/, '')}
+            </span>
+          )}
           <span className={styles.headline}>{rule.headline}</span>
           {ai?.reason && <span className={styles.why}>{ai.reason}</span>}
         </span>
