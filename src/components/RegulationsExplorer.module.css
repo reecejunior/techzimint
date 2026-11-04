@@ -300,6 +300,42 @@
   margin-bottom: var(--s-3);
 }
 
+.rulesGroup {
+  border-top: 1px solid var(--hairline);
+  padding-top: var(--s-3);
+}
+
+.rulesGroup > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px var(--s-3);
+  padding-block: var(--s-2);
+  cursor: pointer;
+}
+
+.rulesTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.rulesNote {
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.rulesIntro {
+  margin-bottom: var(--s-3);
+  font-size: 14px;
+  color: var(--ink-500);
+}
+
+.rulesGroup .list {
+  border-style: dashed;
+  background: var(--surface);
+}
+
 .fine {
   display: flex;
   flex-direction: column;
@@ -345,4 +381,18 @@
   .stale {
     padding-left: var(--s-2);
   }
+}
+
+.rulesGroup > summary::after {
+  content: 'Show';
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rulesGroup[open] > summary::after {
+  content: 'Hide';
 }

@@ -63,7 +63,7 @@ export default function RegulationsExplorer() {
   const { data: saved } = useSavedChecklists(isMember ? user?.uid ?? null : null);
 
   const matched = useMemo(() => (query === null ? null : matchIdea(query, plan)), [query, plan]);
-  const shown = matched ? countShown(matched) : 0;
+  const shown = matched ? countShown(matched) - matched.groups.rules.length : 0;
   const stale = draft.trim() !== (query ?? '');
   const pending = ai === 'pending';
   /** Nothing written for this kind of idea: only the every-business rules apply.
@@ -71,7 +71,7 @@ export default function RegulationsExplorer() {
   const noSpecific =
     matched !== null &&
     !pending &&
-    matched.groups.before.length + matched.groups.running.length + matched.groups.watch.length === 0;
+    Object.values(matched.groups).every(g => g.every(m => m.rule.scope === 'general'));
 
   async function search(text: string, keepRestore = false) {
     if (!keepRestore) setRestore(null);
@@ -239,7 +239,7 @@ export default function RegulationsExplorer() {
             <h2 className={styles.barTitle}>
               {noSpecific
                 ? 'No specific regulation found for your idea'
-                : `${shown} ${shown === 1 ? 'regulation applies' : 'regulations apply'} to your idea`}
+                : `${shown} ${shown === 1 ? 'licence or registration' : 'licences and registrations'} for your idea`}
             </h2>
             <p className={styles.barSub}>
               {pending && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
@@ -290,7 +290,7 @@ export default function RegulationsExplorer() {
           )}
 
           <div className={styles.groups}>
-            {GROUP_ORDER.map((k: GroupKey) => {
+            {GROUP_ORDER.filter(k => k !== 'rules').map((k: GroupKey) => {
               const items = matched.groups[k];
               if (items.length === 0) return null;
               const info = GROUP_INFO[k];
@@ -314,6 +314,21 @@ export default function RegulationsExplorer() {
                 </summary>
                 <div className={styles.list}>
                   {matched.demoted.map(m => <RuleRow key={m.rule.id} match={m} />)}
+                </div>
+              </details>
+            )}
+
+            {matched.groups.rules.length > 0 && (
+              <details className={styles.rulesGroup}>
+                <summary>
+                  <span className={styles.rulesTitle}>
+                    {GROUP_INFO.rules.title} ({matched.groups.rules.length})
+                  </span>
+                  <span className={styles.rulesNote}>Not licences. Nothing to apply for.</span>
+                </summary>
+                <p className={styles.rulesIntro}>{GROUP_INFO.rules.note}</p>
+                <div className={styles.list}>
+                  {matched.groups.rules.map(m => <RuleRow key={m.rule.id} match={m} />)}
                 </div>
               </details>
             )}

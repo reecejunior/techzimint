@@ -60,6 +60,7 @@ function Item({
           </button>
         </span>
       </div>
+      {rule.when && !done && <p className={styles.when}>{rule.when}</p>}
       {steps && (
         <div className={styles.steps}>
           <RuleSteps rule={rule} heading="Steps" sources={false} />
@@ -209,8 +210,8 @@ export default function RegulationsChecklist({
       <div className={styles.progress}>
         <p>
           {total === 0
-            ? 'Nothing specific is needed before you launch.'
-            : <><strong>{done} of {total}</strong> sorted before launch</>}
+            ? 'Nothing is legally needed before you start. Tick things off as they apply.'
+            : <><strong>{done} of {total}</strong> sorted before you start</>}
         </p>
         <div className={styles.meter} aria-hidden="true">
           <span style={{ width: `${pct}%` }} />
@@ -234,7 +235,7 @@ export default function RegulationsChecklist({
 
       {total > 0 && (
         <>
-          <h3 className={styles.sub}>Before you launch</h3>
+          <h3 className={styles.sub}>Needed before you start</h3>
           <ul className={styles.list}>
             {list.before.map(m => (
               <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
@@ -242,19 +243,9 @@ export default function RegulationsChecklist({
           </ul>
         </>
       )}
-      {list.worth.length > 0 && (
-        <>
-          <h3 className={styles.sub}>Worth doing</h3>
-          <ul className={styles.list}>
-            {list.worth.map(m => (
-              <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
-            ))}
-          </ul>
-        </>
-      )}
       {list.later.length > 0 && (
         <>
-          <h3 className={styles.sub}>After you launch</h3>
+          <h3 className={styles.sub}>Needed when it applies</h3>
           <ul className={styles.list}>
             {list.later.map(m => (
               <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
@@ -263,6 +254,31 @@ export default function RegulationsChecklist({
         </>
       )}
 
+      {list.worth.length > 0 && (
+        <>
+          <h3 className={styles.sub}>Optional</h3>
+          <ul className={styles.list}>
+            {list.worth.map(m => (
+              <Item key={m.rule.id} match={m} done={ticked.has(m.rule.id)} onToggle={toggle} steps={view === 'steps'} onShow={onShow} />
+            ))}
+          </ul>
+        </>
+      )}
+      {list.rules.length > 0 && (
+        <>
+          <h3 className={styles.sub}>Rules to follow</h3>
+          <ul className={styles.rules}>
+            {list.rules.map(m => (
+              <li key={m.rule.id}>
+                <span>{m.rule.title}</span>
+                <button type="button" className={styles.more} onClick={() => onShow(m.rule.id)}>
+                  Details
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       {saveError && <p className={styles.saveError} role="alert">{saveError}</p>}
       <div className={styles.actions}>
         <button type="button" onClick={save} disabled={saving} data-saved={isSaved || undefined}>

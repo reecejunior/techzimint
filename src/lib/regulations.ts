@@ -34,8 +34,8 @@ export type Scope = 'general' | 'specific';
 export type Phase = 'before' | 'running' | 'watch';
 
 /** The four buckets results are read in, in display order. */
-export type GroupKey = 'before' | 'general' | 'worth' | 'running' | 'watch';
-export const GROUP_ORDER: GroupKey[] = ['before', 'general', 'worth', 'running', 'watch'];
+export type GroupKey = 'before' | 'when' | 'optional' | 'rules';
+export const GROUP_ORDER: GroupKey[] = ['before', 'when', 'optional', 'rules'];
 
 export interface Sector {
   id: string;
@@ -62,8 +62,18 @@ export interface Rule {
   /** Set once a lawyer or the regulator has confirmed the rule. Shown on the row. */
   reviewed?: { by: string; on: string };
   sources: { t: string; u: string }[];
-  /** 'worth': not needed to start trading, but brings real benefits. */
-  need?: 'worth';
+  /**
+   * 'gate': the law bars operating without it, so it comes before you start.
+   * 'when': switched on by a threshold or event (users, first hire, first sale).
+   * 'worth': not needed at all, but brings real benefits.
+   * 'choice': only if you choose that route (a short code, a sandbox).
+   */
+  need?: Need;
+  /** 'get': a licence, registration or number you apply for. 'follow': a rule
+   *  you follow, with nothing to apply for. */
+  kind?: 'get' | 'follow';
+  /** The plain trigger shown on the row: when this starts to apply. */
+  when?: string;
   /** Why it pays to do this, one short line each. */
   benefits?: string[];
   /** The order to do it in, written from the regulator's page or the law. */
@@ -75,6 +85,8 @@ export interface Rule {
   /** What the steps research could not confirm, shown as "check before you act". */
   stepsCheck?: string;
 }
+
+export type Need = 'gate' | 'when' | 'worth' | 'choice';
 
 export type StepsBasis = 'official' | 'reported' | 'general';
 
@@ -120,9 +132,10 @@ export interface Matched {
 
 /** Which group a rule is read in. */
 export function groupOf(rule: Rule): GroupKey {
-  if (rule.need === 'worth') return 'worth';
-  if (rule.scope === 'general') return 'general';
-  return rule.phase;
+  if (rule.kind === 'follow') return 'rules';
+  if (rule.need === 'worth' || rule.need === 'choice') return 'optional';
+  if (rule.need === 'gate') return 'before';
+  return 'when';
 }
 
 /** Count how many times each sector's keywords appear in the idea. */
@@ -139,7 +152,7 @@ export function analyse(text: string): Record<string, number> {
 const RELEVANCE_RANK: Record<Relevance, number> = { high: 0, medium: 1, unlikely: 2 };
 
 function emptyGroups(): Record<GroupKey, Match[]> {
-  return { before: [], general: [], worth: [], running: [], watch: [] };
+  return { before: [], when: [], optional: [], rules: [] };
 }
 
 /** POTRAZ first, then what the AI is surest of, then keyword strength. */
@@ -247,24 +260,25 @@ export function parseAiPlan(raw: unknown): AiPlan | null {
 /** The launch checklist for a result: what to do first, and what comes after. */
 export interface Checklist {
   before: Match[];
-  /** Not needed to start, but worth doing. */
+  /** Optional: worth doing, or only if you choose that route. */
   worth: Match[];
   later: Match[];
+  /** Rules to follow: listed, not ticked, since there is nothing to apply for. */
+  rules: Match[];
 }
 
 /**
- * Split a result into "before you launch" and "after you launch". Before: the
- * idea-specific licences plus any general rule that must be in place first.
- * After: ongoing duties and moving targets. Order inside each follows the
- * result list, so POTRAZ stays first.
+ * Split a result into the checklist's sections. Before: only what the law bars
+ * you from operating without. Later: everything switched on by a threshold or
+ * event, plus moving targets. Worth: optional, with benefits. Order inside
+ * each follows the result list, so POTRAZ stays first.
  */
 export function checklistOf(m: Matched): Checklist {
-  const generalBefore = m.groups.general.filter(x => x.rule.phase === 'before');
-  const generalLater = m.groups.general.filter(x => x.rule.phase !== 'before');
   return {
-    before: [...m.groups.before, ...generalBefore],
-    worth: m.groups.worth,
-    later: [...m.groups.running, ...generalLater, ...m.groups.watch],
+    before: m.groups.before,
+    later: m.groups.when,
+    worth: m.groups.optional,
+    rules: m.groups.rules,
   };
 }
 
@@ -292,7 +306,8 @@ export function checklistText(opts: {
   const line = (x: Match) => {
     const box = opts.ticked.has(x.rule.id) ? '[x]' : '[ ]';
     const flag = x.rule.status === 'verify' ? ' (verify)' : '';
-    const head = `${box} ${x.rule.title} (${x.rule.reg})${flag}: ${x.rule.headline}`;
+    const when = x.rule.when ? ` When: ${x.rule.when}` : '';
+    const head = `${box} ${x.rule.title} (${x.rule.reg})${flag}: ${x.rule.headline}${when}`;
     const steps = opts.steps ? x.rule.steps : undefined;
     if (!steps?.length) return head;
     return [head, ...steps.map((s, i) => `    ${i + 1}. ${s.t}`)].join('\n');
@@ -300,11 +315,14 @@ export function checklistText(opts: {
   const out: string[] = [];
   out.push(opts.idea ? `Launch checklist for: ${opts.idea}` : 'Launch checklist');
   out.push(`Techzim Startups, ${opts.url} (rules checked ${opts.checked})`);
-  out.push('', 'BEFORE YOU LAUNCH');
-  out.push(...(opts.list.before.length ? opts.list.before.map(line) : ['Nothing specific found.']));
-  if (opts.list.worth.length) out.push('', 'WORTH DOING', ...opts.list.worth.map(line));
-  out.push('', 'AFTER YOU LAUNCH');
-  out.push(...(opts.list.later.length ? opts.list.later.map(line) : ['Nothing specific found.']));
+  out.push('', 'NEEDED BEFORE YOU START');
+  out.push(...(opts.list.before.length ? opts.list.before.map(line) : ['Nothing found.']));
+  out.push('', 'NEEDED WHEN IT APPLIES');
+  out.push(...(opts.list.later.length ? opts.list.later.map(line) : ['Nothing found.']));
+  if (opts.list.worth.length) out.push('', 'OPTIONAL', ...opts.list.worth.map(line));
+  if (opts.list.rules.length) {
+    out.push('', 'RULES TO FOLLOW', ...opts.list.rules.map(x => `- ${x.rule.title}: ${x.rule.headline}`));
+  }
   out.push('', 'Not legal advice. Confirm with the regulator or a Zimbabwean lawyer before you act.');
   return out.join('\n');
 }

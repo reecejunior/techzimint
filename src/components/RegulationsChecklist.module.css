@@ -169,8 +169,31 @@
   text-decoration-color: currentColor;
 }
 
+.when {
+  margin-top: 2px;
+  padding-left: calc(18px + var(--s-3));
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+
 .steps {
   padding: var(--s-2) 0 var(--s-1) calc(18px + var(--s-3));
+}
+
+.rules li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: 6px 0;
+  border-top: 1px solid var(--hairline);
+  font-size: 14px;
+  color: var(--ink-700);
+}
+
+.rules li:first-child {
+  border-top: 0;
 }
 
 .saveError {
