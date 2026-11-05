@@ -1,7 +1,40 @@
-export type Category = 'Fintech' | 'Agritech' | 'Logistics' | 'Edtech' | 'Healthtech' | 'E-commerce' | 'SaaS';
+export type Category =
+  | 'Fintech'
+  | 'Agritech'
+  | 'Logistics'
+  | 'Edtech'
+  | 'Healthtech'
+  | 'E-commerce'
+  | 'SaaS'
+  | 'AI'
+  | 'Marketing'
+  | 'Jobs & Careers'
+  | 'Media & Entertainment'
+  | 'Events & Travel'
+  | 'Proptech'
+  | 'Local services'
+  | 'Telecoms & Internet'
+  | 'Civic tech';
 export type Region = 'Harare' | 'Bulawayo' | 'Mutare' | 'Gweru' | 'Pan-African';
 
-export const categories: Category[] = ['Fintech', 'Agritech', 'Logistics', 'Edtech', 'Healthtech', 'E-commerce', 'SaaS'];
+export const categories: Category[] = [
+  'Fintech',
+  'Agritech',
+  'Logistics',
+  'Edtech',
+  'Healthtech',
+  'E-commerce',
+  'SaaS',
+  'AI',
+  'Marketing',
+  'Jobs & Careers',
+  'Media & Entertainment',
+  'Events & Travel',
+  'Proptech',
+  'Local services',
+  'Telecoms & Internet',
+  'Civic tech',
+];
 export const regions: Region[] = ['Harare', 'Bulawayo', 'Mutare', 'Gweru', 'Pan-African'];
 
 /* ─── Media ───────────────────────────────────────────────── */

@@ -9,7 +9,7 @@ import {
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
 import {
   approveStartup, deletePost, deleteRegulationReport, deleteTrackerComment, deleteTrackerOverride,
-  editPost, rejectStartup, reviewTrackerSuggestion, saveTrackerOverride, setRegulationReportStatus,
+  editPost, rejectStartup, setStartupCategory, reviewTrackerSuggestion, saveTrackerOverride, setRegulationReportStatus,
 } from '@/lib/firestore';
 import {
   useAdminAuth, useAllStartupsForAdmin, useRegulationReportsForAdmin, useRegulationStatsForAdmin, useRegulationQuestionsForAdmin,
@@ -17,7 +17,7 @@ import {
   useTrackerOverrides, useTrackerSuggestionsForAdmin,
 } from '@/lib/hooks';
 import { timeAgo } from '@/lib/ranking';
-import type { Post, RegulationReport, Startup, TrackerComment, TrackerOverride, TrackerSuggestion } from '@/lib/types';
+import { categories, type Category, type Post, type RegulationReport, type Startup, type TrackerComment, type TrackerOverride, type TrackerSuggestion } from '@/lib/types';
 import { applyTrackerOverride, WINNERS, type Winner } from '@/app/community/hackathon-tracker/data';
 import { RULES, SECTORS } from '@/lib/regulationsData';
 import Logo from '@/components/ui/Logo';
@@ -1012,6 +1012,19 @@ function Row({ startup }: { startup: Startup }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [postsOpen, setPostsOpen] = useState(false);
+  const [catSaved, setCatSaved] = useState(false);
+
+  async function changeCategory(next: Category) {
+    if (next === startup.category) return;
+    setError(null);
+    try {
+      await setStartupCategory(startup.id, next);
+      setCatSaved(true);
+      setTimeout(() => setCatSaved(false), 1800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change the category.');
+    }
+  }
 
   async function reject() {
     setBusy(true);
@@ -1052,6 +1065,17 @@ function Row({ startup }: { startup: Startup }) {
             </span>
           </div>
           <p className={styles.rowTagline}>{startup.tagline}</p>
+          <label className={styles.rowCategory}>
+            Category
+            <select
+              value={startup.category}
+              onChange={e => changeCategory(e.target.value as Category)}
+            >
+              {!categories.includes(startup.category) && <option value={startup.category}>{startup.category}</option>}
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            {catSaved && <span className={styles.rowFounders}>Saved</span>}
+          </label>
           {startup.founders.length > 0 && (
             <p className={styles.rowFounders}>by {startup.founders.join(' & ')}</p>
           )}
