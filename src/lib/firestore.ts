@@ -1102,6 +1102,11 @@ export function rejectStartup(startupId: string, reason: string): Promise<void> 
   return setStartupDecision(startupId, 'rejected', reason.trim().slice(0, 500));
 }
 
+/** Admin only: move a startup to another category (firestore.rules checks the list). */
+export async function setStartupCategory(startupId: string, category: Category): Promise<void> {
+  await updateDoc(doc(getDb(), 'startups', startupId), { category });
+}
+
 /**
  * Removes a comment. If it's a top-level comment with replies, those are
  * removed with it — a reply pointing at a `parentId` that no longer exists

@@ -832,3 +832,23 @@
   }
 }
 
+
+.rowCategory {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.rowCategory select {
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-sm);
+  background: var(--white);
+  font-size: 13px;
+  color: var(--ink-900);
+}

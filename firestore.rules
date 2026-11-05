@@ -233,6 +233,17 @@ service cloud.firestore {
                     && (!('rejectionReason' in request.resource.data)
                         || request.resource.data.rejectionReason.size() <= 500);
 
+      // Admin curation: move a startup to another category, and nothing else.
+      // Mirrors `categories` in src/lib/types.ts; update both together.
+      allow update: if isAdmin()
+                    && touched().hasOnly(['category'])
+                    && request.resource.data.category in [
+                         'Fintech', 'Agritech', 'Logistics', 'Edtech', 'Healthtech', 'E-commerce',
+                         'SaaS', 'AI', 'Marketing', 'Jobs & Careers', 'Media & Entertainment',
+                         'Events & Travel', 'Proptech', 'Local services', 'Telecoms & Internet',
+                         'Civic tech'
+                       ];
+
       allow delete: if false;
 
       /* ── Posts ── */
