@@ -308,12 +308,6 @@ export default function HackathonTrackerPage() {
             of the active ones were already running before they won, and they received only{' '}
             {fmtUsd(summary.prizeUsdActive)} of the {fmtUsd(summary.prizeUsdTotal)} in US$ prizes tracked.
           </p>
-          <p className={styles.hint}>
-            Compiled from press and university reports, 15 Oct 2026; corrections and new finds from
-            readers and Techzim staff folded in 19 Oct 2026 — a point-in-time check, not a live feed. Spot
-            something wrong? Click into any row to send a correction — it goes straight to our editors.
-            Tiles, chart segments, dots and findings all filter the list at the bottom; click any of them.
-          </p>
         </div>
       </header>
 
