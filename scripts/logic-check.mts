@@ -264,12 +264,13 @@ assert.ok(ids(lendingAi.groups.before).includes('rbz-mm'), 'AI adds a rule the k
 assert.equal(lendingAi.groups.before.find(m => m.rule.id === 'rbz-mm')!.ai!.reason, 'It holds members\' money.');
 assert.equal(lendingAi.hasSector, true, 'an AI-added rule counts as a recognised sector');
 
-/* ...and demote a keyword hit without deleting it. */
+/* An "unlikely" note never hides or moves a keyword hit: it stays in its group, unannotated. */
 const demoteSms = matchIdea('SMS reminders for clinics', {
   picks: { 'potraz-codes': { relevance: 'unlikely', reason: 'Uses ordinary SMS, no short code.' } },
 });
-assert.ok(!ids(demoteSms.groups.before).includes('potraz-codes'), 'unlikely moves a rule out of its group');
-assert.deepEqual(ids(demoteSms.demoted), ['potraz-codes'], 'but it stays visible in the demoted list');
+const smsHit = Object.values(demoteSms.groups).flat().find(m => m.rule.id === 'potraz-codes');
+assert.ok(smsHit, 'a keyword hit the AI rated unlikely is still shown');
+assert.equal(smsHit!.ai, undefined, 'and carries no AI note');
 
 /* The AI can annotate general rules, never remove them. */
 const guarded = matchIdea('a bakery', {

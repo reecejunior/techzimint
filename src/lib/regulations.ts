@@ -124,8 +124,6 @@ export interface Matched {
   /** True when something more specific than "personal data" was identified. */
   hasSector: boolean;
   groups: Record<GroupKey, Match[]>;
-  /** Keyword hits the AI rated unlikely. Shown collapsed, never dropped. */
-  demoted: Match[];
   clarify?: string;
   aiUsed: boolean;
 }
@@ -176,7 +174,6 @@ function sortMatches(items: Match[]): Match[] {
 export function matchIdea(text: string, plan?: AiPlan | null): Matched {
   const found = analyse(text);
   const groups = emptyGroups();
-  const demoted: Match[] = [];
   let aiAdded = false;
 
   for (const rule of RULES) {
@@ -188,8 +185,6 @@ export function matchIdea(text: string, plan?: AiPlan | null): Matched {
 
     if (rule.scope === 'general') {
       groups[groupOf(rule)].push(m);
-    } else if (pick?.relevance === 'unlikely') {
-      if (score > 0) demoted.push({ rule, hits, score, ai: pick });
     } else if (keep || score > 0) {
       groups[groupOf(rule)].push(m);
       if (keep && score === 0) aiAdded = true;
@@ -203,7 +198,6 @@ export function matchIdea(text: string, plan?: AiPlan | null): Matched {
     recognised,
     hasSector: recognised.some(id => id !== 'data') || aiAdded,
     groups,
-    demoted: sortMatches(demoted),
     clarify: plan?.clarify,
     aiUsed: Boolean(plan),
   };
@@ -214,7 +208,7 @@ export function browseAll(): Matched {
   const groups = emptyGroups();
   for (const rule of RULES) groups[groupOf(rule)].push({ rule, hits: [], score: 0 });
   for (const k of GROUP_ORDER) groups[k] = sortMatches(groups[k]);
-  return { recognised: [], hasSector: false, groups, demoted: [], aiUsed: false };
+  return { recognised: [], hasSector: false, groups, aiUsed: false };
 }
 
 /** Total rules shown across all four groups. */

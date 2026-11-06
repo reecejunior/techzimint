@@ -175,16 +175,6 @@
   letter-spacing: var(--track-title);
 }
 
-.hint {
-  max-width: 68ch;
-  padding: var(--s-3) var(--s-4);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--ink-700);
-}
-
 .noRule {
   display: flex;
   flex-direction: column;
@@ -278,17 +268,6 @@
   border-radius: var(--r-md);
   background: var(--white);
   overflow: hidden;
-}
-
-.demoted > summary {
-  padding-block: var(--s-2);
-  font-size: 14px;
-  color: var(--ink-500);
-  cursor: pointer;
-}
-
-.demoted[open] > summary {
-  margin-bottom: var(--s-3);
 }
 
 .rulesGroup {
