@@ -219,13 +219,6 @@ export default function RegulationsExplorer() {
             </h2>
           </div>
 
-          {matched.clarify && (
-            <p className={styles.hint}>
-              <strong>To narrow this down:</strong> {matched.clarify} Add it to your idea and
-              search again.
-            </p>
-          )}
-
           {noSpecific && (
             <section className={styles.noRule} aria-labelledby="norule-h">
               <p>
@@ -278,17 +271,6 @@ export default function RegulationsExplorer() {
                 </section>
               );
             })}
-
-            {matched.demoted.length > 0 && (
-              <details className={styles.demoted}>
-                <summary>
-                  {matched.demoted.length} more matched your words but probably don&apos;t apply
-                </summary>
-                <div className={styles.list}>
-                  {matched.demoted.map(m => <RuleRow key={m.rule.id} match={m} />)}
-                </div>
-              </details>
-            )}
 
             {matched.groups.rules.length > 0 && (
               <details className={styles.rulesGroup}>
