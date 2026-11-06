@@ -175,15 +175,6 @@
   letter-spacing: var(--track-title);
 }
 
-.barSub {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  font-size: 14px;
-  color: var(--ink-500);
-}
-
 .hint {
   max-width: 68ch;
   padding: var(--s-3) var(--s-4);

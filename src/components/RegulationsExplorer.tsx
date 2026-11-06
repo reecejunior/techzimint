@@ -9,7 +9,7 @@ import {
   GROUP_ORDER, countShown, matchIdea,
   type AiPlan, type GroupKey,
 } from '@/lib/regulations';
-import { FAILURE_TEXT, MAX_IDEA_LENGTH, isAiFailure, type AiFailure } from '@/lib/regulationsAi';
+import { MAX_IDEA_LENGTH } from '@/lib/regulationsAi';
 import { CHECKED, GROUP_INFO, NO_RULE_CONTACTS, RULES } from '@/lib/regulationsData';
 import { useMember, useSavedChecklists } from '@/lib/hooks';
 import AskQuestion from './AskQuestion';
@@ -27,17 +27,6 @@ type AiState =
   | 'unavailable' // the model host could not be reached
   | 'disabled';   // no model is configured for this site
 
-function aiStatusText(ai: AiState, failure: AiFailure): string {
-  switch (ai) {
-    case 'pending': return 'Checking with AI…';
-    case 'done': return 'Checked with AI';
-    case 'no-opinion': return 'Keyword matches';
-    case 'unavailable': return `Keyword matches (${FAILURE_TEXT[failure]})`;
-    case 'disabled': return 'Keyword matches';
-    default: return '';
-  }
-}
-
 /**
  * The regulations search: one box, then only the regulations that apply to the
  * idea. The full directory lives on /regulations/all. The checklist is opt-in,
@@ -49,7 +38,6 @@ export default function RegulationsExplorer() {
   const [query, setQuery] = useState<string | null>(null);
   const [plan, setPlan] = useState<AiPlan | null>(null);
   const [ai, setAi] = useState<AiState>('idle');
-  const [failure, setFailure] = useState<AiFailure>('other');
   const inputId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -109,16 +97,7 @@ export default function RegulationsExplorer() {
       });
       if (id !== requestId.current) return;
       if (!res.ok) {
-        // 429 here is our own per-IP limit; a 502 carries the model host's reason.
-        let reason: AiFailure = res.status === 429 ? 'limit' : 'other';
-        try {
-          const body = (await res.json()) as { reason?: unknown };
-          if (isAiFailure(body.reason)) reason = body.reason;
-        } catch { /* no JSON body: keep the default */ }
-        if (id === requestId.current) {
-          setFailure(reason);
-          setAi('unavailable');
-        }
+        if (id === requestId.current) setAi('unavailable');
         return;
       }
       const data = (await res.json()) as { configured?: boolean; plan?: AiPlan | null };
@@ -128,11 +107,8 @@ export default function RegulationsExplorer() {
         setPlan(data.plan);
         setAi('done');
       } else setAi('no-opinion');
-    } catch (e) {
-      if (id === requestId.current) {
-        setFailure(e instanceof Error && e.name === 'TimeoutError' ? 'timeout' : 'network');
-        setAi('unavailable');
-      }
+    } catch {
+      if (id === requestId.current) setAi('unavailable');
     }
   }
 
@@ -241,10 +217,6 @@ export default function RegulationsExplorer() {
                 ? 'No specific regulation found for your idea'
                 : `${shown} ${shown === 1 ? 'licence or registration' : 'licences and registrations'} for your idea`}
             </h2>
-            <p className={styles.barSub}>
-              {pending && <Loader2 size={13} className={styles.spin} aria-hidden="true" />}
-              {aiStatusText(ai, failure)}
-            </p>
           </div>
 
           {matched.clarify && (
