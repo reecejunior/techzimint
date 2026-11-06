@@ -23,7 +23,9 @@ export default function PostMedia({
   startupName: string;
 }) {
   const [playing, setPlaying] = useState(false);
-  const shown = images.slice(0, 4);
+  /** Images whose link no longer loads are dropped rather than shown broken. */
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set());
+  const shown = images.filter(i => !failed.has(i.url)).slice(0, 4);
   const hasMedia = shown.length > 0 || video;
   if (!hasMedia) return null;
 
@@ -80,6 +82,11 @@ export default function PostMedia({
                  images arrive. */
               width={img.width}
               height={img.height}
+              /* Free image hosts often block images embedded on other sites,
+                 spotted from the Referer header; sending none matches the
+                 check run when the image was added. */
+              referrerPolicy="no-referrer"
+              onError={() => setFailed(prev => new Set(prev).add(img.url))}
             />
           ))}
         </div>

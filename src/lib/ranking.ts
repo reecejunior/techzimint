@@ -163,3 +163,15 @@ export function timeAgo(iso: string, now = new Date()): string {
   const n = Math.floor(value);
   return `${n} ${unit}${n === 1 ? '' : 's'} ago`;
 }
+
+/**
+ * True for the automatic first update, whose text is the startup's own
+ * description (or tagline when there was no description). Whitespace and case
+ * are ignored so a trailing newline doesn't make it show twice.
+ */
+export function isLaunchPost(body: string, description: string, tagline: string): boolean {
+  const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+  const b = norm(body);
+  if (!b) return false;
+  return b === norm(description) || b === norm(tagline);
+}

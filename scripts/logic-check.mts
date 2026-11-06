@@ -1,7 +1,7 @@
 // Sanity checks for the pure logic in src/lib/ranking.ts.
 import assert from 'node:assert/strict';
 import {
-  computeScore, parseVideoUrl, periodKeys, slugify, timeAgo, withRanks,
+  computeScore, isLaunchPost, parseVideoUrl, periodKeys, slugify, timeAgo, withRanks,
 } from '../src/lib/ranking.ts';
 import type { Startup } from '../src/lib/types.ts';
 import {
@@ -377,5 +377,11 @@ assert.ok(isAiFailure('limit') && !isAiFailure('nope') && !isAiFailure(undefined
 for (const k of ['auth', 'model', 'limit', 'timeout', 'host', 'network', 'other'] as const) {
   assert.ok(FAILURE_TEXT[k].length > 0, `${k} has a message`);
 }
+
+/* The automatic first update is recognised so its text isn't shown twice. */
+assert.ok(isLaunchPost('We build wallets.\n', 'We build  wallets.', 'Wallets'));
+assert.ok(isLaunchPost('Wallets', '', 'wallets'), 'falls back to the tagline');
+assert.ok(!isLaunchPost('We just shipped v2!', 'We build wallets.', 'Wallets'));
+assert.ok(!isLaunchPost('', '', ''));
 
 console.log('All logic checks passed.');

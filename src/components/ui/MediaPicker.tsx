@@ -388,7 +388,7 @@ export default function MediaPicker({
           {images.map((img, i) => (
             <div key={img.url} className={styles.preview}>
               {/* eslint-disable-next-line @next/next/no-img-element -- arbitrary remote host */}
-              <img src={img.url} alt="" className={styles.previewImg} />
+              <img src={img.url} alt="" className={styles.previewImg} referrerPolicy="no-referrer" />
               <button
                 type="button"
                 className={styles.remove}
