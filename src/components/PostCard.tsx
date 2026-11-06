@@ -27,6 +27,12 @@ interface PostCardProps {
    * startups) — the connecting line only makes sense within one story.
    */
   threadPosition?: 'first' | 'middle' | 'last';
+  /**
+   * The automatic first update repeats the startup's description. On the
+   * startup's own page, where the description is already shown, say "Joined"
+   * instead of printing it twice.
+   */
+  launchOnly?: boolean;
 }
 
 export default function PostCard({
@@ -35,6 +41,7 @@ export default function PostCard({
   isOwner = false,
   isAdmin = false,
   threadPosition,
+  launchOnly = false,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [pendingLike, setPendingLike] = useState(false);
@@ -140,7 +147,11 @@ export default function PostCard({
         )}
       </header>
 
-      {post.body && <p className={styles.body}>{post.body}</p>}
+      {launchOnly ? (
+        <p className={styles.launch}>Joined Techzim Startups.</p>
+      ) : (
+        post.body && <p className={styles.body}>{post.body}</p>
+      )}
 
       <PostMedia images={post.images} video={post.video} startupName={post.startupName} />
 

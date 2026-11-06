@@ -20,6 +20,7 @@ import Logo from '@/components/ui/Logo';
 import StarRating from '@/components/ui/StarRating';
 import MediaPicker from '@/components/ui/MediaPicker';
 import PostCard from '@/components/PostCard';
+import { isLaunchPost } from '@/lib/ranking';
 import { EmptyState, ErrorState } from '@/components/ui/DataState';
 import styles from './detail.module.css';
 
@@ -798,6 +799,7 @@ function Loaded({ startup }: { startup: Startup }) {
                                         <PostCard
                                             key={p.id}
                                             post={p}
+                                            launchOnly={isLaunchPost(p.body, startup.description, startup.tagline)}
                                             liked={likes.has(p.id)}
                                             isOwner={isOwner}
                                             isAdmin={isAdmin}

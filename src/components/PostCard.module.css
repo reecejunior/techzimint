@@ -391,3 +391,8 @@
     font-size: 16px;
   }
 }
+
+.launch {
+  font-size: 14px;
+  color: var(--ink-500);
+}

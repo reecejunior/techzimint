@@ -1262,7 +1262,7 @@ function PostRow({ post }: { post: Post }) {
             <div className={styles.postImages}>
               {post.images.map((img, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={img.url} alt="" className={styles.postImage} />
+                <img key={i} src={img.url} alt="" className={styles.postImage} referrerPolicy="no-referrer" />
               ))}
             </div>
           )}
