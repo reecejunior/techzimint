@@ -15,7 +15,6 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
-  startAfter,
   Timestamp,
   updateDoc,
   where,
@@ -293,48 +292,6 @@ function mapReviewer(snap: QueryDocumentSnapshot<DocumentData>): Reviewer {
     isTrustedTester: Boolean(d.isTrustedTester),
     joinedAt: toIso(d.joinedAt),
   };
-}
-
-/* ─── Video feed ──────────────────────────────────────────────
- * Live feed of posts that carry a video, across every approved startup.
- * `approved` is denormalised onto each post so this is a single
- * collection-group query — joining to the parent startup to check its status
- * would mean a read per post. `hasVideo` exists precisely because Firestore
- * can't ask for "video is not null" — see the Post type. */
-
-export function subscribeToVideoFeed(
-  onData: (posts: Post[]) => void,
-  onError: (err: Error) => void,
-  pageSize = FEED_PAGE_SIZE,
-): () => void {
-  const q = query(
-    collectionGroup(getDb(), 'posts'),
-    where('approved', '==', true),
-    where('hasVideo', '==', true),
-    orderBy('createdAt', 'desc'),
-    limit(pageSize),
-  );
-  return onSnapshot(
-    q,
-    snap => onData(snap.docs.map(mapPost)),
-    err => onError(err as Error),
-  );
-}
-
-export async function fetchVideoFeedPage(
-  afterIso: string,
-  pageSize = FEED_PAGE_SIZE,
-): Promise<Post[]> {
-  const q = query(
-    collectionGroup(getDb(), 'posts'),
-    where('approved', '==', true),
-    where('hasVideo', '==', true),
-    orderBy('createdAt', 'desc'),
-    startAfter(Timestamp.fromDate(new Date(afterIso))),
-    limit(pageSize),
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(mapPost);
 }
 
 export function subscribeToStartupPosts(

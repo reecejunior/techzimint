@@ -1,13 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, onIdTokenChanged, type User } from 'firebase/auth';
 import { ACCOUNT_EVENT, isMemberUser } from './account';
 import { ensureSignedIn, getFirebaseAuth, isAdminUser, isFirebaseConfigured } from './firebase';
 import {
-  FEED_PAGE_SIZE,
   fetchStartupBySlug,
-  fetchVideoFeedPage,
   getReviewerByUsername,
   getReviewsByAuthor,
   subscribeToComments,
@@ -34,7 +32,6 @@ import {
   subscribeToTrackerComments,
   subscribeToTrackerOverrides,
   subscribeToTrackerSuggestions,
-  subscribeToVideoFeed,
 } from './firestore';
 import type {
   Comment,
@@ -72,95 +69,6 @@ interface AsyncState<T> {
  * sets state synchronously just forces a second render to say what the first
  * one already knew.
  */
-
-/* ─── Feed ────────────────────────────────────────────────── */
-
-interface FeedState extends AsyncState<Post[]> {
-  hasMore: boolean;
-  loadingMore: boolean;
-  loadMore: () => void;
-}
-
-type FeedSubscribe = (
-  onData: (posts: Post[]) => void,
-  onError: (err: Error) => void,
-) => () => void;
-
-/**
- * The newest page of the feed stays live over a websocket so new posts, likes
- * and comment counts arrive on their own. Older pages are fetched once and
- * appended — keeping every page subscribed would mean an open listener per page.
- *
- * Parameterised by which query to run so the main feed and the video-only
- * feed share this pagination logic rather than duplicating it.
- */
-function useFeedQuery(subscribe: FeedSubscribe, fetchPage: (afterIso: string) => Promise<Post[]>): FeedState {
-  const [live, setLive] = useState<AsyncState<Post[]>>({
-    data: [],
-    loading: true,
-    error: null,
-  });
-  const [older, setOlder] = useState<Post[]>([]);
-  const [exhausted, setExhausted] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  useEffect(() => {
-    if (!isFirebaseConfigured) return;
-    return subscribe(
-      posts => setLive({ data: posts, loading: false, error: null }),
-      err => setLive({ data: [], loading: false, error: err.message }),
-    );
-  }, [subscribe]);
-
-  const posts = useMemo(() => {
-    // A live post can also exist in an older page after a like reorders nothing
-    // but a refetch overlaps — de-duplicate by id, preferring the live copy.
-    const seen = new Set(live.data.map(p => p.id));
-    return [...live.data, ...older.filter(p => !seen.has(p.id))];
-  }, [live.data, older]);
-
-  const loadMore = useCallback(() => {
-    const last = posts[posts.length - 1];
-    if (!last || loadingMore || exhausted) return;
-
-    setLoadingMore(true);
-    fetchPage(last.createdAt)
-      .then(page => {
-        if (page.length < FEED_PAGE_SIZE) setExhausted(true);
-        setOlder(prev => {
-          const seen = new Set(prev.map(p => p.id));
-          return [...prev, ...page.filter(p => !seen.has(p.id))];
-        });
-      })
-      .catch(() => setExhausted(true))
-      .finally(() => setLoadingMore(false));
-  }, [posts, loadingMore, exhausted, fetchPage]);
-
-  if (!isFirebaseConfigured) {
-    return {
-      data: [],
-      loading: false,
-      error: NOT_CONFIGURED,
-      hasMore: false,
-      loadingMore: false,
-      loadMore: () => {},
-    };
-  }
-
-  return {
-    data: posts,
-    loading: live.loading,
-    error: live.error,
-    hasMore: !exhausted && live.data.length >= FEED_PAGE_SIZE,
-    loadingMore,
-    loadMore,
-  };
-}
-
-/** Only posts carrying a video, newest first. */
-export function useVideoFeed(): FeedState {
-  return useFeedQuery(subscribeToVideoFeed, fetchVideoFeedPage);
-}
 
 export function useStartupPosts(startupId: string | undefined): AsyncState<Post[]> {
   const [state, setState] = useState<AsyncState<Post[]> & { forId?: string }>({
@@ -338,11 +246,10 @@ export function useMyUid(): string | null {
 }
 
 /* ─── Community ───────────────────────────────────────────────
- * Deliberately simpler than useFeedQuery above: one live onSnapshot, no
- * older-pages pagination split. That's a starting scope, not an oversight —
- * the community section opens with a single capped recent-first list, and
- * can grow the same live-page/fetched-older-pages pattern the main feed uses
- * once there's enough volume that one page isn't everything there is. */
+ * One live onSnapshot, no older-pages pagination split. That's a starting
+ * scope, not an oversight — the community section opens with a single capped
+ * recent-first list, and can grow a live-page/fetched-older-pages pattern once
+ * there's enough volume that one page isn't everything there is. */
 
 export function useCommunityFeed(kind: CommunityKind | 'all'): AsyncState<CommunityPost[]> {
   const [state, setState] = useState<AsyncState<CommunityPost[]> & { forKind?: string }>({
@@ -445,7 +352,7 @@ export interface PollTally {
 
 /**
  * Tallies for one poll. This is the "hook owns the derived shape, firestore.ts
- * owns the raw subscription" split useFeedQuery already uses for pagination —
+ * owns the raw subscription" split —
  * subscribeToCommunityPollVotes hands back the raw vote docs, and counting
  * them into per-option totals (plus picking out this visitor's own vote) is
  * presentation logic that lives here rather than in firestore.ts. See the
