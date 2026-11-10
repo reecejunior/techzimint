@@ -3,9 +3,9 @@
  *
  *   npm run backfill:has-video
  *
- * The /videos page queries `where('hasVideo','==',true)`, and Firestore can't
- * match documents where the field is simply absent — so posts created before
- * the flag existed are invisible to that query until this runs.
+ * Firestore can't match documents where a field is simply absent, so posts
+ * created before the flag existed would not match `where('hasVideo','==',true)`
+ * until this runs.
  *
  * Needs firestore.seed.rules published first (posts aren't client-writable
  * beyond like/comment counters, which is correct for everyone except this).

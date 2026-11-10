@@ -92,7 +92,7 @@ export interface Post {
   approved: boolean;
   isLaunch: boolean;
   /** Denormalised `video != null`, because Firestore cannot query for the
-   *  absence of a field — /videos filters on this in one query instead. */
+   *  absence of a field. */
   hasVideo: boolean;
   createdAt: string;
 }

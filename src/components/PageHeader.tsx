@@ -1,7 +1,7 @@
 import styles from './PageHeader.module.css';
 
 /**
- * The masthead every top-level page opens with. Shared so /videos, /startups
+ * The masthead every top-level page opens with. Shared so /startups
  * and the feed don't each invent their own type scale and spacing — the
  * repetition is what makes the site feel like one place.
  */
