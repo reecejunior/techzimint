@@ -105,3 +105,23 @@ Dated log of growth/product thinking from the daily-improve run. Newest entries 
 - A read-only, rate-limited developer API exposing the directory/leaderboard as JSON for third parties to build on — a step beyond the plain public RSS/JSON feed already logged, with real auth and usage limits.
 - An automatic "why did my rank move" breakdown on the startup page — which of likes, comments or reviews actually drove the week-over-week change — building on the existing rank-history chart, which shows the number but not the cause.
 - A region filter alongside the category filter on the directory (shipped today — see the PR this entry travelled with); next natural step is a combined "category + region" shareable URL so a filtered view can be linked directly, not just reconstructed by hand.
+
+## 2026-10-14
+
+**Target audience**
+- Zimbabwean/African founders — come to launch, get feedback, and track how their product ranks against peers.
+- Angel investors/VCs and corporate innovation teams — come to scout what's gaining traction before it's on their radar elsewhere.
+- Job seekers and students — come to find startups that are actually hiring or worth interning at, and to see what's being built locally.
+- Diaspora and media (incl. Techzim itself) — come for a quick pulse on the local tech scene to write about or point family/contacts toward.
+
+**Growth ideas**
+- A low-data "Lite" mode (stripped images/video, text-first) pitched to local ISPs/telcos as a zero-rated or data-saver path to the directory — a mobile-data-cost angle on growth that nothing logged so far addresses.
+- A short-form "Weekly Movers" video recap (top 3 climbers, under 60 seconds) for YouTube Shorts/TikTok/Instagram Reels, distinct from the text-based monthly movers recap already logged — video is a different acquisition channel entirely, not just a reformat.
+- A public "nominate a founder" lead-capture widget on the homepage for any visitor who knows an unlisted startup — distinct from the existing founder-referral-credit mechanic, which rewards founders for sharing their own link; this instead sources leads from the wider community for outreach.
+- Auto-surface each startup's own past Techzim editorial mentions (searched from Techzim's existing site archive) on its detail page as "As seen on Techzim" — reuses existing content for trust/SEO with no new writing required.
+
+**Feature backlog**
+- A lightweight "founder verified" badge granted when the submitting account's email domain matches the startup's own website domain — a trust signal distinct from the full "claim your listing" flow already logged, since it needs no new ownership-transfer mechanism.
+- An "investor contact request" form that routes a message to the founder through the platform without exposing either party's email until the founder opts to reply — distinct from the investor shortlist/bookmark tool already logged, which is about saving listings, not making first contact.
+- A "flag a dead link" control on a startup's website/demo/APK links, feeding straight into the existing admin moderation queue — lets the community surface stale listings instead of only an admin stumbling on them.
+- A weekly algorithmic "small startup spotlight" slot on the homepage — one low-review listing rotated in automatically each week — distinct from the "help these launches get their first review" module already logged, which lists several at once rather than giving one a single featured placement.
