@@ -159,7 +159,7 @@ export default function CommunityPage() {
           </EmptyState>
         ) : visible.length === 0 && tab === 'regulations' && !filtering ? (
           <EmptyState title="No regulations questions yet">
-            Ask one from any rule on the <Link href="/regulations">regulations page</Link>.
+            Ask one from any rule on the <Link href="/tools/regulations">regulations page</Link>.
           </EmptyState>
         ) : visible.length === 0 && filtering ? (
           <EmptyState title="Nothing matches that">

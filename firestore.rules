@@ -800,5 +800,57 @@ service cloud.firestore {
 
       allow delete: if isMember() && resource.data.ownerId == request.auth.uid;
     }
+
+    // Finder: members post their work and what they're looking for. Posts go
+    // live straight away; the author (or an admin) can take a post down.
+    match /finderPosts/{postId} {
+      allow read: if true;
+
+      allow create: if isMember()
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.headline is string
+                    && request.resource.data.headline.size() > 0
+                    && request.resource.data.headline.size() <= 120
+                    && request.resource.data.body is string
+                    && request.resource.data.body.size() > 0
+                    && request.resource.data.body.size() <= 2000
+                    && request.resource.data.lookingFor is list
+                    && request.resource.data.lookingFor.size() >= 1
+                    && request.resource.data.lookingFor.size() <= 3
+                    && request.resource.data.lookingFor.hasOnly(['cofounder', 'employee', 'freelancer'])
+                    && request.resource.data.skills is list
+                    && request.resource.data.skills.size() <= 8
+                    && request.resource.data.location is string
+                    && request.resource.data.location.size() <= 80
+                    && (request.resource.data.contact == null
+                        || (request.resource.data.contact is string && request.resource.data.contact.size() <= 120))
+                    && request.resource.data.createdAt == request.time;
+
+      allow delete: if (isMember() && resource.data.authorId == request.auth.uid) || isAdmin();
+    }
+
+    // Spaces: members submit a space; it stays pending until an admin approves
+    // it. Only approved submissions are public. Admins see all of them.
+    match /spaceSubmissions/{submissionId} {
+      allow read: if resource.data.status == 'approved' || isAdmin();
+
+      allow create: if isMember()
+                    && request.resource.data.submittedById == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 100
+                    && request.resource.data.town is string
+                    && request.resource.data.town.size() > 0
+                    && request.resource.data.town.size() <= 60
+                    && request.resource.data.type in ['coworking', 'cafe']
+                    && request.resource.data.offers is list
+                    && request.resource.data.offers.size() <= 10
+                    && request.resource.data.createdAt == request.time;
+
+      allow update: if isAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+                    && request.resource.data.status in ['approved', 'rejected'];
+    }
   }
 }

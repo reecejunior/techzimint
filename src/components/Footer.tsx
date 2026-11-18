@@ -19,7 +19,7 @@ export default function Footer() {
         <div className={styles.col}>
           <span className={styles.colTitle}>Platform</span>
           <Link href="/" className={styles.colLink}>Startups</Link>
-          <Link href="/regulations" className={styles.colLink}>Regulations</Link>
+          <Link href="/tools" className={styles.colLink}>Tools</Link>
           <Link href="/submit" className={styles.colLink}>Post your startup</Link>
         </div>
 
