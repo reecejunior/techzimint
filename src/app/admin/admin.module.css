@@ -852,3 +852,23 @@
   font-size: 13px;
   color: var(--ink-900);
 }
+
+.rowMain {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--ink-900);
+}
+
+.rowMeta {
+  font-size: 13px;
+  color: var(--ink-500);
+  overflow-wrap: anywhere;
+}
+
+.error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--orange-700);
+}

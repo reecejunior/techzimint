@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Heart, ImageIcon, Lightbulb,
+  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Coffee, ExternalLink, Heart, ImageIcon, Lightbulb,
   Loader2, LogOut, Mail, MessageCircle, Scale, Pencil, PlaySquare, RotateCcw, Search, ShieldCheck, Trash2, X,
 } from 'lucide-react';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
@@ -20,6 +20,8 @@ import { timeAgo } from '@/lib/ranking';
 import { categories, type Category, type Post, type RegulationReport, type Startup, type TrackerComment, type TrackerOverride, type TrackerSuggestion } from '@/lib/types';
 import { applyTrackerOverride, WINNERS, type Winner } from '@/app/community/hackathon-tracker/data';
 import { RULES, SECTORS } from '@/lib/regulationsData';
+import { decideSpaceSubmission, useSpaceSubmissionsForAdmin } from '@/lib/tools';
+import type { SpaceSubmission } from '@/lib/types';
 import Logo from '@/components/ui/Logo';
 import { ErrorState } from '@/components/ui/DataState';
 import styles from './admin.module.css';
@@ -70,6 +72,7 @@ export default function AdminClient() {
         <TrackerQueue />
         <TrackerCommentsQueue />
         <RulesFeedback />
+        <SpaceSubmissionsQueue />
         <Queue />
       </div>
     </div>
@@ -521,6 +524,97 @@ function TrackerEntryForm({
         )}
       </div>
     </form>
+  );
+}
+
+function SpaceSubmissionsQueue() {
+  const { data: submissions, loading, error } = useSpaceSubmissionsForAdmin();
+  const pending = submissions.filter(s => s.status === 'pending');
+  const decided = submissions.filter(s => s.status !== 'pending');
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <span className={styles.cardIcon} data-tone="brand">
+          <Coffee size={16} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className={styles.cardTitle}>Spaces submissions</h2>
+          <p className={styles.cardSubtitle}>
+            Workspaces and internet cafés founders have sent in. Approving one puts it on the
+            Spaces page straight away. Check the details first, since they are not verified.
+          </p>
+        </div>
+      </div>
+
+      {error ? (
+        <ErrorState message={error} />
+      ) : loading ? (
+        <div className={styles.list}>
+          {Array.from({ length: 2 }, (_, i) => (
+            <div key={i} className={`skel ${styles.skelRow}`} />
+          ))}
+        </div>
+      ) : submissions.length === 0 ? (
+        <p className={styles.empty}>Nothing submitted yet.</p>
+      ) : (
+        <ul className={styles.list}>
+          {pending.map(s => (
+            <SpaceSubmissionRow key={s.id} submission={s} />
+          ))}
+          {decided.map(s => (
+            <SpaceSubmissionRow key={s.id} submission={s} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function SpaceSubmissionRow({ submission: s }: { submission: SpaceSubmission }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function decide(status: 'approved' | 'rejected') {
+    setBusy(true);
+    setError(null);
+    try {
+      await decideSpaceSubmission(s.id, status);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save that.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <li className={styles.row}>
+      <div className={styles.rowMain}>
+        <strong>{s.name}</strong>
+        <span className={styles.rowMeta}>
+          {s.town} · {s.type === 'cafe' ? 'Internet café' : 'Co-working'} · sent by {s.submittedBy}
+        </span>
+        {s.address && <span className={styles.rowMeta}>Address: {s.address}</span>}
+        {s.offers.length > 0 && <span className={styles.rowMeta}>Offers: {s.offers.join(', ')}</span>}
+        {s.price && <span className={styles.rowMeta}>Prices: {s.price}</span>}
+        {s.contact && <span className={styles.rowMeta}>Contact: {s.contact}</span>}
+      </div>
+
+      {s.status === 'pending' ? (
+        <div className={styles.rowActions}>
+          <button type="button" className={styles.submitBtn} onClick={() => decide('approved')} disabled={busy}>
+            {busy && <Loader2 size={15} className={styles.spin} aria-hidden="true" />}
+            Approve
+          </button>
+          <button type="button" className={styles.rejectBtn} onClick={() => decide('rejected')} disabled={busy}>
+            Reject
+          </button>
+        </div>
+      ) : (
+        <span className={styles.rowMeta}>{s.status === 'approved' ? 'Approved' : 'Rejected'}</span>
+      )}
+      {error && <p className={styles.error}>{error}</p>}
+    </li>
   );
 }
 

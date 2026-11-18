@@ -10,7 +10,7 @@ import styles from './Nav.module.css';
 const LINKS = [
   { href: '/', label: 'Startups' },
   { href: '/community', label: 'Community' },
-  { href: '/regulations', label: 'Regulations' },
+  { href: '/tools', label: 'Tools' },
 ];
 
 export default function Nav() {

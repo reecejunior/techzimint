@@ -572,7 +572,7 @@ export default function CommunityThreadClient({ postId }: { postId: string }) {
               )}
             </span>
             {post.category === 'regulations' && (
-              <Link href="/regulations" className={clsx(styles.kindBadge, styles.kindNeutral)}>
+              <Link href="/tools/regulations" className={clsx(styles.kindBadge, styles.kindNeutral)}>
                 Regulations
               </Link>
             )}

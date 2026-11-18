@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
     return [
       { source: '/startups', destination: '/', permanent: true },
       { source: '/leaderboard', destination: '/', permanent: true },
+      // Regulations moved under the Tools section.
+      { source: '/regulations', destination: '/tools/regulations', permanent: true },
+      { source: '/regulations/:path*', destination: '/tools/regulations/:path*', permanent: true },
     ];
   },
 };

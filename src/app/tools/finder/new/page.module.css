@@ -1,0 +1,139 @@
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--s-8) var(--s-4) var(--s-20);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ink-500);
+  text-decoration: none;
+}
+
+.title {
+  margin: var(--s-4) 0 var(--s-2);
+  font-size: 26px;
+  font-weight: 650;
+  color: var(--ink-900);
+  letter-spacing: var(--track-title);
+}
+
+.subtitle {
+  margin: 0 0 var(--s-6);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-500);
+}
+
+.gate {
+  padding: var(--s-5);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.form {
+  display: grid;
+  gap: var(--s-5);
+}
+
+.field {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.field legend {
+  padding: 0;
+  margin-bottom: var(--s-2);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  font: inherit;
+  font-weight: 400;
+  color: var(--ink-900);
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+}
+
+.field small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-500);
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-700);
+  cursor: pointer;
+}
+
+.check input {
+  margin: 0;
+}
+
+.checkOn {
+  border-color: var(--ink-900);
+  color: var(--ink-900);
+  font-weight: 600;
+}
+
+.error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--orange-700);
+}
+
+.submit {
+  justify-self: start;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}

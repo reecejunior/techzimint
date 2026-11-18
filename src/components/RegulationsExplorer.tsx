@@ -29,7 +29,7 @@ type AiState =
 
 /**
  * The regulations search: one box, then only the regulations that apply to the
- * idea. The full directory lives on /regulations/all. The checklist is opt-in,
+ * idea. The full directory lives on /tools/regulations/all. The checklist is opt-in,
  * in a drawer behind a small button.
  */
 export default function RegulationsExplorer() {
@@ -197,7 +197,7 @@ export default function RegulationsExplorer() {
           </button>
         </div>
         <p className={styles.links}>
-          <Link href="/regulations/all">Browse all {RULES.length} regulations</Link>
+          <Link href="/tools/regulations/all">Browse all {RULES.length} regulations</Link>
           {isMember && saved.length > 0 && (
             <button type="button" onClick={() => setDrawer(true)}>
               Saved checklists ({saved.length})
@@ -302,7 +302,7 @@ export default function RegulationsExplorer() {
             <p>
               Checked {CHECKED}. A research directory, not legal advice: confirm with the
               regulator or a Zimbabwean lawyer before you act.{' '}
-              <Link href="/regulations/all#gaps">What we don&apos;t cover yet</Link>
+              <Link href="/tools/regulations/all#gaps">What we don&apos;t cover yet</Link>
             </p>
           </footer>
         </>

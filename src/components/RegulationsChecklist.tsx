@@ -169,7 +169,7 @@ export default function RegulationsChecklist({
   async function copy() {
     const text = checklistText({
       idea, list, ticked, checked: CHECKED,
-      url: `${window.location.origin}/regulations`,
+      url: `${window.location.origin}/tools/regulations`,
       steps: view === 'steps',
     });
     try {

@@ -556,3 +556,73 @@ export interface SavedChecklist {
   createdAt: string;
   updatedAt: string;
 }
+
+/* ─── Finder ─────────────────────────────────────────────── */
+
+export type FinderNeed = 'cofounder' | 'employee' | 'freelancer';
+
+export const FINDER_NEEDS: { key: FinderNeed; label: string }[] = [
+  { key: 'cofounder', label: 'Co-founder' },
+  { key: 'employee', label: 'Employee' },
+  { key: 'freelancer', label: 'Freelancer' },
+];
+
+export interface FinderPost {
+  id: string;
+  authorId: string;
+  authorName: string;
+  headline: string;
+  body: string;
+  lookingFor: FinderNeed[];
+  skills: string[];
+  location: string;
+  /** Optional, chosen by the poster, shown publicly. */
+  contact: string | null;
+  createdAt: string;
+}
+
+export interface FinderPostDraft {
+  headline: string;
+  body: string;
+  lookingFor: FinderNeed[];
+  skills: string[];
+  location: string;
+  contact: string;
+}
+
+/* ─── Spaces ─────────────────────────────────────────────── */
+
+export type SpaceType = 'coworking' | 'cafe';
+
+export interface Space {
+  id: string;
+  name: string;
+  town: string;
+  type: SpaceType;
+  /** Street address, or the closest place name the source gives. */
+  address: string | null;
+  offers: string[];
+  /** Price text as the source gives it, with its currency and date. */
+  price: string | null;
+  contact: string | null;
+  /** The page the details came from. */
+  sourceUrl: string | null;
+  /** true only when the venue's own website states the details. */
+  verified: boolean;
+}
+
+export interface SpaceSubmission {
+  id: string;
+  name: string;
+  town: string;
+  type: SpaceType;
+  address: string;
+  offers: string[];
+  price: string;
+  contact: string;
+  submittedBy: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export const SPACE_TOWNS = ['Harare', 'Bulawayo', 'Mutare'] as const;

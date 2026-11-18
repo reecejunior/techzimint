@@ -15,7 +15,7 @@ export default function AllRegulationsPage() {
     <>
       <PageHeader
         title="All licences and regulations"
-        aside={<Link href="/regulations" className={styles.back}>Search by your idea</Link>}
+        aside={<Link href="/tools/regulations" className={styles.back}>Search by your idea</Link>}
       >
         Licences and registrations by kind of business, then the rules to follow.
       </PageHeader>
