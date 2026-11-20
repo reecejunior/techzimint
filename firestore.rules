@@ -852,5 +852,33 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
                     && request.resource.data.status in ['approved', 'rejected'];
     }
+
+    // Home page content: videos, opportunities, guides, stories, events and
+    // who's-who entries. Admins post them from the admin panel; anyone reads.
+    // Fields and limits mirror TEXT_LIMITS in src/lib/homeData.ts.
+    function validHomeItem() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['kind', 'title', 'url', 'source', 'topic', 'duration', 'summary',
+                               'stage', 'type', 'organiser', 'value', 'forWho', 'date', 'founder',
+                               'startup', 'quote', 'storyType', 'town', 'group', 'description',
+                               'minutes', 'createdAt', 'updatedAt'])
+             && d.kind in ['video', 'opportunity', 'guide', 'story', 'event', 'scene']
+             && d.title is string && d.title.size() > 0 && d.title.size() <= 200
+             && d.url is string && d.url.size() <= 500
+             && d.summary is string && d.summary.size() <= 2000
+             && d.quote is string && d.quote.size() <= 400
+             && d.description is string && d.description.size() <= 400
+             && d.date is string && d.date.size() <= 10
+             && d.minutes is int && d.minutes >= 0 && d.minutes <= 600
+             && d.updatedAt == request.time;
+    }
+
+    match /homeContent/{itemId} {
+      allow read: if true;
+      allow create: if isAdmin() && validHomeItem() && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validHomeItem()
+                    && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
   }
 }

@@ -1,22 +1,126 @@
 .shell {
   min-height: calc(100vh - var(--nav-h));
-  background: var(--surface);
+  background: #f6f5f3;
 }
 
 .page {
-  padding-block: var(--s-8) var(--s-16);
+  padding-block: var(--s-6) var(--s-16);
+}
+
+/* ── Sections ──────────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--s-8);
+  align-items: start;
+}
+
+.sideNav {
+  position: sticky;
+  top: calc(var(--nav-h) + var(--s-4));
+  display: grid;
+  gap: 2px;
+}
+
+.sideLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-700);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sideLink svg {
+  color: var(--ink-400);
+}
+
+.sideLink:hover {
+  background: #ecebe8;
+  color: var(--ink-900);
+}
+
+.sideLinkOn,
+.sideLinkOn:hover {
+  background: var(--white);
+  color: var(--ink-900);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(29, 26, 23, 0.08);
+}
+
+.sideLinkOn svg {
+  color: var(--brand);
+}
+
+.main {
+  display: grid;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+.sectionHead {
+  padding-bottom: var(--s-2);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ink-900);
+}
+
+.sectionText {
+  margin: 4px 0 0;
+  max-width: 70ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-500);
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: var(--s-5);
+  }
+
+  .sideNav {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .sideNav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sideLink {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }
 
 /* ── Top bar ───────────────────────────────────────────────── */
 .shellHeader {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--s-4);
   flex-wrap: wrap;
-  padding-bottom: var(--s-5);
-  margin-bottom: var(--s-5);
-  border-bottom: 2px solid var(--ink-900);
+  padding-bottom: var(--s-4);
+  margin-bottom: var(--s-6);
+  border-bottom: 1px solid var(--hairline-strong);
 }
 
 .shellEyebrow {
@@ -30,7 +134,8 @@
 }
 
 .shellTitle {
-  font-size: 30px;
+  margin: 0;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: var(--track-display);
   color: var(--ink-900);
@@ -73,9 +178,12 @@
 /* ── Stats strip ───────────────────────────────────────────── */
 .stats {
   display: flex;
-  gap: var(--s-8);
-  margin-bottom: var(--s-6);
+  gap: var(--s-10);
   flex-wrap: wrap;
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--white);
 }
 
 .statItem {
@@ -279,9 +387,8 @@
 .card {
   background: var(--white);
   border: 1px solid var(--hairline);
-  border-radius: var(--r-lg);
-  padding: var(--s-6);
-  box-shadow: 0 1px 2px rgba(29, 26, 23, 0.03);
+  border-radius: var(--r-md);
+  padding: var(--s-5);
 }
 
 .cardHead {
@@ -302,18 +409,14 @@
   margin-top: 2px;
 }
 
-.cardIcon[data-tone='brand'] {
-  background: var(--brand);
-  color: var(--white);
-}
-
+.cardIcon[data-tone='brand'],
 .cardIcon[data-tone='neutral'] {
-  background: var(--ink-900);
-  color: var(--white);
+  background: #f1efec;
+  color: var(--ink-700);
 }
 
 .cardTitle {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: var(--track-heading);
   color: var(--ink-900);

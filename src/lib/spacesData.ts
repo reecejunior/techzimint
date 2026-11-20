@@ -23,12 +23,22 @@ const coworker = (path: string): SpaceSource => ({
   url: `https://www.coworker.com/zimbabwe/${path}`,
 });
 
-/** Spaces with a photo in public/spaces/{id}.jpg (resized to 1200px). */
-const LOCAL_PHOTOS = new Set([
-  'afrotopia', 'the-business-hub', 'space-station', 'location47', 'the-creative-factory-hub',
-  'kubasa', 'lamar-hub', 'linkspot', 'the-oasis', 'the-techvillage', 'mybizspace',
-  'africa-university-i5hub',
-]);
+/**
+ * How many photos each space has in public/spaces: {id}.jpg, then {id}-2.jpg,
+ * {id}-3.jpg and so on. Resized to at most 1200px wide.
+ */
+const LOCAL_PHOTOS: Record<string, number> = {
+  'afrotopia': 1, 'the-business-hub': 1, 'space-station': 1, 'location47': 1,
+  'the-creative-factory-hub': 1, 'kubasa': 1, 'lamar-hub': 1, 'linkspot': 1, 'the-oasis': 1,
+  'the-techvillage': 1, 'mybizspace': 1, 'africa-university-i5hub': 1,
+  'b2c-coworking': 2, 'cyrex-business-centre': 2, 'eight-to-five-hub': 3, 'flexiwork': 2,
+  'gbi-business-hub': 1, 'moto-republik': 1, 'tech-hub-harare': 2, 'techworld-internet-cafe': 2,
+};
+
+function localPhotos(id: string): string[] {
+  const count = LOCAL_PHOTOS[id] ?? 0;
+  return Array.from({ length: count }, (_, i) => (i === 0 ? `/spaces/${id}.jpg` : `/spaces/${id}-${i + 1}.jpg`));
+}
 
 function space(
   id: string,
@@ -52,7 +62,7 @@ function space(
     email: null,
     website: null,
     contact: null,
-    photo: LOCAL_PHOTOS.has(id) ? `/spaces/${id}.jpg` : null,
+    photos: localPhotos(id),
     photoCredit: null,
     ...details,
   };
@@ -69,7 +79,7 @@ export const SEED_SPACES: Space[] = [
     phone: '+263 783 156 194',
     email: 'hello@digitaltwo.net',
     website: 'https://digitaltwo.net/digital-two-hub/',
-    photo: 'https://digitaltwo.net/wp-content/uploads/2025/03/5.jpeg',
+    photos: ['https://digitaltwo.net/wp-content/uploads/2025/03/5.jpeg'],
     photoCredit: 'Digital Two website',
     sources: [
       { label: 'Digital Two website, 2026', url: 'https://digitaltwo.net/digital-two-hub/' },

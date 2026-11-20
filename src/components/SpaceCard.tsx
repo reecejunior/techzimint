@@ -11,19 +11,21 @@ import { SPACE_TYPE_LABEL, mapsLink, phoneDigits, spaceHref, whatsappLink } from
 import type { Space } from '@/lib/types';
 import styles from './SpaceCard.module.css';
 
-/** The space's photo, or its illustrated cover when it has none or the photo fails. */
-export function SpacePicture({ space: s }: { space: Space }) {
-  const [failed, setFailed] = useState(false);
-  if (!s.photo || failed) return <SpaceCover id={s.id} town={s.town} type={s.type} />;
+/** A photo of the space (the first by default), or its illustrated cover when it has none or the photo fails. */
+export function SpacePicture({ space: s, index = 0 }: { space: Space; index?: number }) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const src = s.photos[index] ?? s.photos[0];
+  if (!src || failedSrc === src) return <SpaceCover id={s.id} town={s.town} type={s.type} />;
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={s.photo}
+        key={src}
+        src={src}
         alt={`Inside ${s.name}`}
         loading="lazy"
         referrerPolicy="no-referrer"
-        onError={() => setFailed(true)}
+        onError={() => setFailedSrc(src)}
       />
       {s.photoCredit && <span className={styles.credit}>Photo: {s.photoCredit}</span>}
     </>

@@ -33,7 +33,7 @@ export function submissionToSpace(s: SpaceSubmission): Space {
     email: null,
     website: null,
     contact: s.contact || null,
-    photo: null,
+    photos: [],
     photoCredit: null,
     sources: [{ label: 'Added by a founder', url: null }],
   };

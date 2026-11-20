@@ -620,8 +620,8 @@ export interface Space {
   website: string | null;
   /** Free-text contact from a founder's submission. */
   contact: string | null;
-  /** A photo the venue published itself, shown with photoCredit. */
-  photo: string | null;
+  /** Photos of the space, the first one used on its card. */
+  photos: string[];
   /** Who published the photo, e.g. "Digital Two website". */
   photoCredit: string | null;
   sources: SpaceSource[];

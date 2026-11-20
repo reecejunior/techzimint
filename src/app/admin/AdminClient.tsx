@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Coffee, ExternalLink, Heart, ImageIcon, Lightbulb,
-  Loader2, LogOut, Mail, MessageCircle, Scale, Pencil, PlaySquare, RotateCcw, Search, ShieldCheck, Trash2, X,
+  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Coffee, ExternalLink, Heart, House, ImageIcon, Lightbulb,
+  Loader2, LogOut, Mail, MessageCircle, Rocket, Scale, Pencil, PlaySquare, RotateCcw, Search, ShieldCheck, Trash2, Trophy, X,
 } from 'lucide-react';
+import clsx from 'clsx';
+import HomeContentAdmin from './HomeContentAdmin';
 import { sendAdminPasswordReset, signInAdmin, signOutAdmin } from '@/lib/firebase';
 import {
   approveStartup, deletePost, deleteRegulationReport, deleteTrackerComment, deleteTrackerOverride,
@@ -67,13 +69,77 @@ export default function AdminClient() {
     <div className={styles.shell}>
       <div className={`wrap ${styles.page}`}>
         <AdminHeader email={user?.email ?? null} />
-        <StatsStrip />
-        <TrackerEntryEditor adminEmail={user?.email ?? ''} />
-        <TrackerQueue />
-        <TrackerCommentsQueue />
-        <RulesFeedback />
-        <SpaceSubmissionsQueue />
-        <Queue />
+        <AdminSections adminEmail={user?.email ?? ''} />
+      </div>
+    </div>
+  );
+}
+
+type SectionKey = 'home' | 'startups' | 'spaces' | 'regulations' | 'tracker';
+
+const SECTIONS: { key: SectionKey; label: string; icon: typeof House; title: string; text: string }[] = [
+  { key: 'home', label: 'Home page', icon: House, title: 'Home page', text: 'Post videos, opportunities, guides, stories, events and who’s-who entries. They appear on the home page as soon as you post them.' },
+  { key: 'startups', label: 'Startups', icon: Rocket, title: 'Startups', text: 'Approve, reject and recategorise listings, and fix their posts.' },
+  { key: 'spaces', label: 'Spaces', icon: Coffee, title: 'Spaces', text: 'Workspaces founders have sent in for the Spaces tool.' },
+  { key: 'regulations', label: 'Regulations', icon: Scale, title: 'Regulations', text: 'Reports on the rules directory, readers’ questions and what people search for.' },
+  { key: 'tracker', label: 'Hackathon tracker', icon: Trophy, title: 'Hackathon tracker', text: 'Edit entries, review suggestions and moderate comments.' },
+];
+
+function initialSection(): SectionKey {
+  if (typeof window === 'undefined') return 'home';
+  const hash = window.location.hash.slice(1);
+  return SECTIONS.some(s => s.key === hash) ? (hash as SectionKey) : 'home';
+}
+
+/** One area of the admin panel at a time, picked from the side menu. */
+function AdminSections({ adminEmail }: { adminEmail: string }) {
+  const [section, setSection] = useState<SectionKey>(initialSection);
+  const info = SECTIONS.find(s => s.key === section)!;
+
+  function open(key: SectionKey) {
+    setSection(key);
+    window.history.replaceState(null, '', `#${key}`);
+  }
+
+  return (
+    <div className={styles.layout}>
+      <nav className={styles.sideNav} aria-label="Admin sections">
+        {SECTIONS.map(s => (
+          <button
+            key={s.key}
+            type="button"
+            className={clsx(styles.sideLink, section === s.key && styles.sideLinkOn)}
+            aria-current={section === s.key ? 'page' : undefined}
+            onClick={() => open(s.key)}
+          >
+            <s.icon size={16} aria-hidden="true" />
+            {s.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className={styles.main}>
+        <div className={styles.sectionHead}>
+          <h2 className={styles.sectionTitle}>{info.title}</h2>
+          <p className={styles.sectionText}>{info.text}</p>
+        </div>
+
+        {section === 'home' && <HomeContentAdmin />}
+        {section === 'startups' && (
+          <>
+            <StatsStrip />
+            <Queue />
+          </>
+        )}
+        {section === 'spaces' && <SpaceSubmissionsQueue />}
+        {section === 'regulations' && <RulesFeedback />}
+        {section === 'tracker' && (
+          <>
+            <TrackerEntryEditor adminEmail={adminEmail} />
+            <TrackerQueue />
+            <TrackerCommentsQueue />
+          </>
+        )}
       </div>
     </div>
   );
@@ -82,10 +148,7 @@ export default function AdminClient() {
 function AdminHeader({ email }: { email: string | null }) {
   return (
     <header className={styles.shellHeader}>
-      <div>
-        <span className={styles.shellEyebrow}>Techzim Startups</span>
-        <h1 className={styles.shellTitle}>Admin</h1>
-      </div>
+      <h1 className={styles.shellTitle}>Admin</h1>
       <div className={styles.shellRight}>
         {email && (
           <span className={styles.shellUser}>

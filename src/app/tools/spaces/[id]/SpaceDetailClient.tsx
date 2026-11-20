@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import clsx from 'clsx';
 import {
-  ArrowLeft, Building2, Check, Clock, Coffee, ExternalLink, Globe, Mail, MapPin, MessageCircle,
+  ArrowLeft, Building2, Check, Clock, Coffee, Globe, Mail, MapPin, MessageCircle,
   Phone, Tag,
 } from 'lucide-react';
 import SpaceCard, { SpaceActions, SpacePicture } from '@/components/SpaceCard';
@@ -51,8 +53,9 @@ function BackLink() {
 
 function SpaceDetail({ space: s }: { space: Space }) {
   const Icon = s.type === 'cafe' ? Coffee : Building2;
+  const [photo, setPhoto] = useState(0);
   const nearby = SEED_SPACES.filter(o => o.town === s.town && o.id !== s.id)
-    .sort((a, b) => Number(Boolean(b.photo)) - Number(Boolean(a.photo)))
+    .sort((a, b) => Number(b.photos.length > 0) - Number(a.photos.length > 0))
     .slice(0, 3);
 
   return (
@@ -61,8 +64,26 @@ function SpaceDetail({ space: s }: { space: Space }) {
         <BackLink />
 
         <div className={styles.hero}>
-          <SpacePicture space={s} />
+          <SpacePicture space={s} index={photo} />
         </div>
+
+        {s.photos.length > 1 && (
+          <div className={styles.thumbs} role="group" aria-label="Photos">
+            {s.photos.map((src, i) => (
+              <button
+                key={src}
+                type="button"
+                className={clsx(styles.thumb, i === photo && styles.thumbOn)}
+                onClick={() => setPhoto(i)}
+                aria-label={`Photo ${i + 1} of ${s.photos.length}`}
+                aria-pressed={i === photo}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" />
+              </button>
+            ))}
+          </div>
+        )}
 
         <header className={styles.head}>
           <span className={styles.icon} aria-hidden="true">
@@ -117,27 +138,6 @@ function SpaceDetail({ space: s }: { space: Space }) {
               </p>
             </section>
 
-            <section className={styles.section}>
-              <h2 className={styles.h2}>Where these details come from</h2>
-              <ul className={styles.sources}>
-                {s.sources.map(src => (
-                  <li key={src.label}>
-                    {src.url ? (
-                      <a href={src.url} target="_blank" rel="noopener noreferrer">
-                        {src.label}
-                        <ExternalLink size={13} aria-hidden="true" />
-                      </a>
-                    ) : (
-                      src.label
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <p className={styles.note}>
-                Prices and hours change, and some details are a few years old. Call ahead before you
-                go. <Link href="/tools/spaces/submit">Send a correction</Link>.
-              </p>
-            </section>
           </div>
 
           <aside className={styles.side}>
@@ -188,6 +188,10 @@ function SpaceDetail({ space: s }: { space: Space }) {
                 )}
               </ul>
               <SpaceActions space={s} large />
+              <p className={styles.note}>
+                Prices and hours change, so call ahead.{' '}
+                <Link href="/tools/spaces/submit">Something wrong? Tell us</Link>.
+              </p>
             </div>
           </aside>
         </div>
