@@ -203,3 +203,30 @@ export function useSpaceSubmissionsForAdmin(): { data: SpaceSubmission[]; loadin
 export async function decideSpaceSubmission(id: string, status: 'approved' | 'rejected'): Promise<void> {
   await updateDoc(doc(getDb(), 'spaceSubmissions', id), { status });
 }
+
+/** One approved submission, for its own page. null when missing or not approved. */
+export function useApprovedSpaceSubmission(id: string | null): { data: SpaceSubmission | null; loading: boolean } {
+  const [state, setState] = useState<{ data: SpaceSubmission | null; loading: boolean; forId: string | null }>({
+    data: null,
+    loading: Boolean(id) && isFirebaseConfigured,
+    forId: id,
+  });
+
+  useEffect(() => {
+    if (!id || !isFirebaseConfigured) return;
+    return onSnapshot(
+      doc(getDb(), 'spaceSubmissions', id),
+      snap =>
+        setState({
+          data: snap.exists() && snap.data().status === 'approved'
+            ? mapSubmission(snap as QueryDocumentSnapshot<DocumentData>)
+            : null,
+          loading: false,
+          forId: id,
+        }),
+      () => setState({ data: null, loading: false, forId: id }),
+    );
+  }, [id]);
+
+  return state.forId === id ? state : { data: null, loading: Boolean(id) && isFirebaseConfigured };
+}

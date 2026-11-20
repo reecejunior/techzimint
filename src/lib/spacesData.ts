@@ -23,6 +23,13 @@ const coworker = (path: string): SpaceSource => ({
   url: `https://www.coworker.com/zimbabwe/${path}`,
 });
 
+/** Spaces with a photo in public/spaces/{id}.jpg (resized to 1200px). */
+const LOCAL_PHOTOS = new Set([
+  'afrotopia', 'the-business-hub', 'space-station', 'location47', 'the-creative-factory-hub',
+  'kubasa', 'lamar-hub', 'linkspot', 'the-oasis', 'the-techvillage', 'mybizspace',
+  'africa-university-i5hub',
+]);
+
 function space(
   id: string,
   name: string,
@@ -45,7 +52,7 @@ function space(
     email: null,
     website: null,
     contact: null,
-    photo: null,
+    photo: LOCAL_PHOTOS.has(id) ? `/spaces/${id}.jpg` : null,
     photoCredit: null,
     ...details,
   };
@@ -133,8 +140,6 @@ export const SEED_SPACES: Space[] = [
     offers: ['WiFi', 'Printing', 'Standing desks', 'Lounge', 'Tea room'],
     price: 'From $10 a day',
     hours: 'Every day, 8am–5pm',
-    photo: 'https://www.coworkbooking.com/images/1600!0/stul/29694/img_6142.jpg',
-    photoCredit: 'Space Station on coworkbooking.com',
     sources: [
       coworker('harare/space-station'),
       { label: 'coworkbooking.com listing', url: 'https://www.coworkbooking.com/africa/zimbabwe/harare/karimapondo-space-station1' },
@@ -145,8 +150,6 @@ export const SEED_SPACES: Space[] = [
     address: '47 Herbert Chitepo Avenue',
     offers: ['WiFi', 'Meeting rooms', 'Printing', 'Garden', 'Pool', 'Kitchen', 'Parking'],
     hours: 'Mon–Fri 8:30am–6:30pm · Sat–Sun 9:30am–6:30pm',
-    photo: 'https://www.coworkbooking.com/images/1600!0/kapacita/20365/20230612_091002.jpg',
-    photoCredit: 'Location47 on coworkbooking.com',
     sources: [
       coworker('harare/location47'),
       { label: 'coworkbooking.com listing', url: 'https://www.coworkbooking.com/africa/zimbabwe/harare/location47hre' },

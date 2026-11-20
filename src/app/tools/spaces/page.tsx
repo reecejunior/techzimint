@@ -2,13 +2,11 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import {
-  Building2, Clock, Coffee, ExternalLink, Globe, Mail, MapPin, MessageCircle, Navigation,
-  Phone, Plus, Search,
-} from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import clsx from 'clsx';
 import PageHeader from '@/components/PageHeader';
-import SpaceCover from '@/components/SpaceCover';
+import SpaceCard from '@/components/SpaceCard';
+import { submissionToSpace } from '@/lib/spaces';
 import { SEED_SPACES } from '@/lib/spacesData';
 import { useApprovedSpaceSubmissions } from '@/lib/tools';
 import { SPACE_TOWNS, type Space, type SpaceType } from '@/lib/types';
@@ -16,58 +14,13 @@ import styles from './page.module.css';
 
 type TypeFilter = SpaceType | 'all';
 
-const TYPE_LABEL: Record<SpaceType, string> = { coworking: 'Co-working space', cafe: 'Internet café' };
-
-/** Zimbabwean numbers in international form, for tel: and wa.me links. */
-function digits(number: string): string {
-  const d = number.replace(/[^\d+]/g, '');
-  if (d.startsWith('+')) return d.slice(1);
-  if (d.startsWith('0') && d.length >= 9) return `263${d.slice(1)}`;
-  return d;
-}
-
-function whatsappLink(value: string): string {
-  return /^https?:\/\//.test(value) ? value : `https://wa.me/${digits(value)}`;
-}
-
-function mapsLink(s: Space): string {
-  const q = [s.name, s.address, s.area, s.town, 'Zimbabwe'].filter(Boolean).join(', ');
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-}
-
 export default function SpacesPage() {
   const submitted = useApprovedSpaceSubmissions();
   const [town, setTown] = useState<string>('all');
   const [type, setType] = useState<TypeFilter>('all');
   const [search, setSearch] = useState('');
 
-  const all = useMemo<Space[]>(
-    () => [
-      ...SEED_SPACES,
-      ...submitted.map(
-        (s): Space => ({
-          id: `submitted-${s.id}`,
-          name: s.name,
-          town: s.town,
-          type: s.type,
-          area: null,
-          address: s.address || null,
-          offers: s.offers,
-          price: s.price || null,
-          hours: null,
-          phone: null,
-          whatsapp: null,
-          email: null,
-          website: null,
-          contact: s.contact || null,
-          photo: null,
-          photoCredit: null,
-          sources: [{ label: 'Added by a founder', url: null }],
-        }),
-      ),
-    ],
-    [submitted],
-  );
+  const all = useMemo<Space[]>(() => [...SEED_SPACES, ...submitted.map(submissionToSpace)], [submitted]);
 
   const towns = useMemo(() => {
     const extra = [...new Set(all.map(s => s.town))].filter(t => !(SPACE_TOWNS as readonly string[]).includes(t));
@@ -85,8 +38,14 @@ export default function SpacesPage() {
         (s.area ?? '').toLowerCase().includes(q) ||
         s.offers.some(o => o.toLowerCase().includes(q))),
   );
+  // Spaces with a photo first within each town, so the page opens on pictures.
   const groups = towns
-    .map(t => ({ town: t, spaces: visible.filter(s => s.town === t) }))
+    .map(t => ({
+      town: t,
+      spaces: visible
+        .filter(s => s.town === t)
+        .sort((a, b) => Number(Boolean(b.photo)) - Number(Boolean(a.photo))),
+    }))
     .filter(g => g.spaces.length > 0);
 
   return (
@@ -179,124 +138,11 @@ export default function SpacesPage() {
         )}
 
         <p className={styles.fine}>
-          Details come from the sources named on each card, and some are from 2022, so call ahead
-          before you go. Photos are credited to the venue that published them; the rest are illustrations.{' '}
+          Details come from the sources named on each space&apos;s page, and some are from 2022, so
+          call ahead before you go. Spaces without a photo show an illustration.{' '}
           <Link href="/tools/spaces/submit">Add or correct a space</Link>.
         </p>
       </div>
     </div>
-  );
-}
-
-function SpaceCard({ space: s }: { space: Space }) {
-  const Icon = s.type === 'cafe' ? Coffee : Building2;
-  // A venue photo that stops loading falls back to the illustrated cover.
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const showPhoto = Boolean(s.photo) && !photoFailed;
-
-  return (
-    <article className={styles.card}>
-      <div className={styles.cover}>
-        {showPhoto ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={s.photo ?? undefined}
-              alt={`Inside ${s.name}`}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              onError={() => setPhotoFailed(true)}
-            />
-            {s.photoCredit && <span className={styles.credit}>Photo: {s.photoCredit}</span>}
-          </>
-        ) : (
-          <SpaceCover id={s.id} town={s.town} type={s.type} />
-        )}
-        <span className={styles.coverIcon} aria-hidden="true">
-          <Icon size={18} />
-        </span>
-      </div>
-
-      <div className={styles.body}>
-        <p className={styles.kind}>
-          {TYPE_LABEL[s.type]}
-          {s.area ? ` · ${s.area}` : ''}
-        </p>
-        <h3 className={styles.name}>{s.name}</h3>
-
-        {s.price && <p className={styles.price}>{s.price}</p>}
-
-        <ul className={styles.facts}>
-          {s.address && (
-            <li>
-              <MapPin size={15} aria-hidden="true" />
-              <span>{s.address}</span>
-            </li>
-          )}
-          {s.hours && (
-            <li>
-              <Clock size={15} aria-hidden="true" />
-              <span>{s.hours}</span>
-            </li>
-          )}
-          {s.contact && (
-            <li>
-              <Phone size={15} aria-hidden="true" />
-              <span>{s.contact}</span>
-            </li>
-          )}
-        </ul>
-
-        {s.offers.length > 0 && <p className={styles.offers}>{s.offers.join(' · ')}</p>}
-
-        <div className={styles.actions}>
-          {s.phone && (
-            <a className={styles.action} href={`tel:+${digits(s.phone)}`}>
-              <Phone size={14} aria-hidden="true" />
-              Call
-            </a>
-          )}
-          {s.whatsapp && (
-            <a className={styles.action} href={whatsappLink(s.whatsapp)} target="_blank" rel="noopener noreferrer">
-              <MessageCircle size={14} aria-hidden="true" />
-              WhatsApp
-            </a>
-          )}
-          {s.email && (
-            <a className={styles.action} href={`mailto:${s.email}`}>
-              <Mail size={14} aria-hidden="true" />
-              Email
-            </a>
-          )}
-          {s.website && (
-            <a className={styles.action} href={s.website} target="_blank" rel="noopener noreferrer">
-              <Globe size={14} aria-hidden="true" />
-              Website
-            </a>
-          )}
-          <a className={styles.action} href={mapsLink(s)} target="_blank" rel="noopener noreferrer">
-            <Navigation size={14} aria-hidden="true" />
-            Directions
-          </a>
-        </div>
-
-        <p className={styles.source}>
-          Info from{' '}
-          {s.sources.map((src, i) => (
-            <span key={src.label}>
-              {i > 0 && ', '}
-              {src.url ? (
-                <a href={src.url} target="_blank" rel="noopener noreferrer">
-                  {src.label}
-                  <ExternalLink size={11} aria-hidden="true" />
-                </a>
-              ) : (
-                src.label
-              )}
-            </span>
-          ))}
-        </p>
-      </div>
-    </article>
   );
 }
