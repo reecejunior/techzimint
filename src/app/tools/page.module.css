@@ -3,7 +3,7 @@
 }
 
 .wrap {
-  margin-top: var(--s-8);
+  margin-top: var(--s-10);
 }
 
 .grid {
@@ -11,44 +11,138 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--s-4);
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--s-5);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid > li {
+  display: flex;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
-  height: 100%;
-  padding: var(--s-5);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--bg);
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--white);
   color: inherit;
   text-decoration: none;
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--normal) var(--ease),
+    transform var(--normal) var(--ease);
 }
 
 .card:hover,
 .card:focus-visible {
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow);
+  border-color: var(--hairline-strong);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
 }
 
-.icon {
+/* ── Visuals ── */
+
+.visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.visualRegs {
+  background: radial-gradient(circle at 30% 20%, #fff6ef 0%, var(--orange-50) 45%, #fbefe5 100%);
+}
+
+.logos,
+.faces {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.logos {
+  max-width: 248px;
+  gap: 12px;
+}
+
+.logo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  color: var(--brand-text);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 1px 2px rgba(29, 26, 23, 0.06), 0 4px 12px rgba(158, 61, 2, 0.08);
+  transition: transform var(--normal) var(--ease);
+}
+
+.logo img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.card:hover .logo {
+  transform: translateY(-2px);
+}
+
+.visualPhoto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 600ms var(--ease);
+}
+
+.card:hover .visualPhoto img {
+  transform: scale(1.04);
+}
+
+.visualTalent {
+  background: #f6f3ee;
+}
+
+.faces {
+  max-width: 262px;
+  gap: 10px;
+}
+
+.face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px #f6f3ee;
+}
+
+.tone_orange { background: #fdebdc; color: #9e3d02; }
+.tone_green  { background: #e3efe4; color: #2f6136; }
+.tone_blue   { background: #e2ebf5; color: #2c517c; }
+.tone_plum   { background: #f0e4ee; color: #6e3563; }
+.tone_sand   { background: #f1ead9; color: #6b5420; }
+
+/* ── Text ── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  flex: 1;
+  padding: var(--s-5);
 }
 
 .name {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 650;
   color: var(--ink-900);
   letter-spacing: var(--track-heading);
 }
@@ -59,13 +153,43 @@
   color: var(--ink-700);
 }
 
-.open {
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
   margin-top: auto;
+  padding-top: var(--s-4);
+}
+
+.stat {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-500);
+}
+
+.go {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding-top: var(--s-2);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--brand-text);
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--orange-100);
+  color: var(--orange-700);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease), transform var(--normal) var(--ease);
+}
+
+.card:hover .go {
+  background: var(--brand);
+  color: var(--white);
+  transform: translateX(2px);
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+  }
 }
