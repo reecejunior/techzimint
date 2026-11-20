@@ -643,7 +643,7 @@ export default function StartupDetailClient({ slug }: { slug: string }) {
             <div className={`wrap ${styles.stateWrap}`}>
                 <EmptyState title="We couldn't find that startup">
                     It may have been removed, or the link may be wrong.{' '}
-                    <Link href="/">Back to the directory</Link>.
+                    <Link href="/startups">Back to the directory</Link>.
                 </EmptyState>
             </div>
         );
@@ -669,7 +669,7 @@ function Loaded({ startup }: { startup: Startup }) {
     return (
         <div className={styles.page}>
             <div className="wrap">
-                <Link href="/" className={styles.back}>
+                <Link href="/startups" className={styles.back}>
                     <ArrowLeft size={14} aria-hidden="true" />
                     Startups
                 </Link>

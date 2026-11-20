@@ -35,7 +35,7 @@ export default function ProfileClient({ username }: { username: string }) {
         return (
             <div className={`wrap ${styles.stateWrap}`}>
                 <EmptyState title="No reviewer by that name">
-                    The profile may have been removed. <Link href="/">Back to the directory</Link>.
+                    The profile may have been removed. <Link href="/startups">Back to the directory</Link>.
                 </EmptyState>
             </div>
         );
@@ -111,7 +111,7 @@ export default function ProfileClient({ username }: { username: string }) {
 
                     {reviews.length === 0 ? (
                         <EmptyState title="No reviews yet">
-                            <Link href="/">Explore startups</Link> to leave the first one.
+                            <Link href="/startups">Explore startups</Link> to leave the first one.
                         </EmptyState>
                     ) : (
                         <div className={styles.reviewList}>

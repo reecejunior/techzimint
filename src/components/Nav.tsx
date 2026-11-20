@@ -8,7 +8,7 @@ import NotificationBell from './NotificationBell';
 import styles from './Nav.module.css';
 
 const LINKS = [
-  { href: '/', label: 'Startups' },
+  { href: '/startups', label: 'Startups' },
   { href: '/community', label: 'Community' },
   { href: '/tools', label: 'Tools' },
 ];
