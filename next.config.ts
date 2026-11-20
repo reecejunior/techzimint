@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: '/leaderboard', destination: '/', permanent: true },
+      // The community section is off for now; the hackathon tracker under it stays.
+      { source: '/community', destination: '/', permanent: false },
+      { source: '/community/:id((?!hackathon-tracker$)[^/]+)', destination: '/', permanent: false },
+      // Finder is now the Talent Directory.
+      { source: '/tools/finder', destination: '/tools/talent', permanent: true },
+      { source: '/tools/finder/:path*', destination: '/tools/talent/:path*', permanent: true },
       // Regulations moved under the Tools section.
       { source: '/regulations', destination: '/tools/regulations', permanent: true },
       { source: '/regulations/:path*', destination: '/tools/regulations/:path*', permanent: true },

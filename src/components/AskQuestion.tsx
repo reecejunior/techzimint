@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useId, useState } from 'react';
 import { CheckCircle2, Loader2, MessageCircleQuestion } from 'lucide-react';
 import { createCommunityPost } from '@/lib/firestore';
@@ -74,8 +73,8 @@ export default function AskQuestion({
   if (postId) {
     return (
       <p className={styles.thanks} role="status">
-        <CheckCircle2 size={16} aria-hidden="true" /> Posted to the community. The Techzim team has
-        it too. <Link href={`/community/${postId}`}>See your question</Link>
+        <CheckCircle2 size={16} aria-hidden="true" /> Sent. The Techzim team has your question and
+        will reply.
       </p>
     );
   }
@@ -91,7 +90,7 @@ export default function AskQuestion({
   if (!isMember) {
     return (
       <div className={styles.wrap}>
-        <MemberAuth reason="Create a free account to ask a question. It is posted in the community, where other founders can answer it." />
+        <MemberAuth reason="Create a free account to ask a question. The Techzim team will reply." />
         <button type="button" className={styles.cancel} onClick={() => setOpen(false)}>Cancel</button>
       </div>
     );

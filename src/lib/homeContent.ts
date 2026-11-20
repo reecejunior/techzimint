@@ -99,7 +99,7 @@ export const STAGES: Stage[] = [
     label: 'Idea',
     question: 'Is the idea worth building?',
     summary: 'Talk to ten people who have the problem before you build anything. If none of them would pay to fix it, change the idea.',
-    tool: { title: 'Find a co-founder on Finder', href: '/tools/finder' },
+    tool: { title: 'Find a co-founder in the Talent Directory', href: '/tools/talent' },
   },
   {
     key: 'register',
@@ -134,7 +134,7 @@ export const STAGES: Stage[] = [
     label: 'Grow',
     question: 'How do I grow past the first market?',
     summary: 'Hiring well, getting paid from abroad and choosing the next market decide how far you go.',
-    tool: { title: 'Hire through Finder', href: '/tools/finder' },
+    tool: { title: 'Hire from the Talent Directory', href: '/tools/talent' },
   },
 ];
 

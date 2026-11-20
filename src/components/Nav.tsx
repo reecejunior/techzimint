@@ -8,7 +8,6 @@ import styles from './Nav.module.css';
 
 const LINKS = [
   { href: '/startups', label: 'Startups' },
-  { href: '/community', label: 'Community' },
   { href: '/tools', label: 'Tools' },
 ];
 
