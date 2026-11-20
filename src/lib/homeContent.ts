@@ -69,6 +69,9 @@ export const HOME_KINDS: { key: HomeKind; label: string; singular: string }[] = 
   { key: 'scene', label: "Who's who", singular: 'entry' },
 ];
 
+/** The kinds the home page shows right now. The others can still be posted and are kept for later. */
+export const HOME_VISIBLE_KINDS: HomeKind[] = ['video', 'guide'];
+
 export const OPPORTUNITY_TYPES = ['Grant', 'Competition', 'Accelerator', 'Hackathon', 'Fellowship', 'Other'];
 export const EVENT_TYPES = ['Meetup', 'Pitch night', 'Workshop', 'Hackathon', 'Demo day', 'Conference', 'Other'];
 

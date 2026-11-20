@@ -5,7 +5,7 @@ import { ExternalLink, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { ErrorState } from '@/components/ui/DataState';
 import {
-  EVENT_TYPES, HOME_KINDS, OPPORTUNITY_TYPES, SCENE_GROUPS, STAGES,
+  EVENT_TYPES, HOME_KINDS, HOME_VISIBLE_KINDS, OPPORTUNITY_TYPES, SCENE_GROUPS, STAGES,
   type HomeItem, type HomeKind,
 } from '@/lib/homeContent';
 import { deleteHomeItem, emptyDraft, saveHomeItem, useHomeItems, type HomeItemDraft } from '@/lib/homeData';
@@ -117,6 +117,7 @@ export default function HomeContentAdmin() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   const kindInfo = HOME_KINDS.find(k => k.key === kind)!;
+  const hidden = !HOME_VISIBLE_KINDS.includes(kind);
   const ofKind = items.filter(i => i.kind === kind);
 
   function switchKind(next: HomeKind) {
@@ -149,7 +150,12 @@ export default function HomeContentAdmin() {
     setMessage(null);
     try {
       await saveHomeItem(draft, editingId ?? undefined);
-      setMessage({ tone: 'ok', text: editingId ? 'Saved. The home page shows the change now.' : 'Posted. It’s on the home page now.' });
+      setMessage({
+        tone: 'ok',
+        text: hidden
+          ? 'Saved. It will show when this section is back on the home page.'
+          : editingId ? 'Saved. The home page shows the change now.' : 'Posted. It’s on the home page now.',
+      });
       setDraft(draftFor(kind));
       setEditingId(null);
     } catch (err) {
@@ -184,11 +190,18 @@ export default function HomeContentAdmin() {
               onClick={() => switchKind(k.key)}
             >
               {k.label}
-              <span className={styles.tabCount}>{count}</span>
+              <span className={styles.tabCount}>{HOME_VISIBLE_KINDS.includes(k.key) ? count : 'hidden'}</span>
             </button>
           );
         })}
       </div>
+
+      {hidden && (
+        <p className={styles.hiddenNote}>
+          {kindInfo.label} aren’t on the home page right now. You can still post them here; they’ll
+          show once the section is switched back on.
+        </p>
+      )}
 
       <div className={styles.grid}>
         <form className={styles.form} onSubmit={submit}>

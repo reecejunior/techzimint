@@ -881,3 +881,47 @@ a.sceneItem:hover .sceneName {
     font-size: 22px;
   }
 }
+
+/* ── Videos and guides only (current layout) ── */
+
+.top + .section {
+  margin-top: var(--s-10);
+}
+
+.leadRow {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--s-8);
+  align-items: center;
+  padding-bottom: var(--s-10);
+  margin-bottom: var(--s-8);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.leadText .kicker {
+  margin-top: 0;
+}
+
+.guidesGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--s-10);
+}
+
+.guidesGrid > li {
+  border-bottom: 1px solid var(--hairline);
+}
+
+@media (max-width: 900px) {
+  .leadRow {
+    grid-template-columns: 1fr;
+    gap: var(--s-4);
+  }
+
+  .guidesGrid {
+    grid-template-columns: 1fr;
+  }
+}

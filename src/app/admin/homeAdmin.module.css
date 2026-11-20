@@ -295,3 +295,12 @@ textarea.input {
     grid-template-columns: 1fr;
   }
 }
+
+.hiddenNote {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  background: #f1efec;
+  color: var(--ink-700);
+  font-size: 13.5px;
+}
