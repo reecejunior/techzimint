@@ -239,10 +239,9 @@ export default function RegulationsExplorer() {
                   </li>
                 ))}
                 <li>
-                  <span className={styles.contactName}>The Techzim community</span>
+                  <span className={styles.contactName}>The Techzim team</span>
                   <span>
-                    Founders who have been through it. Your question also reaches the Techzim team,
-                    and helps us add the right rules for ideas like yours.
+                    Send us your question. It also helps us add the right rules for ideas like yours.
                   </span>
                   <AskQuestion idea={query} label="Ask about my idea" />
                 </li>

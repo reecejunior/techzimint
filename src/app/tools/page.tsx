@@ -17,10 +17,10 @@ const TOOLS = [
     text: 'Co-working spaces and internet cafés in Harare, Bulawayo and Mutare, with what each one offers.',
   },
   {
-    href: '/tools/finder',
+    href: '/tools/talent',
     icon: Users,
-    name: 'Finder',
-    text: 'Post what you are building and what you need. Find co-founders, employees and freelancers.',
+    name: 'Talent Directory',
+    text: 'Developers and designers for hire, and founders looking for co-founders, staff or freelancers.',
   },
 ];
 

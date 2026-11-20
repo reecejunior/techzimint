@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Coffee, ExternalLink, Heart, House, ImageIcon, Lightbulb,
@@ -1016,9 +1015,7 @@ function RulesFeedback() {
             <li key={q.id} className={styles.row}>
               <div className={styles.rowBody}>
                 <div className={styles.rowHead}>
-                  <Link href={`/community/${q.id}`} className={styles.rowName}>
-                    {q.title}
-                  </Link>
+                  <span className={styles.rowName}>{q.title}</span>
                   <span className={styles.rowFounders}>{q.isAnswered ? 'Answered' : 'Open'}</span>
                 </div>
                 <p className={styles.rowTagline}>{q.body.split('\n')[0]}</p>

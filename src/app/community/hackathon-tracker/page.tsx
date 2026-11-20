@@ -291,9 +291,9 @@ export default function HackathonTrackerPage() {
   return (
     <div className={styles.page}>
       <div className={`wrap ${styles.backRow}`}>
-        <Link href="/community" className={styles.back}>
+        <Link href="/" className={styles.back}>
           <ArrowLeft size={14} aria-hidden="true" />
-          Developer community
+          Home
         </Link>
       </div>
 

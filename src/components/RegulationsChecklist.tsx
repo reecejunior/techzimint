@@ -295,7 +295,7 @@ export default function RegulationsChecklist({
       </div>
 
       <div className={styles.ask}>
-        <AskQuestion idea={idea} label="Ask the community about this checklist" />
+        <AskQuestion idea={idea} label="Ask Techzim about this checklist" />
       </div>
     </section>
   );

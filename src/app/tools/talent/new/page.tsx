@@ -43,7 +43,7 @@ export default function NewFinderPostPage() {
         },
         user?.displayName ?? user?.email?.split('@')[0] ?? 'Founder',
       );
-      router.push('/tools/finder');
+      router.push('/tools/talent?tab=team');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not post that. Try again.');
       setBusy(false);
@@ -53,11 +53,11 @@ export default function NewFinderPostPage() {
   return (
     <div className={styles.page}>
       <div className={`wrap ${styles.wrap}`}>
-        <Link href="/tools/finder" className={styles.back}>
+        <Link href="/tools/talent" className={styles.back}>
           <ArrowLeft size={14} aria-hidden="true" />
-          Finder
+          Talent Directory
         </Link>
-        <h1 className={styles.title}>Post yourself on Finder</h1>
+        <h1 className={styles.title}>Add yourself to the Talent Directory</h1>
         <p className={styles.subtitle}>
           Say what you have built, what you have done before and what you are looking for. Your
           post goes live straight away.
@@ -65,7 +65,7 @@ export default function NewFinderPostPage() {
 
         {loading ? null : !isMember ? (
           <div className={styles.gate}>
-            <MemberAuth reason="Sign up with email to post on Finder. Reading it is free." />
+            <MemberAuth reason="Sign up with email to add yourself. Browsing is free." />
           </div>
         ) : (
           <form className={styles.form} onSubmit={submit}>
@@ -141,7 +141,7 @@ export default function NewFinderPostPage() {
             {error && <p className={styles.error} role="alert">{error}</p>}
 
             <button type="submit" className={styles.submit} disabled={busy}>
-              {busy ? 'Posting…' : 'Post on Finder'}
+              {busy ? 'Posting…' : 'Add me to the directory'}
             </button>
           </form>
         )}

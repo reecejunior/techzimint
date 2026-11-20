@@ -642,3 +642,24 @@ export interface SpaceSubmission {
 }
 
 export const SPACE_TOWNS = ['Harare', 'Bulawayo', 'Mutare'] as const;
+
+/* ─── Talent Directory ───────────────────────────────────── */
+
+/** A developer from the Techzim developer directory. Empty strings mean "not given". */
+export interface Developer {
+  id: string;
+  name: string;
+  town: string;
+  skills: string;
+  experience: string;
+  /** Portfolio as written, when it isn't a single link. */
+  portfolio: string;
+  portfolioUrl: string;
+  github: string;
+  stackOverflow: string;
+  availability: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  website: string;
+}

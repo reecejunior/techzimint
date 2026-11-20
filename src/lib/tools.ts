@@ -69,7 +69,7 @@ export async function createFinderPost(draft: FinderPostDraft, authorName: strin
   if (lookingFor.length === 0) throw new Error('Choose at least one thing you are looking for.');
 
   const user = await ensureSignedIn();
-  if (!isMemberUser(user)) throw new Error('Sign up with email to post on Finder.');
+  if (!isMemberUser(user)) throw new Error('Sign up with email to add yourself to the Talent Directory.');
 
   const skills = [...new Set(draft.skills.map(s => s.trim()).filter(Boolean))].slice(0, 8);
   const ref = await addDoc(collection(getDb(), 'finderPosts'), {
