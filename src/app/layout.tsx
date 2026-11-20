@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Nav from '@/components/Nav';
-import Footer from '@/components/Footer';
 import Analytics from '@/components/Analytics';
 import BetaBanner from '@/components/BetaBanner';
 
@@ -31,7 +30,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Nav />
         <BetaBanner />
         <main id="main">{children}</main>
-        <Footer />
         <Analytics />
       </body>
     </html>
