@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
 import {
+  connectAuthEmulator,
   getAuth,
   sendPasswordResetEmail,
   signInAnonymously,
@@ -54,12 +55,30 @@ export function getFirebaseApp(): FirebaseApp {
   return getApps().length ? getApp() : initializeApp(firebaseConfig);
 }
 
+/**
+ * Local testing against the Firebase emulators: set
+ * NEXT_PUBLIC_FIREBASE_EMULATORS=1 and run `firebase emulators:start
+ * --only auth,firestore`. Never set it in production.
+ */
+const USE_EMULATORS = process.env.NEXT_PUBLIC_FIREBASE_EMULATORS === '1';
+const emulatorsWired = { db: false, auth: false };
+
 export function getDb(): Firestore {
-  return getFirestore(getFirebaseApp());
+  const db = getFirestore(getFirebaseApp());
+  if (USE_EMULATORS && !emulatorsWired.db) {
+    emulatorsWired.db = true;
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  }
+  return db;
 }
 
 export function getFirebaseAuth(): Auth {
-  return getAuth(getFirebaseApp());
+  const auth = getAuth(getFirebaseApp());
+  if (USE_EMULATORS && !emulatorsWired.auth) {
+    emulatorsWired.auth = true;
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  }
+  return auth;
 }
 
 /**

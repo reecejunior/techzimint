@@ -1,208 +1,222 @@
 /**
- * Content for the home page, the knowledge hub for founders.
+ * The home page's content model, the founder stages, and the starter items
+ * shown in a section until an admin posts the first item there.
  *
- * EVERYTHING HERE IS SAMPLE CONTENT, written to show the layout. Names,
- * dates, amounts and stories are made up. Replace each list with real items
- * from Techzim and other media before launch, and remove SAMPLE_CONTENT (it
- * shows the "sample content" notice on the page).
+ * Real items are posted from the admin panel (Home page section) and stored
+ * in the Firestore `homeContent` collection. See src/lib/homeData.ts.
  */
 
-export const SAMPLE_CONTENT = true;
+export type HomeKind = 'video' | 'opportunity' | 'guide' | 'story' | 'event' | 'scene';
 
 export type StageKey = 'idea' | 'register' | 'build' | 'customers' | 'funding' | 'grow';
 
-export interface ResourceLink {
-  kind: 'video' | 'guide' | 'tool';
+export type SceneGroup = 'hubs' | 'programmes' | 'funders' | 'government' | 'universities' | 'communities';
+
+/**
+ * One piece of home page content. Every kind uses title and url; the other
+ * fields are used by some kinds and left empty by the rest.
+ */
+export interface HomeItem {
+  id: string;
+  kind: HomeKind;
   title: string;
-  meta: string;
-  href: string;
+  /** Where the item links: the video, article, application page or event page. */
+  url: string;
+  /** Video: who published it, e.g. Techzim. */
+  source: string;
+  /** Video and guide: the subject, e.g. Payments. */
+  topic: string;
+  /** Video: running time, e.g. 12:30. */
+  duration: string;
+  /** Video: a short written summary, for people saving data. */
+  summary: string;
+  /** Video and guide: the stage it belongs to in "Start here", or ''. */
+  stage: StageKey | '';
+  /** Opportunity: Grant, Competition, Accelerator, Hackathon, Fellowship. Event: Meetup, Pitch night… */
+  type: string;
+  /** Opportunity: who runs it. */
+  organiser: string;
+  /** Opportunity: what it's worth, e.g. Up to US$10,000. */
+  value: string;
+  /** Opportunity: who can apply. */
+  forWho: string;
+  /** Opportunity: closing date. Event: event date. Guide and story: published. YYYY-MM-DD. */
+  date: string;
+  /** Story: founder's name and startup. */
+  founder: string;
+  startup: string;
+  /** Story: one line in the founder's words. */
+  quote: string;
+  /** Story: success or lesson (from a shutdown or a hard year). */
+  storyType: 'success' | 'lesson' | '';
+  /** Guide and story: reading time in minutes. */
+  minutes: number;
+  /** Event: town. */
+  town: string;
+  /** Who's who: which group it belongs to. */
+  group: SceneGroup | '';
+  /** Who's who: one line about what they do. */
+  description: string;
+  createdAt: string;
 }
+
+export const HOME_KINDS: { key: HomeKind; label: string; singular: string }[] = [
+  { key: 'video', label: 'Videos', singular: 'video' },
+  { key: 'opportunity', label: 'Opportunities', singular: 'opportunity' },
+  { key: 'guide', label: 'Guides', singular: 'guide' },
+  { key: 'story', label: 'Founder stories', singular: 'story' },
+  { key: 'event', label: 'Events', singular: 'event' },
+  { key: 'scene', label: "Who's who", singular: 'entry' },
+];
+
+export const OPPORTUNITY_TYPES = ['Grant', 'Competition', 'Accelerator', 'Hackathon', 'Fellowship', 'Other'];
+export const EVENT_TYPES = ['Meetup', 'Pitch night', 'Workshop', 'Hackathon', 'Demo day', 'Conference', 'Other'];
+
+export const SCENE_GROUPS: { key: SceneGroup; label: string }[] = [
+  { key: 'hubs', label: 'Hubs and co-working spaces' },
+  { key: 'programmes', label: 'Incubators and accelerators' },
+  { key: 'funders', label: 'Investors and grant-makers' },
+  { key: 'government', label: 'Government and regulators' },
+  { key: 'universities', label: 'University programmes' },
+  { key: 'communities', label: 'Communities' },
+];
 
 export interface Stage {
   key: StageKey;
   label: string;
   question: string;
   summary: string;
-  resources: ResourceLink[];
+  /** Always shown with this stage, after any videos and guides posted for it. */
+  tool: { title: string; href: string };
 }
 
 export const STAGES: Stage[] = [
   {
     key: 'idea',
     label: 'Idea',
-    question: 'Is my idea worth building?',
-    summary:
-      'Before you write code or register anything, check that people have the problem and would pay to solve it. Talk to ten potential customers this week.',
-    resources: [
-      { kind: 'video', title: 'Testing a startup idea without spending money', meta: 'Techzim · 12 min', href: '#videos' },
-      { kind: 'guide', title: 'Ten questions to ask your first customers', meta: 'Guide · 6 min read', href: '#guides' },
-      { kind: 'tool', title: 'Find a co-founder or your first hire', meta: 'Finder', href: '/tools/finder' },
-    ],
+    question: 'Is the idea worth building?',
+    summary: 'Talk to ten people who have the problem before you build anything. If none of them would pay to fix it, change the idea.',
+    tool: { title: 'Find a co-founder on Finder', href: '/tools/finder' },
   },
   {
     key: 'register',
     label: 'Register',
-    question: 'What do I need to register, and when?',
-    summary:
-      'Registering a company and for tax brings real benefits, and some sectors need a licence before you start. Check what applies to your idea.',
-    resources: [
-      { kind: 'tool', title: 'Check the licences your idea needs', meta: 'Regulations', href: '/tools/regulations' },
-      { kind: 'video', title: 'Registering a company in Zimbabwe, step by step', meta: 'Techzim · 15 min', href: '#videos' },
-      { kind: 'guide', title: 'Private limited company or PBC?', meta: 'Guide · 5 min read', href: '#guides' },
-    ],
+    question: 'What do I register, and when?',
+    summary: 'Registering a company and for tax opens doors to banks, tenders and investors. Some sectors also need a licence before you launch.',
+    tool: { title: 'Check which licences your idea needs', href: '/tools/regulations' },
   },
   {
     key: 'build',
     label: 'Build',
     question: 'How do I build it on a small budget?',
-    summary:
-      'Build the smallest version that solves the problem. Work from a co-working space with backup power, and take payments locally from day one.',
-    resources: [
-      { kind: 'tool', title: 'Find a workspace near you', meta: 'Spaces', href: '/tools/spaces' },
-      { kind: 'guide', title: 'Taking EcoCash and card payments in your app', meta: 'Guide · 8 min read', href: '#guides' },
-      { kind: 'video', title: 'Building on mobile data: tips from local developers', meta: 'Other media · 18 min', href: '#videos' },
-    ],
+    summary: 'Build the smallest version that solves the problem, and take payments from the first day.',
+    tool: { title: 'Find a workspace with power and internet', href: '/tools/spaces' },
   },
   {
     key: 'customers',
     label: 'First customers',
-    question: 'How do I get my first 100 customers?',
-    summary:
-      'Your first customers come from people you can reach directly: WhatsApp groups, communities and partners. Learn what made them say yes.',
-    resources: [
-      { kind: 'video', title: 'How three Harare startups found their first users', meta: 'Techzim · 22 min', href: '#videos' },
-      { kind: 'guide', title: 'Pricing in USD and ZiG', meta: 'Guide · 7 min read', href: '#guides' },
-      { kind: 'tool', title: 'List your startup so people can find it', meta: 'Startups', href: '/submit' },
-    ],
+    question: 'Where do the first customers come from?',
+    summary: 'Usually from people you can reach directly: WhatsApp groups, communities, past employers and partners.',
+    tool: { title: 'List your startup on Techzim Startups', href: '/submit' },
   },
   {
     key: 'funding',
     label: 'Funding',
     question: 'Where does early money come from?',
-    summary:
-      'Grants, competitions and accelerators fund most early Zimbabwean startups. Investors come later. Watch the deadlines and apply early.',
-    resources: [
-      { kind: 'tool', title: 'Opportunities closing soon', meta: 'Opportunities', href: '#opportunities' },
-      { kind: 'video', title: 'What investors look for in a Zimbabwean startup', meta: 'Other media · 25 min', href: '#videos' },
-      { kind: 'guide', title: 'Writing a grant application that gets read', meta: 'Guide · 9 min read', href: '#guides' },
-    ],
+    summary: 'Most early Zimbabwean startups are funded by grants, competitions and accelerators before any investor.',
+    tool: { title: 'See opportunities closing soon', href: '#opportunities' },
   },
   {
     key: 'grow',
     label: 'Grow',
-    question: 'How do I grow beyond Zimbabwe?',
-    summary:
-      'Growing means hiring well, getting paid from abroad and entering new markets. Learn from founders who have done it.',
-    resources: [
-      { kind: 'guide', title: 'Receiving payments from outside Zimbabwe', meta: 'Guide · 10 min read', href: '#guides' },
-      { kind: 'video', title: 'Expanding into the region: lessons learned', meta: 'Techzim · 30 min', href: '#videos' },
-      { kind: 'tool', title: 'Hire through Finder', meta: 'Finder', href: '/tools/finder' },
-    ],
+    question: 'How do I grow past the first market?',
+    summary: 'Hiring well, getting paid from abroad and choosing the next market decide how far you go.',
+    tool: { title: 'Hire through Finder', href: '/tools/finder' },
   },
 ];
 
-export interface Opportunity {
-  id: string;
-  type: 'Grant' | 'Competition' | 'Accelerator' | 'Hackathon' | 'Fellowship';
-  title: string;
-  organiser: string;
-  value: string;
-  closes: string;
-  daysLeft: number;
-  forWho: string;
+/* ─── Starter content ─────────────────────────────────────────
+ * Real Techzim articles and videos, current opportunities and events, and
+ * the organisations founders deal with, researched in November 2026. A
+ * section shows these until an admin posts its first item there. Video
+ * lengths and summaries are left empty because they couldn't be checked.
+ * Opportunities and events drop off after their dates. */
+
+function item(id: string, kind: HomeKind, title: string, extra: Partial<HomeItem>): HomeItem {
+  return {
+    id: `starter-${id}`,
+    kind,
+    title,
+    url: '',
+    source: '',
+    topic: '',
+    duration: '',
+    summary: '',
+    stage: '',
+    type: '',
+    organiser: '',
+    value: '',
+    forWho: '',
+    date: '',
+    founder: '',
+    startup: '',
+    quote: '',
+    storyType: '',
+    minutes: 0,
+    town: '',
+    group: '',
+    description: '',
+    createdAt: '',
+    ...extra,
+  };
 }
 
-export const OPPORTUNITIES: Opportunity[] = [
-  { id: 'o1', type: 'Grant', title: 'Youth Innovation Grant', organiser: 'Sample Foundation', value: 'Up to US$10,000', closes: '28 Nov', daysLeft: 8, forWho: 'Founders aged 18–35' },
-  { id: 'o2', type: 'Accelerator', title: 'Fintech Accelerator, Cohort 4', organiser: 'Sample Ventures', value: 'US$25,000 + mentorship', closes: '5 Dec', daysLeft: 15, forWho: 'Fintech startups with a live product' },
-  { id: 'o3', type: 'Competition', title: 'National Pitch Challenge', organiser: 'Sample Hub', value: 'US$5,000 prize', closes: '12 Dec', daysLeft: 22, forWho: 'Any early-stage startup' },
-  { id: 'o4', type: 'Hackathon', title: 'AgriTech Hackathon', organiser: 'Sample University', value: 'Prizes + incubation', closes: '15 Jan', daysLeft: 56, forWho: 'Student and graduate teams' },
-  { id: 'o5', type: 'Fellowship', title: 'Women in Tech Fellowship', organiser: 'Sample Network', value: '6-month programme', closes: '31 Jan', daysLeft: 72, forWho: 'Women-led startups' },
-];
+export function starterItems(): HomeItem[] {
+  return [
+    /* Videos */
+    item('v1', 'video', 'Victor Chaitezvi: Fireside chat on entrepreneurship & investment in the African tech ecosystem', { url: 'https://www.youtube.com/watch?v=4ok1e8aGqtI', source: 'Techzim', topic: 'Funding', stage: 'funding' }),
+    item('v2', 'video', 'MINT: Building Zimbabwe’s Startup Ecosystem: From Ideas To Investment', { url: 'https://www.youtube.com/watch?v=yU4RBWkEvEo', source: 'ZTNPRIME', topic: 'Ecosystem' }),
+    item('v3', 'video', 'Garth Drummond fireside chat: Running a successful online business in Zim', { url: 'https://www.youtube.com/watch?v=ybTcWs902Zk', source: 'Techzim', topic: 'Founder story', stage: 'customers' }),
+    item('v4', 'video', 'EcoCash Scams, Digital Tax Confusion & Zim Tech in 2026', { url: 'https://www.youtube.com/watch?v=Az3KSfON0L4', source: 'Techzim', topic: 'Payments and tax', stage: 'build' }),
+    item('v5', 'video', 'EcoCash Scam Explained: How Wallets Are Being Taken Over', { url: 'https://www.youtube.com/watch?v=Zpy6b2WM5L4', source: 'Techzim', topic: 'Security' }),
+    item('v6', 'video', 'Zimbabwe’s ISP Battle: SmartBiz vs Dolphin Tech', { url: 'https://www.youtube.com/watch?v=ygFwkpdePtY', source: 'Techzim', topic: 'Connectivity' }),
+    item('v7', 'video', 'Online Doctors Africa launches: Healthcare on credit and a digital doctor directory in Zim', { url: 'https://www.youtube.com/shorts/t1lCkJPMoSg', source: 'Techzim', topic: 'Startup launch' }),
 
-export interface Video {
-  id: string;
-  title: string;
-  source: string;
-  duration: string;
-  topic: string;
-  /** A written summary is available for viewers saving data. */
-  hasSummary: boolean;
-  /** 0–5, picks the thumbnail colours. */
-  tone: number;
+    /* Opportunities */
+    item('o1', 'opportunity', 'Hello Tomorrow Global Challenge', { type: 'Competition', organiser: 'Hello Tomorrow', value: '€200,000 investment for the winner', forWho: 'Deep-tech startups anywhere, teams of two or more', date: '2026-11-30', url: 'https://apply.hello-tomorrow.org/' }),
+    item('o2', 'opportunity', 'AI Founder Sprint 2027', { type: 'Accelerator', organiser: 'INSEAD AI Venture Lab', value: 'Free 10-week virtual programme, no equity', forWho: 'Early-stage founders aged 18 and over', date: '2026-12-01', url: 'https://venture-lab.ai/apply/founder' }),
+    item('o3', 'opportunity', 'Founder Institute South Africa 2027 (virtual)', { type: 'Accelerator', organiser: 'Founder Institute', value: 'Pre-seed programme, US$599 to apply', forWho: 'Pre-seed founders; check eligibility for Zimbabwe', date: '2026-12-15', url: 'https://fi.co/join' }),
+
+    /* Guides */
+    item('g1', 'guide', 'Here is why Zimbabwean startups struggle to raise capital from international investors', { url: 'https://www.techzim.co.zw/2024/01/why-zim-startups-struggle-to-raise-capital-from-international-investors/', topic: 'Funding', minutes: 5, stage: 'funding', date: '2024-01-18' }),
+    item('g2', 'guide', 'What the 2027 budget means for tech', { url: 'https://www.techzim.co.zw/2026/11/what-the-2027-budget-means-for-tech/', topic: 'Tax and policy', minutes: 2, date: '2026-11-19' }),
+    item('g3', 'guide', 'ZB launches “free-to-use” payment gateway', { url: 'https://www.techzim.co.zw/2025/05/zb-launches-payment-gateway/', topic: 'Payments', minutes: 3, stage: 'build', date: '2025-05-16' }),
+    item('g4', 'guide', 'Zimbabwe Data Protection Act: summary, guide and downloads', { url: 'https://www.techzim.co.zw/zimbabwe-cyber-and-data-protection-act/', topic: 'Data protection', minutes: 2, stage: 'register', date: '2024-11-26' }),
+    item('g5', 'guide', 'Wait… so we could receive money via PayPal in Zim all along?!', { url: 'https://www.techzim.co.zw/2021/05/wait-so-we-could-receive-money-via-paypal-in-zim-all-along/', topic: 'Getting paid from abroad', minutes: 3, stage: 'grow', date: '2021-05-07' }),
+    item('g6', 'guide', 'Here’s how to get your tax clearance online in Zimbabwe', { url: 'https://www.techzim.co.zw/2019/01/heres-how-to-get-your-tax-clearance-online-in-zimbabwe/', topic: 'Tax', minutes: 3, stage: 'register', date: '2019-01-08' }),
+    item('g7', 'guide', 'Check out ZIMRA’s tax credit for employing under-30s', { url: 'https://www.techzim.co.zw/2022/01/check-out-zimras-180000-a-year-tax-credit-for-employing-under-30s/', topic: 'Hiring', minutes: 2, stage: 'grow', date: '2022-01-04' }),
+    item('g8', 'guide', 'The step-by-step process for registering your startup as a private business corporation', { url: 'https://www.techzim.co.zw/2016/08/heres-step-step-process-registering-startup-private-business-corporation/', topic: 'Registering', minutes: 2, stage: 'register', date: '2016-08-12' }),
+
+    /* Founder stories */
+    item('s1', 'story', 'This Zimbabwean/Zambian startup was accepted into Y Combinator', { url: 'https://www.techzim.co.zw/2024/02/zimbabwean-zambian-startup-accepted-into-y-combinator-prestigious-amreican-accelerator/', founder: 'Louis Murerwa and Michael Moyo', startup: 'Ocular AI', quote: 'At Google and Microsoft, it was very difficult to know what was happening, when, where and how it affected other teams.', storyType: 'success', date: '2024-02-22' }),
+    item('s2', 'story', 'This startup made ZIMRA fiscalisation painless, for $10 a month', { url: 'https://www.techzim.co.zw/2025/05/this-startup-just-made-zimra-fiscalisation-painless-and-for-only-10-a-month/', founder: 'Thamsanqa Bhala', startup: 'RoundIHMP', quote: 'We’d like to offload some of the work like customer acquisition to others like Accountants.', storyType: 'success', date: '2025-05-05' }),
+    item('s3', 'story', 'Why Tengesa failed: a startup founder shares with us', { url: 'https://techzim.co.zw/2013/06/why-tengesa-failed-startup-founder-shares-with-us', founder: 'Colin Pringlewood', startup: 'Tengesa', quote: 'So don’t give up your day job.', storyType: 'lesson', date: '2013-06-18' }),
+
+    /* Events */
+    item('e1', 'event', 'ZCICT 2026: Zimbabwe Conference on ICT', { type: 'Conference', town: 'Harare', date: '2026-11-26', url: 'https://zcict.co.zw/' }),
+    item('e2', 'event', 'Computer Society of Zimbabwe annual ICT cocktail', { type: 'Networking', town: 'Harare', date: '2026-11-27', url: 'https://discoverzim.com/events/csz-annual-ict-cocktail-c4115491-fc5c-4739-be45-47c60e205f18' }),
+    item('e3', 'event', 'Next Africa EBL Conference, Zimbabwe edition', { type: 'Conference', town: 'Harare', date: '2027-07-06', url: 'https://ebl.thenextafrica.com/' }),
+
+    /* Who's who */
+    item('c1', 'scene', 'Tech Hub Harare', { group: 'hubs', description: 'Co-working, incubation and pitch nights.', url: 'https://cowork.co.zw/' }),
+    item('c2', 'scene', 'Eight2Five Innovation Hub', { group: 'hubs', description: 'Old Mutual-backed hub running the Value Creation Challenge.', url: 'http://www.eight2five.co.zw' }),
+    item('c3', 'scene', 'Founder Institute', { group: 'programmes', description: 'Pre-seed accelerator; Zimbabwe joins the virtual South Africa chapter.', url: 'https://fi.co/zimbabwe' }),
+    item('c4', 'scene', 'Tech Hub Harare Angels', { group: 'funders', description: 'Angel investor network that backs early-stage startups.', url: 'https://cowork.co.zw/Angels/' }),
+    item('c5', 'scene', 'ZIMRA', { group: 'government', description: 'Tax registration, VAT, PAYE and tax clearance.', url: 'https://www.zimra.co.zw/domestic-taxes/corporate/new-businesses' }),
+    item('c6', 'scene', 'ZIDA', { group: 'government', description: 'Investment licences and help setting up a business.', url: 'http://www.zidainvest.com/' }),
+    item('c7', 'scene', 'POTRAZ', { group: 'government', description: 'Telecoms regulator and data protection authority.', url: 'http://www.potraz.gov.zw' }),
+    item('c8', 'scene', 'UZ Innovation Hub', { group: 'universities', description: 'University of Zimbabwe spin-offs and IP.', url: 'https://www.uz.ac.zw/index.php/innov-hub' }),
+    item('c9', 'scene', 'NUST Innovation Hub', { group: 'universities', description: 'Start-up support and technology licensing in Bulawayo.', url: 'https://www.nust.ac.zw/index.php/home/vice-chancellors-office/innovation-hub.html' }),
+    item('c10', 'scene', 'GDG Harare', { group: 'communities', description: 'Google Developer Group; runs DevFest every year.', url: 'https://gdg.community.dev/gdg-harare/' }),
+  ];
 }
-
-export const VIDEOS: Video[] = [
-  { id: 'v1', title: 'How to register a company in Zimbabwe in 2026', source: 'Techzim', duration: '15:20', topic: 'Registering', hasSummary: true, tone: 0 },
-  { id: 'v2', title: 'Taking EcoCash payments in your app', source: 'Techzim', duration: '11:05', topic: 'Payments', hasSummary: true, tone: 1 },
-  { id: 'v3', title: 'What investors want to see before they write a cheque', source: 'Other media', duration: '24:48', topic: 'Funding', hasSummary: true, tone: 2 },
-  { id: 'v4', title: 'From hackathon project to paying customers', source: 'Techzim', duration: '18:12', topic: 'Founder story', hasSummary: false, tone: 3 },
-  { id: 'v5', title: 'Pricing your product in USD and ZiG', source: 'Other media', duration: '9:37', topic: 'Pricing', hasSummary: true, tone: 4 },
-  { id: 'v6', title: 'Hiring your first developer without overpaying', source: 'Techzim', duration: '13:50', topic: 'Hiring', hasSummary: true, tone: 5 },
-  { id: 'v7', title: 'Do you need a licence? Reading the regulations', source: 'Techzim', duration: '10:24', topic: 'Registering', hasSummary: true, tone: 1 },
-];
-
-export interface SceneGroup {
-  key: string;
-  label: string;
-  description: string;
-  count: number;
-  examples: string[];
-}
-
-export const SCENE: SceneGroup[] = [
-  { key: 'hubs', label: 'Hubs and co-working', description: 'Places to work, meet people and join programmes.', count: 24, examples: ['Sample Hub, Harare', 'Sample Space, Bulawayo', 'Sample Lab, Mutare'] },
-  { key: 'accelerators', label: 'Incubators and accelerators', description: 'Structured programmes with mentors, and sometimes money.', count: 12, examples: ['Sample Accelerator', 'Sample Incubator', 'Sample Startup Factory'] },
-  { key: 'funders', label: 'Investors and grant-makers', description: 'Angels, funds, banks and foundations that back startups.', count: 18, examples: ['Sample Angels', 'Sample Capital', 'Sample Foundation'] },
-  { key: 'government', label: 'Government and regulators', description: 'Who registers, licenses and supports businesses.', count: 9, examples: ['Company registry', 'Tax authority', 'Telecoms regulator'] },
-  { key: 'universities', label: 'University programmes', description: 'Innovation hubs and incubators at universities.', count: 7, examples: ['Sample University Hub', 'Sample Innovation Centre'] },
-  { key: 'communities', label: 'Communities and meetups', description: 'Groups where founders and developers help each other.', count: 15, examples: ['Sample Dev Community', 'Sample Founders Circle'] },
-];
-
-export interface Story {
-  id: string;
-  kind: 'success' | 'lesson';
-  founder: string;
-  startup: string;
-  quote: string;
-  title: string;
-  minutes: number;
-}
-
-export const STORIES: Story[] = [
-  { id: 's1', kind: 'success', founder: 'Sample Founder', startup: 'Sample Pay', title: 'Reaching 10,000 users with no marketing budget', quote: 'We found our first users in WhatsApp groups, one conversation at a time.', minutes: 8 },
-  { id: 's2', kind: 'lesson', founder: 'Sample Founder', startup: 'Sample Logistics', title: 'Why we shut down after two years, and what we would do differently', quote: 'We built for a market that loved the idea but would not pay for it.', minutes: 11 },
-  { id: 's3', kind: 'success', founder: 'Sample Founder', startup: 'Sample Agri', title: 'From a university project to a regional business', quote: 'The hackathon gave us a deadline. Our first farmers gave us a business.', minutes: 9 },
-];
-
-export interface Guide {
-  id: string;
-  title: string;
-  topic: string;
-  minutes: number;
-}
-
-export const GUIDES: Guide[] = [
-  { id: 'g1', title: 'Taking EcoCash, card and bank payments', topic: 'Payments', minutes: 8 },
-  { id: 'g2', title: 'Receiving money from clients outside Zimbabwe', topic: 'Payments', minutes: 10 },
-  { id: 'g3', title: 'What it really costs to start: registration, internet and power', topic: 'Costs', minutes: 7 },
-  { id: 'g4', title: 'Contracts and payslips for your first employees', topic: 'Hiring', minutes: 9 },
-  { id: 'g5', title: 'Data protection: what your app must do', topic: 'Compliance', minutes: 6 },
-  { id: 'g6', title: 'Pricing in USD and ZiG without losing money', topic: 'Pricing', minutes: 7 },
-];
-
-export interface EventItem {
-  id: string;
-  day: string;
-  month: string;
-  title: string;
-  town: string;
-  kind: string;
-}
-
-export const EVENTS: EventItem[] = [
-  { id: 'e1', day: '27', month: 'Nov', title: 'Founders breakfast', town: 'Harare', kind: 'Meetup' },
-  { id: 'e2', day: '3', month: 'Dec', title: 'Pitch night: fintech', town: 'Harare', kind: 'Pitch night' },
-  { id: 'e3', day: '6', month: 'Dec', title: 'Build weekend', town: 'Bulawayo', kind: 'Hackathon' },
-  { id: 'e4', day: '11', month: 'Dec', title: 'Demo day', town: 'Mutare', kind: 'Demo day' },
-];

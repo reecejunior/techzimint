@@ -44,7 +44,7 @@ export default function SpacesPage() {
       town: t,
       spaces: visible
         .filter(s => s.town === t)
-        .sort((a, b) => Number(Boolean(b.photo)) - Number(Boolean(a.photo))),
+        .sort((a, b) => Number(b.photos.length > 0) - Number(a.photos.length > 0)),
     }))
     .filter(g => g.spaces.length > 0);
 
@@ -138,8 +138,7 @@ export default function SpacesPage() {
         )}
 
         <p className={styles.fine}>
-          Details come from the sources named on each space&apos;s page, and some are from 2022, so
-          call ahead before you go. Spaces without a photo show an illustration.{' '}
+          Prices and opening hours change, so call ahead before you go.{' '}
           <Link href="/tools/spaces/submit">Add or correct a space</Link>.
         </p>
       </div>
