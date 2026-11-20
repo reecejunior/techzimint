@@ -46,6 +46,7 @@ function space(
     website: null,
     contact: null,
     photo: null,
+    photoCredit: null,
     ...details,
   };
 }
@@ -61,6 +62,8 @@ export const SEED_SPACES: Space[] = [
     phone: '+263 783 156 194',
     email: 'hello@digitaltwo.net',
     website: 'https://digitaltwo.net/digital-two-hub/',
+    photo: 'https://digitaltwo.net/wp-content/uploads/2025/03/5.jpeg',
+    photoCredit: 'Digital Two website',
     sources: [
       { label: 'Digital Two website, 2026', url: 'https://digitaltwo.net/digital-two-hub/' },
       { label: 'Digital Two blog, Apr 2025', url: 'https://digitaltwo.net/8-reasons-why-co-working-spaces-in-harare-are-transforming-the-way-we-work/' },
@@ -130,6 +133,8 @@ export const SEED_SPACES: Space[] = [
     offers: ['WiFi', 'Printing', 'Standing desks', 'Lounge', 'Tea room'],
     price: 'From $10 a day',
     hours: 'Every day, 8am–5pm',
+    photo: 'https://www.coworkbooking.com/images/1600!0/stul/29694/img_6142.jpg',
+    photoCredit: 'Space Station on coworkbooking.com',
     sources: [
       coworker('harare/space-station'),
       { label: 'coworkbooking.com listing', url: 'https://www.coworkbooking.com/africa/zimbabwe/harare/karimapondo-space-station1' },
@@ -140,6 +145,8 @@ export const SEED_SPACES: Space[] = [
     address: '47 Herbert Chitepo Avenue',
     offers: ['WiFi', 'Meeting rooms', 'Printing', 'Garden', 'Pool', 'Kitchen', 'Parking'],
     hours: 'Mon–Fri 8:30am–6:30pm · Sat–Sun 9:30am–6:30pm',
+    photo: 'https://www.coworkbooking.com/images/1600!0/kapacita/20365/20230612_091002.jpg',
+    photoCredit: 'Location47 on coworkbooking.com',
     sources: [
       coworker('harare/location47'),
       { label: 'coworkbooking.com listing', url: 'https://www.coworkbooking.com/africa/zimbabwe/harare/location47hre' },

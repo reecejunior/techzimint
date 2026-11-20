@@ -61,6 +61,7 @@ export default function SpacesPage() {
           website: null,
           contact: s.contact || null,
           photo: null,
+          photoCredit: null,
           sources: [{ label: 'Added by a founder', url: null }],
         }),
       ),
@@ -179,7 +180,7 @@ export default function SpacesPage() {
 
         <p className={styles.fine}>
           Details come from the sources named on each card, and some are from 2022, so call ahead
-          before you go. Pictures are illustrations unless a space has sent its own.{' '}
+          before you go. Photos are credited to the venue that published them; the rest are illustrations.{' '}
           <Link href="/tools/spaces/submit">Add or correct a space</Link>.
         </p>
       </div>
@@ -189,13 +190,25 @@ export default function SpacesPage() {
 
 function SpaceCard({ space: s }: { space: Space }) {
   const Icon = s.type === 'cafe' ? Coffee : Building2;
+  // A venue photo that stops loading falls back to the illustrated cover.
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = Boolean(s.photo) && !photoFailed;
 
   return (
     <article className={styles.card}>
       <div className={styles.cover}>
-        {s.photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={s.photo} alt="" loading="lazy" referrerPolicy="no-referrer" />
+        {showPhoto ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={s.photo ?? undefined}
+              alt={`Inside ${s.name}`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setPhotoFailed(true)}
+            />
+            {s.photoCredit && <span className={styles.credit}>Photo: {s.photoCredit}</span>}
+          </>
         ) : (
           <SpaceCover id={s.id} town={s.town} type={s.type} />
         )}

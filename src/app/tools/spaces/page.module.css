@@ -378,3 +378,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+.credit {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(29, 26, 23, 0.55);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.6;
+}
