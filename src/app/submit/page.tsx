@@ -154,7 +154,7 @@ export default function SubmitPage() {
                                 View your page
                             </Link>
                         )}
-                        <Link href="/" className={styles.successSecondary}>
+                        <Link href="/startups" className={styles.successSecondary}>
                             Back to the directory
                         </Link>
                     </div>
