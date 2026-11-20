@@ -594,21 +594,35 @@ export interface FinderPostDraft {
 
 export type SpaceType = 'coworking' | 'cafe';
 
+export interface SpaceSource {
+  /** Who published the details and when, e.g. "Techzim, Jan 2022". */
+  label: string;
+  url: string | null;
+}
+
 export interface Space {
   id: string;
   name: string;
   town: string;
   type: SpaceType;
+  /** Suburb or area, when a source names one. */
+  area: string | null;
   /** Street address, or the closest place name the source gives. */
   address: string | null;
   offers: string[];
-  /** Price text as the source gives it, with its currency and date. */
+  /** Short price text, as the source gives it. */
   price: string | null;
+  hours: string | null;
+  phone: string | null;
+  /** A WhatsApp number or wa.me link. */
+  whatsapp: string | null;
+  email: string | null;
+  website: string | null;
+  /** Free-text contact from a founder's submission. */
   contact: string | null;
-  /** The page the details came from. */
-  sourceUrl: string | null;
-  /** true only when the venue's own website states the details. */
-  verified: boolean;
+  /** A photo the venue owns or has allowed us to use. */
+  photo: string | null;
+  sources: SpaceSource[];
 }
 
 export interface SpaceSubmission {
