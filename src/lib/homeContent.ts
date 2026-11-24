@@ -177,6 +177,7 @@ function item(id: string, kind: HomeKind, title: string, extra: Partial<HomeItem
 export function starterItems(): HomeItem[] {
   return [
     /* Videos: founder conversations and startup visits */
+    item('v9', 'video', 'Brian Chiware, founder of BuyMeSadza', { url: 'https://www.youtube.com/shorts/mvF42wSGiXg', source: 'Techzim', topic: 'Founder interview' }),
     item('v1', 'video', 'Victor Chaitezvi: Fireside chat on entrepreneurship & investment in the African tech ecosystem', { url: 'https://www.youtube.com/watch?v=4ok1e8aGqtI', source: 'Techzim', topic: 'Fireside chat', stage: 'funding' }),
     item('v3', 'video', 'Garth Drummond fireside chat: Running a successful online business in Zim', { url: 'https://www.youtube.com/watch?v=ybTcWs902Zk', source: 'Techzim', topic: 'Fireside chat', stage: 'customers' }),
     item('v8', 'video', 'Inside Eight2Five Hub: What Do Startups Really Get Here?', { url: 'https://www.youtube.com/watch?v=U0NIfspCzEI', source: 'Techzim', topic: 'Startup hub' }),
