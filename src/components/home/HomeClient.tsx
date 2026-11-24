@@ -10,9 +10,10 @@ import { embedSrc, parseVideoUrl } from '@/lib/ranking';
 import styles from './home.module.css';
 
 /**
- * The home page shows two things for now: videos and guides. Opportunities,
- * stories, events and who's-who can still be posted from the admin panel and
- * are kept in Firestore, ready to come back (see HOME_VISIBLE_KINDS).
+ * The home page shows two things for now: founder videos and founder stories.
+ * Guides, opportunities, events and who's-who can still be posted from the
+ * admin panel and are kept in Firestore, ready to come back (see
+ * HOME_VISIBLE_KINDS).
  */
 
 function withAutoplay(src: string): string {
@@ -29,8 +30,17 @@ function pick(posted: HomeItem[], starter: HomeItem[], kind: HomeKind): HomeItem
   return own.length > 0 ? own : starter.filter(i => i.kind === kind);
 }
 
-function year(date: string): string {
-  return /^\d{4}/.test(date) ? date.slice(0, 4) : '';
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "2026-09-24" → "Sep 2026". */
+function monthYear(date: string): string {
+  const m = /^(\d{4})-(\d{2})/.exec(date);
+  return m ? `${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`.trim() : '';
+}
+
+/** Newest first; undated items keep their place at the end. */
+function byDate(a: HomeItem, b: HomeItem): number {
+  return (b.date || '').localeCompare(a.date || '');
 }
 
 export default function HomeClient() {
@@ -38,7 +48,7 @@ export default function HomeClient() {
   const starter = useMemo(() => starterItems(), []);
 
   const videos = pick(items, starter, 'video');
-  const guides = pick(items, starter, 'guide');
+  const stories = [...pick(items, starter, 'story')].sort(byDate);
   const [lead, ...moreVideos] = videos;
 
   if (loading) {
@@ -55,7 +65,8 @@ export default function HomeClient() {
       <section className={`wrap ${styles.top}`}>
         <h1 className={styles.title}>Building a startup in Zimbabwe</h1>
         <p className={styles.intro}>
-          Videos and practical guides from Techzim and other media, for founders at any stage.
+          Zimbabwean founders on what they are building, how they found customers and what they
+          learned, from Techzim and other media.
         </p>
       </section>
 
@@ -88,22 +99,23 @@ export default function HomeClient() {
         )}
       </section>
 
-      {/* ── Guides ── */}
-      <section id="guides" className={`wrap ${styles.section}`} aria-labelledby="guides-h">
+      {/* ── Founder stories ── */}
+      <section id="stories" className={`wrap ${styles.section}`} aria-labelledby="stories-h">
         <div className={styles.sectionHead}>
-          <h2 id="guides-h" className={styles.sectionTitle}>Guides</h2>
-          <p className={styles.sectionNote}>Step-by-step help with registering, tax, payments, hiring and funding.</p>
+          <h2 id="stories-h" className={styles.sectionTitle}>Founder stories</h2>
+          <p className={styles.sectionNote}>The startups Techzim has spoken to, and what their founders are building.</p>
         </div>
 
         <ol className={styles.guidesGrid}>
-          {guides.slice(0, 12).map((g, i) => (
-            <li key={g.id}>
-              <MaybeLink href={g.url} className={styles.guide}>
+          {stories.slice(0, 12).map((s, i) => (
+            <li key={s.id}>
+              <MaybeLink href={s.url} className={styles.guide}>
                 <span className={styles.guideNum}>{String(i + 1).padStart(2, '0')}</span>
                 <span>
-                  <span className={styles.guideTitle}>{g.title}</span>
+                  {s.startup && <span className={styles.storyStartup}>{s.startup}</span>}
+                  <span className={styles.guideTitle}>{s.title}</span>
                   <span className={styles.meta}>
-                    {[g.topic, year(g.date), g.minutes ? `${g.minutes} min read` : ''].filter(Boolean).join(' · ')}
+                    {[s.founder, monthYear(s.date), s.minutes ? `${s.minutes} min read` : ''].filter(Boolean).join(' · ')}
                   </span>
                 </span>
               </MaybeLink>

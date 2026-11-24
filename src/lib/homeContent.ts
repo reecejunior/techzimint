@@ -70,7 +70,7 @@ export const HOME_KINDS: { key: HomeKind; label: string; singular: string }[] = 
 ];
 
 /** The kinds the home page shows right now. The others can still be posted and are kept for later. */
-export const HOME_VISIBLE_KINDS: HomeKind[] = ['video', 'guide'];
+export const HOME_VISIBLE_KINDS: HomeKind[] = ['video', 'story'];
 
 export const OPPORTUNITY_TYPES = ['Grant', 'Competition', 'Accelerator', 'Hackathon', 'Fellowship', 'Other'];
 export const EVENT_TYPES = ['Meetup', 'Pitch night', 'Workshop', 'Hackathon', 'Demo day', 'Conference', 'Other'];
@@ -176,14 +176,13 @@ function item(id: string, kind: HomeKind, title: string, extra: Partial<HomeItem
 
 export function starterItems(): HomeItem[] {
   return [
-    /* Videos */
-    item('v1', 'video', 'Victor Chaitezvi: Fireside chat on entrepreneurship & investment in the African tech ecosystem', { url: 'https://www.youtube.com/watch?v=4ok1e8aGqtI', source: 'Techzim', topic: 'Funding', stage: 'funding' }),
-    item('v2', 'video', 'MINT: Building Zimbabwe’s Startup Ecosystem: From Ideas To Investment', { url: 'https://www.youtube.com/watch?v=yU4RBWkEvEo', source: 'ZTNPRIME', topic: 'Ecosystem' }),
-    item('v3', 'video', 'Garth Drummond fireside chat: Running a successful online business in Zim', { url: 'https://www.youtube.com/watch?v=ybTcWs902Zk', source: 'Techzim', topic: 'Founder story', stage: 'customers' }),
-    item('v4', 'video', 'EcoCash Scams, Digital Tax Confusion & Zim Tech in 2026', { url: 'https://www.youtube.com/watch?v=Az3KSfON0L4', source: 'Techzim', topic: 'Payments and tax', stage: 'build' }),
-    item('v5', 'video', 'EcoCash Scam Explained: How Wallets Are Being Taken Over', { url: 'https://www.youtube.com/watch?v=Zpy6b2WM5L4', source: 'Techzim', topic: 'Security' }),
-    item('v6', 'video', 'Zimbabwe’s ISP Battle: SmartBiz vs Dolphin Tech', { url: 'https://www.youtube.com/watch?v=ygFwkpdePtY', source: 'Techzim', topic: 'Connectivity' }),
+    /* Videos: founder conversations and startup visits */
+    item('v9', 'video', 'Brian Chiware, founder of BuyMeSadza', { url: 'https://www.youtube.com/shorts/mvF42wSGiXg', source: 'Techzim', topic: 'Founder interview' }),
+    item('v1', 'video', 'Victor Chaitezvi: Fireside chat on entrepreneurship & investment in the African tech ecosystem', { url: 'https://www.youtube.com/watch?v=4ok1e8aGqtI', source: 'Techzim', topic: 'Fireside chat', stage: 'funding' }),
+    item('v3', 'video', 'Garth Drummond fireside chat: Running a successful online business in Zim', { url: 'https://www.youtube.com/watch?v=ybTcWs902Zk', source: 'Techzim', topic: 'Fireside chat', stage: 'customers' }),
+    item('v8', 'video', 'Inside Eight2Five Hub: What Do Startups Really Get Here?', { url: 'https://www.youtube.com/watch?v=U0NIfspCzEI', source: 'Techzim', topic: 'Startup hub' }),
     item('v7', 'video', 'Online Doctors Africa launches: Healthcare on credit and a digital doctor directory in Zim', { url: 'https://www.youtube.com/shorts/t1lCkJPMoSg', source: 'Techzim', topic: 'Startup launch' }),
+    item('v2', 'video', 'MINT: Building Zimbabwe’s Startup Ecosystem: From Ideas To Investment', { url: 'https://www.youtube.com/watch?v=yU4RBWkEvEo', source: 'ZTNPRIME', topic: 'Panel' }),
 
     /* Opportunities */
     item('o1', 'opportunity', 'Hello Tomorrow Global Challenge', { type: 'Competition', organiser: 'Hello Tomorrow', value: '€200,000 investment for the winner', forWho: 'Deep-tech startups anywhere, teams of two or more', date: '2026-11-30', url: 'https://apply.hello-tomorrow.org/' }),
@@ -200,10 +199,16 @@ export function starterItems(): HomeItem[] {
     item('g7', 'guide', 'Check out ZIMRA’s tax credit for employing under-30s', { url: 'https://www.techzim.co.zw/2022/01/check-out-zimras-180000-a-year-tax-credit-for-employing-under-30s/', topic: 'Hiring', minutes: 2, stage: 'grow', date: '2022-01-04' }),
     item('g8', 'guide', 'The step-by-step process for registering your startup as a private business corporation', { url: 'https://www.techzim.co.zw/2016/08/heres-step-step-process-registering-startup-private-business-corporation/', topic: 'Registering', minutes: 2, stage: 'register', date: '2016-08-12' }),
 
-    /* Founder stories */
-    item('s1', 'story', 'This Zimbabwean/Zambian startup was accepted into Y Combinator', { url: 'https://www.techzim.co.zw/2024/02/zimbabwean-zambian-startup-accepted-into-y-combinator-prestigious-amreican-accelerator/', founder: 'Louis Murerwa and Michael Moyo', startup: 'Ocular AI', quote: 'At Google and Microsoft, it was very difficult to know what was happening, when, where and how it affected other teams.', storyType: 'success', date: '2024-02-22' }),
+    /* Founder stories: Techzim's startup profiles, newest first */
+    item('s4', 'story', 'MaDeals wins $7,000 at the Innovation Expo: what’s behind the startup, future plans?', { url: 'https://www.techzim.co.zw/2026/10/ma-deals-app-7000-innovation-expo/', founder: 'Ray Vines', startup: 'MaDeals', storyType: 'success', minutes: 5, date: '2026-10-16' }),
+    item('s5', 'story', 'MIS: The startup that’s trying to make it easier to find medicine in Zim', { url: 'https://www.techzim.co.zw/2026/10/mis-the-startup-thats-trying-to-make-it-easier-to-find-medicine-in-zim/', founder: 'Dr Dudzai Mureyi', startup: 'Medical Information Service', storyType: 'success', minutes: 5, date: '2026-10-05' }),
+    item('s6', 'story', 'Menard Mutingwende on building ZimLedger, finding paying customers and the business of tech', { url: 'https://www.techzim.co.zw/2026/09/menard-mutingwende-on-building-zimledger-finding-paying-customers-and-the-business-of-tech/', founder: 'Menard Mutingwende', startup: 'ZimLedger', storyType: 'success', minutes: 4, date: '2026-09-24' }),
+    item('s7', 'story', 'Local developer turns Zimbabwe’s favourite card game into a mobile app', { url: 'https://www.techzim.co.zw/2026/09/local-developer-turns-zimbabwes-favorite-card-game-into-a-mobile-app/', founder: 'Tendai Karuma', startup: 'Makasa Cards', storyType: 'success', minutes: 3, date: '2026-09-11' }),
+    item('s8', 'story', 'Runtime is selling local domains for $2 a year', { url: 'https://www.techzim.co.zw/2026/09/runtime-is-selling-local-domains-for-2-a-year/', founder: 'Ngaavongwe Ndasowampange', startup: 'Runtime', storyType: 'success', minutes: 2, date: '2026-09-01' }),
+    item('s9', 'story', 'Rera: the WhatsApp-based platform that takes reminding work off your shoulders', { url: 'https://www.techzim.co.zw/2026/08/rera-whatsapp-based-platform-which-takes-reminding-work-off-your-shoulders/', founder: 'Timothy Sabelanga', startup: 'Rera', storyType: 'success', minutes: 4, date: '2026-08-18' }),
+    item('s10', 'story', 'Local startup Kose launches a super app to compete against inDrive', { url: 'https://www.techzim.co.zw/2026/08/local-startup-kose-launches-super-app-to-compete-against-indrive/', founder: 'Tirivashe Mundondo', startup: 'Kose', storyType: 'success', minutes: 3, date: '2026-08-05' }),
     item('s2', 'story', 'This startup made ZIMRA fiscalisation painless, for $10 a month', { url: 'https://www.techzim.co.zw/2025/05/this-startup-just-made-zimra-fiscalisation-painless-and-for-only-10-a-month/', founder: 'Thamsanqa Bhala', startup: 'RoundIHMP', quote: 'We’d like to offload some of the work like customer acquisition to others like Accountants.', storyType: 'success', date: '2025-05-05' }),
-    item('s3', 'story', 'Why Tengesa failed: a startup founder shares with us', { url: 'https://techzim.co.zw/2013/06/why-tengesa-failed-startup-founder-shares-with-us', founder: 'Colin Pringlewood', startup: 'Tengesa', quote: 'So don’t give up your day job.', storyType: 'lesson', date: '2013-06-18' }),
+    item('s1', 'story', 'This Zimbabwean/Zambian startup was accepted into Y Combinator', { url: 'https://www.techzim.co.zw/2024/02/zimbabwean-zambian-startup-accepted-into-y-combinator-prestigious-amreican-accelerator/', founder: 'Louis Murerwa and Michael Moyo', startup: 'Ocular AI', quote: 'At Google and Microsoft, it was very difficult to know what was happening, when, where and how it affected other teams.', storyType: 'success', date: '2024-02-22' }),
 
     /* Events */
     item('e1', 'event', 'ZCICT 2026: Zimbabwe Conference on ICT', { type: 'Conference', town: 'Harare', date: '2026-11-26', url: 'https://zcict.co.zw/' }),
